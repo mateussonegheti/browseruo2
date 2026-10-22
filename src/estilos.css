@@ -44,3 +44,44 @@ html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--tex
 .status[data-erro="1"] { color: var(--erro); }
 .dica { margin: 8px 0 0; font-size: 12px; color: var(--suave); }
 .erro-fatal { position: fixed; inset: 20px; margin: 0; padding: 16px; background: #2a1215; color: var(--erro); white-space: pre-wrap; }
+
+/* ---------- combate ---------- */
+#jogo.mirando { cursor: cell; }
+#combate[hidden] { display: none; }
+#combate button { padding: 5px 9px; color: var(--texto); background: #20252e; border: 1px solid var(--borda);
+  border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+#combate button:hover { background: #2a303b; }
+.status-combate { position: fixed; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.barras { width: 220px; padding: 8px 10px; background: rgba(13,15,18,.82); border: 1px solid var(--borda); border-radius: 8px; }
+.barras.alvo { border-color: #6b4a2a; }
+.barras[hidden] { display: none; }
+.barras .nome { font-weight: 600; font-size: 13px; margin-bottom: 5px; }
+.barra { position: relative; height: 14px; margin-bottom: 4px; background: #0a0b0e; border-radius: 3px; overflow: hidden; }
+.barra .valor { position: absolute; inset: 0 auto 0 0; transition: width .12s linear; }
+.barra.vida .valor { background: #2f6fd8; }
+.barra.vida .valor.envenenado { background: #3fae3f; }
+.barra.mana .valor { background: #3c86c9; filter: hue-rotate(40deg); }
+.barra .texto { position: relative; font-size: 10px; line-height: 14px; text-align: center; color: #fff; text-shadow: 0 1px 2px #000; }
+.barras .estado { min-height: 14px; font-size: 11px; color: var(--destaque); }
+.bots { position: fixed; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
+  background: rgba(13,15,18,.82); border: 1px solid var(--borda); border-radius: 8px; }
+.bots strong { font-size: 12px; color: var(--suave); }
+.barra-magias { position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px;
+  background: rgba(13,15,18,.82); border: 1px solid var(--borda); border-radius: 8px; max-width: calc(100% - 24px); overflow-x: auto; }
+.barra-magias button { position: relative; width: 50px; height: 50px; padding: 2px !important; flex: none; }
+.barra-magias img { width: 44px; height: 44px; display: block; image-rendering: pixelated; }
+.barra-magias .sigla { font-weight: 700; }
+.barra-magias .tecla { position: absolute; left: 3px; top: 1px; font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+.barra-magias .progresso { position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--destaque); }
+.barra-magias button.lancando { border-color: var(--destaque); }
+.barra-magias button.mirando { border-color: #7fb7ff; box-shadow: 0 0 0 2px #7fb7ff; }
+.barra-magias button.sem-mana img { opacity: .35; }
+.log-combate { position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); white-space: pre-line; text-align: center;
+  font-size: 12px; color: #e8d9a8; text-shadow: 0 1px 2px #000, 0 0 4px #000; pointer-events: none; }
+.dica-mira { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); padding: 5px 10px; font-size: 12px;
+  background: rgba(30,50,90,.85); border: 1px solid #7fb7ff; border-radius: 6px; pointer-events: none; }
+.dica-mira[hidden] { display: none; }
+@media (max-width: 700px) {
+  .status-combate .barras { width: 170px; }
+  .bots { top: auto; bottom: 110px; }
+}

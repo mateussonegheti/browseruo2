@@ -5,3 +5,5 @@ dist
 cliente/
 pacote-cliente/
 public/sprites/
+public/gumps/
+public/sons/

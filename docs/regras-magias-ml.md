@@ -7,8 +7,13 @@ Fonte: [ServUO](https://github.com/ServUO/ServUO), commit `d76bf44` (ago/2026). 
 Em ML o ServUO liga `Core.AOS`, `Core.SE` e `Core.ML` (não `Core.SA`). Sempre que a magia tem dois
 ramos (pré-AoS × AoS), vale o **ramo AoS**, salvo onde indicado.
 
-Os valores calculados assumem o **template do mago padrão** (a confirmar):
-Magery 120, Evaluating Intelligence 120, Resisting Spells 120, Inscription 100, Poisoning 0, FC 2, FCR 6.
+> **Decisões do projeto (implementadas em `src/combate/`):** todas as skills em **100** (não há upar skills),
+> Str 100 / Dex 25 / Int 100, resistências 70 (teto de jogador), FC 2, FCR 6 e **Magic Reflect clássico**.
+> Os números ficam em `src/combate/regras.json`. Os valores abaixo marcados "com o template" foram calculados
+> para o rascunho anterior (skills em 120); a tabela "Valores com skills 100" no fim vale para o jogo.
+
+Rascunho inicial do template: Magery 120, Evaluating Intelligence 120, Resisting Spells 120, Inscription 100,
+Poisoning 0, FC 2, FCR 6.
 
 > `Utility.Random(a, n)` no ServUO devolve de `a` a `a + n - 1`. `RandomMinMax(a, b)` devolve de `a` a `b`.
 
@@ -109,10 +114,36 @@ Dano dos venenos (ramo AoS). Dano por tick = `1 + floor(vida_atual × %)`, preso
 - Cada magia recebida gasta `círculo` pontos. Enquanto o saldo não ficar negativo, a magia volta para quem a lançou.
 - Ao zerar, o escudo some. Não dá para recastar enquanto ele estiver ativo.
 
+## Fórmulas adicionais usadas no motor
+
+- **Dano das magias (AoS):** `dado × (30 + 0,9 × EvalInt)% × (100 + bônus Inscription + Int/10)%`, depois
+  `× (100 − resistência do elemento)%`. Com Eval, Int e Inscription 100 o multiplicador é 1,2 × 1,2.
+  Energy Bolt (40 + 1d5, energia), Explosion (40 + 1d5, fogo, 3 s de atraso), Flamestrike (48 + 1d5, fogo),
+  Lightning (23 + 1d4, energia). EB e Flamestrike chegam 1 s depois; Lightning é imediato.
+- **Durante o cast o personagem não anda** (`BlocksMovement`). Paralisado não começa nem conclui magia.
+- **Vida:** 50 + Str/2. Regenera 1 ponto a cada 3,33 s (humano em ML), nada enquanto envenenado.
+- **Mana:** Int. Regeneração ML com Meditation e Focus 100 e Int 100: ~1 ponto a cada 0,66 s.
+- **Veneno:** um veneno igual ou mais forte já ativo impede o novo. Dano de veneno também interrompe o cast.
+
+## Valores com skills 100 (os do jogo)
+
+| | Valor |
+|---|---|
+| Energy Bolt / Explosion | 17–19 (resistência 70) |
+| Flamestrike | 21–22 |
+| Lightning | 10–11 |
+| Heal | 9–12 em si; 13–18 em outro |
+| Greater Heal | 41–50 |
+| Cure | Lesser e Regular 100%, Greater 76%, Deadly 43%, Lethal 20% |
+| Poison | Deadly a até 2 tiles; Lesser mais longe; resiste ~34,5% |
+| Paralyze | `Eval/10 − Resist/10` = **0 s** entre magos iguais (ver pendência 1) |
+| Magic Reflect clássico | 15 pontos; cada magia gasta o próprio círculo |
+
 ## Pendências / decisões
-1. **Template:** confirmar Eval 120, Resist 120, Inscription 100 e Poisoning 0 (ou 100).
-2. **Magic Reflect:** usar o ML real (resistências) ou o reflect clássico pré-AoS? Como o DMS rodava
-   em Sphere, o feeling lembrado provavelmente é o do reflect clássico.
-3. **Bot:** tratar como "jogador" na regra do Paralyze, para não ganhar ×3 de duração.
-4. Não lidos ainda: resistências elementais e fórmula de dano AoS (`GetNewAosDamage`), Eval
-   Intelligence e Inscription no dano, e o atraso de dano por magia (`GetDamageDelayForSpell`).
+0. **Paralyze sem efeito entre magos iguais:** a fórmula de ML dá 0 s com Eval 100 contra Resist 100.
+   Para ter paralisia útil, trocar a fórmula (ex.: a pré-AoS, `7 + Magery × 0,2` s, ×0,75 se resistir)
+   ou baixar o Resist do template.
+1. ~~Template~~: decidido, todas as skills em 100.
+2. ~~Magic Reflect~~: decidido, clássico (reflete).
+3. ~~Bot~~: bots contam como jogadores (sem o ×3 do Paralyze contra monstros).
+4. ~~Fórmula de dano AoS~~: lida e implementada (acima).

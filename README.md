@@ -1,7 +1,8 @@
 # browserUO
 
 PvP enxuto no estilo Ultima Online, rodando no navegador. Projeto pessoal.
-**Marco 1:** mapa vazio/arena, personagem com movimento no estilo UO e editor de arena interno.
+**Marco 1:** arena com sprites reais do cliente, movimento no estilo UO e editor de arena interno.
+**Marco 2:** combate de magia (era ML) contra bots, com ícones e sons do cliente.
 
 ## Como rodar
 
@@ -23,7 +24,8 @@ python scripts/extrator/extrair_sprites.py
 # outra pasta: python scripts/extrator/extrair_sprites.py --cliente "D:/Jogos/Ultima Online Outlands"
 ```
 
-Sem os PNGs o jogo funciona com losangos/caixas na cor média de cada tile.
+O mesmo comando grava os ícones das magias em `public/gumps/` e os sons em `public/sons/` (também fora do git).
+Sem esses arquivos o jogo funciona com losangos/caixas na cor média de cada tile, siglas no lugar dos ícones e sem som.
 
 O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `npx playwright install chromium`
 (ou aponte `CHROMIUM_PATH` para um Chromium existente, ex.: o Edge em
@@ -40,8 +42,34 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Editor: apagar | Botão direito |
 | Editor: mover a câmera | W/A/S/D ou setas |
 | Editor: grade | Tecla **G** |
+| Lançar magia | Teclas **1** a **0** ou clique na barra de magias |
+| Escolher alvo | Clique no personagem (cursor de mira) · **T**: último alvo · **Y**: você mesmo · **Esc**: cancelar |
+| Bots de teste | Painel no canto superior direito: bot parado (boneco) ou bot ativo (anda e lança magias) |
 
 Tempos por passo (como no UO a pé): andar 400 ms, correr 200 ms.
+
+## Combate
+
+Regras em `src/combate/regras.json` (dá para ajustar sem mexer no código) e explicadas em
+`docs/regras-magias-ml.md`. Todos os personagens usam o mesmo mago: skills em 100, Str 100 / Dex 25 / Int 100,
+resistências 70, FC 2 e FCR 6.
+
+| Tecla | Magia | Círculo | Mana |
+|---|---|---|---|
+| 1 | Energy Bolt | 6 | 20 |
+| 2 | Explosion (dano 3 s depois) | 6 | 20 |
+| 3 | Flamestrike | 7 | 40 |
+| 4 | Lightning | 4 | 11 |
+| 5 | Poison (Deadly a até 2 tiles) | 3 | 9 |
+| 6 | Paralyze | 5 | 14 |
+| 7 | Heal | 1 | 4 |
+| 8 | Greater Heal | 4 | 11 |
+| 9 | Cure | 2 | 6 |
+| 0 | Magic Reflection (clássico: reflete magias) | 5 | 14 |
+
+- Durante o cast o personagem não anda; qualquer dano interrompe (*fizzle*). A mana só é gasta ao escolher o alvo.
+- Heal e Greater Heal não funcionam em alvo envenenado. Dano quebra a paralisia.
+- Muros bloqueiam a linha de visão; alcance de mira de 10 tiles. Ao morrer, renasce em 5 s.
 
 ## Editor de arena
 
@@ -64,6 +92,9 @@ src/
   jogo/         jogador.ts (passos, andar/correr, encadeamento)
   render/       renderizador.ts (canvas 2D, ordenação isométrica, placeholders)
   editor/       editor.ts (lógica, sem DOM) · painel.ts (interface)
+  combate/      regras.json · formulas.ts (ServUO) · motor.ts (cast, mira, dano, veneno…) · bot.ts (IA)
+  interface/    hud-combate.ts (barras, barra de magias, bots) · sons.ts
+  render/       efeitos.ts (efeitos de magia e textos sobre os personagens)
   persistencia/ arena-io.ts (JSON, localStorage, servidor de dev)
 public/
   catalogo/catalogo.json   catálogo de tiles gerado pelo extrator
@@ -125,10 +156,12 @@ Os tiles escolhidos vêm de `scripts/extrator/selecao.json` (grupos por nome do 
 - Piso plano: a altura Z dos objetos é só visual; a colisão não considera degraus/escadas.
 - Personagem é um boneco simples (as animações do cliente, em `anim.uoo`, entram numa etapa posterior).
 - A cópia da arena no navegador mudou de chave (`browseruo.arena.v2`): arenas antigas usavam ids de placeholder.
-- Cliente apenas local: ainda não há servidor autoritativo nem outros jogadores.
+- Cliente apenas local: ainda não há servidor autoritativo nem outros jogadores (os bots rodam no navegador).
+- Efeitos de magia desenhados no canvas (os efeitos animados do cliente ainda não foram extraídos).
 
 ## Próximos marcos
 
-1. Servidor autoritativo (Node + WebSocket, tick fixo) reaproveitando `mundo/` e `jogo/`.
-2. Combate: swing timer, dano, morte/respawn, com regras do Source-X como referência.
-3. Magias com cast e interrupção por dano.
+1. Animações do personagem (`anim.uoo`).
+2. Servidor autoritativo (Node + WebSocket, tick fixo) reaproveitando `mundo/` e `jogo/`.
+3. Combate corpo a corpo e itens (swing timer, armas), com regras do ServUO como referência.
+4. Mais magias (Magic Arrow, Harm, Fireball, Mind Blast…).

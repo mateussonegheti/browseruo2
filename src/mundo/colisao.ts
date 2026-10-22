@@ -24,3 +24,27 @@ export function podeAndar(arena: Arena, cat: CatalogoTiles, x: number, y: number
   }
   return true;
 }
+
+/**
+ * Linha de visão entre dois tiles: percorre a reta (Bresenham) e falha se algum tile
+ * intermediário tiver objeto que bloqueia. O terreno (ex.: água) não bloqueia a visão.
+ */
+export function temLinhaDeVisao(
+  arena: Arena, cat: CatalogoTiles, a: { x: number; y: number }, b: { x: number; y: number },
+): boolean {
+  let x = a.x;
+  let y = a.y;
+  const dx = Math.abs(b.x - x);
+  const dy = -Math.abs(b.y - y);
+  const sx = x < b.x ? 1 : -1;
+  const sy = y < b.y ? 1 : -1;
+  let erro = dx + dy;
+  while (x !== b.x || y !== b.y) {
+    const e2 = 2 * erro;
+    if (e2 >= dy) { erro += dy; x += sx; }
+    if (e2 <= dx) { erro += dx; y += sy; }
+    if (x === b.x && y === b.y) break;
+    if (arena.objetosEm(x, y).some((o) => cat.bloqueia(o.id))) return false;
+  }
+  return true;
+}

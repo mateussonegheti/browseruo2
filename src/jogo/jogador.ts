@@ -46,14 +46,17 @@ export function atualizarJogador(j: EstadoJogador, agora: number): void {
 /**
  * Tenta iniciar um passo. Sempre vira o personagem para `dir`;
  * só anda se não houver passo em curso e o destino for livre.
+ * `ocupado` informa tiles com outros personagens (ninguém atravessa ninguém).
  */
 export function tentarAndar(
   j: EstadoJogador, dir: Direcao, correndo: boolean, agora: number, arena: Arena, cat: CatalogoTiles,
+  ocupado?: (x: number, y: number) => boolean,
 ): boolean {
   j.dir = dir;
   if (j.movimento) return false;
   const { dx, dy } = DESLOCAMENTO[dir] ?? { dx: 0, dy: 0 };
   if (!podeAndar(arena, cat, j.x, j.y, dx, dy)) return false;
+  if (ocupado?.(j.x + dx, j.y + dy)) return false;
   const encadeia = agora - j.ultimoFim < TOLERANCIA_ENCADEAR_MS;
   j.movimento = {
     deX: j.x, deY: j.y, paraX: j.x + dx, paraY: j.y + dy,

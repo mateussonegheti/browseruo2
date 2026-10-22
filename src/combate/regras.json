@@ -1,0 +1,56 @@
+{
+  "comentario": "Regras de combate (era ML, fonte: ServUO; ver docs/regras-magias-ml.md). Ajuste os números aqui sem mexer no código.",
+  "modelo": {
+    "atributos": { "str": 100, "dex": 25, "int": 100 },
+    "skills": {
+      "magery": 100, "evalInt": 100, "resist": 100, "inscription": 100,
+      "poisoning": 100, "meditation": 100, "focus": 100
+    },
+    "resistencias": { "fisica": 70, "fogo": 70, "frio": 70, "veneno": 70, "energia": 70 },
+    "fasterCasting": 2,
+    "fasterCastRecovery": 6,
+    "lowerManaCost": 0
+  },
+  "alcanceMiraTiles": 10,
+  "respawnMs": 5000,
+  "manaPorCirculo": [4, 6, 9, 11, 14, 20, 40, 50],
+  "venenos": [
+    { "nome": "Lesser",  "min": 4,  "max": 16, "percentual": 7.5, "primeiroMs": 3000, "intervaloMs": 2250, "ticks": 10 },
+    { "nome": "Regular", "min": 8,  "max": 18, "percentual": 10,  "primeiroMs": 3000, "intervaloMs": 3250, "ticks": 10 },
+    { "nome": "Greater", "min": 12, "max": 20, "percentual": 15,  "primeiroMs": 3000, "intervaloMs": 4250, "ticks": 10 },
+    { "nome": "Deadly",  "min": 16, "max": 30, "percentual": 30,  "primeiroMs": 3000, "intervaloMs": 5250, "ticks": 15 },
+    { "nome": "Lethal",  "min": 20, "max": 50, "percentual": 35,  "primeiroMs": 3000, "intervaloMs": 5250, "ticks": 20 }
+  ],
+  "magias": [
+    { "id": "energy-bolt", "nome": "Energy Bolt", "palavras": "Corp Por", "circulo": 6, "tecla": "1",
+      "icone": "0x08E9", "som": "0x020A", "alvo": "outro",
+      "efeito": { "tipo": "dano", "bonus": 40, "dados": 1, "lados": 5, "elemento": "energia", "atrasoMs": 1000, "visual": "projetil" } },
+    { "id": "explosion", "nome": "Explosion", "palavras": "Vas Ort Flam", "circulo": 6, "tecla": "2",
+      "icone": "0x08EA", "som": "0x0307", "alvo": "outro",
+      "efeito": { "tipo": "dano", "bonus": 40, "dados": 1, "lados": 5, "elemento": "fogo", "atrasoMs": 3000, "visual": "explosao" } },
+    { "id": "flamestrike", "nome": "Flamestrike", "palavras": "Kal Vas Flam", "circulo": 7, "tecla": "3",
+      "icone": "0x08F2", "som": "0x0208", "alvo": "outro",
+      "efeito": { "tipo": "dano", "bonus": 48, "dados": 1, "lados": 5, "elemento": "fogo", "atrasoMs": 1000, "visual": "coluna-fogo" } },
+    { "id": "lightning", "nome": "Lightning", "palavras": "Por Ort Grav", "circulo": 4, "tecla": "4",
+      "icone": "0x08DD", "som": "0x0029", "alvo": "outro",
+      "efeito": { "tipo": "dano", "bonus": 23, "dados": 1, "lados": 4, "elemento": "energia", "atrasoMs": 0, "visual": "raio" } },
+    { "id": "poison", "nome": "Poison", "palavras": "In Nox", "circulo": 3, "tecla": "5",
+      "icone": "0x08D3", "som": "0x0205", "alvo": "outro",
+      "efeito": { "tipo": "veneno", "alcanceForteTiles": 2, "limiares": [1000, 850, 650], "niveis": [3, 2, 1] } },
+    { "id": "paralyze", "nome": "Paralyze", "palavras": "An Ex Por", "circulo": 5, "tecla": "6",
+      "icone": "0x08E5", "som": "0x0204", "alvo": "outro",
+      "efeito": { "tipo": "paralisia" } },
+    { "id": "heal", "nome": "Heal", "palavras": "In Mani", "circulo": 1, "tecla": "7",
+      "icone": "0x08C3", "som": "0x01F2", "alvo": "qualquer",
+      "efeito": { "tipo": "cura", "formula": "heal" } },
+    { "id": "greater-heal", "nome": "Greater Heal", "palavras": "In Vas Mani", "circulo": 4, "tecla": "8",
+      "icone": "0x08DC", "som": "0x0202", "alvo": "qualquer",
+      "efeito": { "tipo": "cura", "formula": "greater-heal" } },
+    { "id": "cure", "nome": "Cure", "palavras": "An Nox", "circulo": 2, "tecla": "9",
+      "icone": "0x08CA", "som": "0x01E0", "alvo": "qualquer",
+      "efeito": { "tipo": "cura-veneno" } },
+    { "id": "magic-reflect", "nome": "Magic Reflection", "palavras": "In Jux Sanct", "circulo": 5, "tecla": "0",
+      "icone": "0x08E3", "som": "0x01E9", "alvo": "proprio",
+      "efeito": { "tipo": "reflexo", "somFim": "0x01ED" } }
+  ]
+}

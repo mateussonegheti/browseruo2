@@ -3,6 +3,7 @@
 Lê a pasta de instalação do cliente e gera:
   - public/catalogo/catalogo.json   (contrato descrito no README)
   - public/sprites/terreno/*.png e public/sprites/objetos/*.png
+  - public/gumps/*.png (ícones de magia) e public/sons/*.wav
 
 Uso:
   python scripts/extrator/extrair_sprites.py
@@ -201,6 +202,42 @@ def extrair_tipo(tipo: str, pasta_saida: str, dados_arte: bytes, indice: dict[in
     return tiles
 
 
+def extrair_gumps(caminho: Path, ids: list[int], pasta: Path) -> int:
+    """gumps.uoo usa o mesmo formato de entradas do art.uoo."""
+    dados = ler_arquivo_uoo(caminho)
+    indice = indexar_entradas(dados)
+    gravados = 0
+    for gid in ids:
+        if gid not in indice:
+            print(f"  aviso: gump 0x{gid:04X} não existe", file=sys.stderr)
+            continue
+        gravar_png(pasta / f"0x{gid:04X}.png", decodificar_imagem(dados, indice[gid]))
+        gravados += 1
+    return gravados
+
+
+def extrair_sons(pasta_cliente: Path, ids: list[int], pasta: Path) -> int:
+    """sound.mul + soundidx.mul (formato clássico): cabeçalho de 40 bytes + PCM 16 bits mono 22050 Hz."""
+    indice = (pasta_cliente / "soundidx.mul").read_bytes()
+    gravados = 0
+    with open(pasta_cliente / "sound.mul", "rb") as arq:
+        for sid in ids:
+            pos, tamanho, _ = struct.unpack_from("<iii", indice, sid * 12)
+            if pos < 0 or tamanho <= 40:
+                print(f"  aviso: som 0x{sid:04X} não existe", file=sys.stderr)
+                continue
+            arq.seek(pos + 40)
+            pcm = arq.read(tamanho - 40)
+            cabecalho = struct.pack(
+                "<4sI4s4sIHHIIHH4sI", b"RIFF", 36 + len(pcm), b"WAVE", b"fmt ", 16, 1, 1,
+                22050, 22050 * 2, 2, 16, b"data", len(pcm),
+            )
+            pasta.mkdir(parents=True, exist_ok=True)
+            (pasta / f"0x{sid:04X}.wav").write_bytes(cabecalho + pcm)
+            gravados += 1
+    return gravados
+
+
 # ---------------------------------------------------------------- principal
 
 def main() -> int:
@@ -242,8 +279,14 @@ def main() -> int:
     texto = '{"versao": 1, "origem": ' + json.dumps(origem, ensure_ascii=False) + ', "tiles": [\n    ' + linhas + "\n]}\n"
     destino.write_text(texto, encoding="utf-8")
 
+    print("Gravando icones e sons...")
+    n_gumps = extrair_gumps(args.cliente / "gumps.uoo", [int(g, 0) for g in selecao.get("gumps", [])],
+                            args.saida / "gumps")
+    n_sons = extrair_sons(args.cliente, [int(s, 0) for s in selecao.get("sons", [])], args.saida / "sons")
+
     n_terreno = sum(1 for t in tiles if t["tipo"] == "terreno")
     print(f"Pronto: {n_terreno} terrenos e {len(tiles) - n_terreno} objetos em {destino}")
+    print(f"        {n_gumps} gumps em public/gumps e {n_sons} sons em public/sons")
     return 0
 
 

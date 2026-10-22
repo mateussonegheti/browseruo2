@@ -2,15 +2,23 @@ import './estilos.css';
 import { direcaoPorVetorTela } from './nucleo/direcoes';
 import { tileParaMundo, type Ponto } from './nucleo/projecao';
 import { carregarCatalogo } from './mundo/catalogo';
+import { tileBloqueado, temLinhaDeVisao } from './mundo/colisao';
 import { Arena, TAMANHO_MAX, TAMANHO_MIN, criarMapaVazio } from './mundo/mapa';
-import type { Mapa } from './mundo/tipos';
+import type { Direcao, Mapa } from './mundo/tipos';
 import { atualizarJogador, criarJogador, posicaoVisual, tentarAndar, type EstadoJogador } from './jogo/jogador';
-import { Renderizador } from './render/renderizador';
+import { Renderizador, type PersonagemRender } from './render/renderizador';
+import { Efeitos } from './render/efeitos';
 import { Editor } from './editor/editor';
 import { PainelEditor } from './editor/painel';
 import {
   REGEX_NOME_ARENA, baixarJson, carregarDoProjeto, carregarLocal, lerArquivoJson, salvarLocal, salvarNoProjeto,
 } from './persistencia/arena-io';
+import regrasJson from './combate/regras.json';
+import { MotorCombate } from './combate/motor';
+import { decidirBot } from './combate/bot';
+import type { Combatente, ModoBot, Regras } from './combate/tipos';
+import { HudCombate } from './interface/hud-combate';
+import { Sons } from './interface/sons';
 
 const NOME_ARENA_PADRAO = 'arena-padrao';
 /** Distância (px) do cursor ao personagem acima da qual ele corre. */
@@ -19,11 +27,15 @@ const ZONA_MORTA_PX = 12;
 /** O corpo do personagem fica acima do pé; o vetor de direção parte do meio do corpo. */
 const DESLOCAMENTO_CORPO_PX = 20;
 const VELOCIDADE_CAMERA_EDITOR = 700; // px/s
+const ID_JOGADOR = 'jogador';
+const COR_JOGADOR = '#3d6fd1';
+const COR_BOT = '#c2453c';
 
 async function iniciar(): Promise<void> {
   const canvas = document.querySelector<HTMLCanvasElement>('#jogo')!;
   const elPainel = document.querySelector<HTMLElement>('#painel')!;
   const elHud = document.querySelector<HTMLElement>('#hud')!;
+  const elCombate = document.querySelector<HTMLElement>('#combate')!;
 
   const catalogo = await carregarCatalogo('/catalogo/catalogo.json');
   const renderizador = new Renderizador(canvas, catalogo);
@@ -41,6 +53,58 @@ async function iniciar(): Promise<void> {
     ultimoTile: null as null | { x: number; y: number },
   };
 
+  // ---------- combate ----------
+  const motor = new MotorCombate(regrasJson as Regras, {
+    temVisao: (a, b) => temLinhaDeVisao(arena, catalogo, a, b),
+    posicaoRespawn: (c) => (c.id === ID_JOGADOR ? tileLivrePerto(arena.spawn, c.id) : tileLivrePerto(jogador, c.id, 6)),
+  });
+  const eu = motor.criar(ID_JOGADOR, 'Você', jogador, performance.now());
+  const efeitos = new Efeitos();
+  const sons = new Sons();
+  let contadorBots = 0;
+
+  /** Tile ocupado por outro personagem vivo (parado nele ou entrando nele). */
+  const ocupadoPorOutro = (x: number, y: number, exceto: string): boolean =>
+    motor.listar().some((c) => c.id !== exceto && !c.morto &&
+      ((c.mov.x === x && c.mov.y === y) || (c.mov.movimento?.paraX === x && c.mov.movimento?.paraY === y)));
+
+  /** Procura em espiral um tile livre a partir de `centro`, começando a `raioMin` tiles. */
+  function tileLivrePerto(centro: { x: number; y: number }, id: string, raioMin = 0): { x: number; y: number } {
+    for (let r = raioMin; r < 30; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = centro.x + dx;
+          const y = centro.y + dy;
+          if (!tileBloqueado(arena, catalogo, x, y) && !ocupadoPorOutro(x, y, id)) return { x, y };
+        }
+      }
+    }
+    return { x: centro.x, y: centro.y };
+  }
+
+  const adicionarBot = (modo: ModoBot): void => {
+    contadorBots++;
+    const id = `bot-${contadorBots}`;
+    const p = tileLivrePerto(jogador, id, 5);
+    motor.criar(id, `Bot ${modo} ${contadorBots}`, criarJogador(p.x, p.y), performance.now(), modo);
+    hud.avisar(`Bot ${modo} ${contadorBots} entrou na arena.`, performance.now());
+  };
+  const removerBots = (): void => {
+    for (const c of motor.listar()) if (c.bot) motor.remover(c.id);
+  };
+
+  const lancarMagia = (magiaId: string): void => {
+    motor.iniciarCast(ID_JOGADOR, magiaId, performance.now());
+  };
+
+  const hud = new HudCombate(elCombate, motor, {
+    lancar: lancarMagia,
+    adicionarBot,
+    removerBots,
+    alternarSom: () => (sons.ativo = !sons.ativo),
+  });
+
   // ---------- editor ----------
   let temporizadorAutosave: number | undefined;
   const editor = new Editor(() => arena, catalogo, () => {
@@ -52,6 +116,8 @@ async function iniciar(): Promise<void> {
   const trocarArena = (mapa: Mapa, mensagem: string): void => {
     arena = new Arena(mapa);
     jogador = criarJogador(arena.spawn.x, arena.spawn.y);
+    eu.mov = jogador;
+    removerBots();
     painel.definirNome(mapa.nome);
     painel.mostrarStatus(mensagem);
     salvarLocal(arena.dados);
@@ -114,12 +180,28 @@ async function iniciar(): Promise<void> {
   const tileSobMouse = (camera: Ponto): { x: number; y: number } | null =>
     entrada.mouse ? renderizador.canvasParaTile(entrada.mouse.x, entrada.mouse.y, camera) : null;
 
+  /** Personagem vivo sob o cursor (o da frente, se houver mais de um). */
+  const combatenteSobMouse = (agora: number): Combatente | undefined => {
+    if (!entrada.mouse) return undefined;
+    const camera = cameraAtual(agora);
+    let escolhido: { c: Combatente; y: number } | undefined;
+    for (const c of motor.listar()) {
+      if (c.morto) continue;
+      const v = posicaoVisual(c.mov, agora);
+      const p = renderizador.tileParaCanvas(v.x, v.y, camera);
+      const dentro = Math.abs(entrada.mouse.x - p.x) <= 16 && entrada.mouse.y >= p.y - 60 && entrada.mouse.y <= p.y + 12;
+      if (dentro && (!escolhido || p.y > escolhido.y)) escolhido = { c, y: p.y };
+    }
+    return escolhido?.c;
+  };
+
   const alternarEditor = (agora: number): void => {
     if (!editor.ativo) cameraEditor = cameraAtual(agora);
     editor.alternar();
     entrada.segurando = false;
     entrada.pintando = null;
     painel.mostrar(editor.ativo);
+    hud.mostrar(!editor.ativo);
   };
 
   const posicaoNoCanvas = (e: MouseEvent): Ponto => {
@@ -140,6 +222,12 @@ async function iniciar(): Promise<void> {
         editor.aplicar(t.x, t.y, entrada.pintando.apagar);
         entrada.ultimoTile = t;
       }
+    } else if (e.button === 0 && eu.mira) {
+      // Cursor de mira: o clique escolhe o alvo em vez de andar
+      const agora = performance.now();
+      const alvo = combatenteSobMouse(agora);
+      if (alvo) motor.escolherAlvo(ID_JOGADOR, alvo.id, agora);
+      else motor.cancelarMira(ID_JOGADOR);
     } else if (e.button === 0) {
       entrada.segurando = true;
     }
@@ -172,13 +260,76 @@ async function iniciar(): Promise<void> {
 
   window.addEventListener('keydown', (e) => {
     const alvo = e.target as HTMLElement;
-    if (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA') return;
+    if (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA' || alvo.tagName === 'SELECT') return;
     const k = e.key.toLowerCase();
-    if (k === 'e') alternarEditor(performance.now());
-    else if (k === 'g' && editor.ativo) editor.grade = !editor.grade;
-    else entrada.teclas.add(k);
+    const agora = performance.now();
+    if (k === 'e') {
+      alternarEditor(agora);
+      return;
+    }
+    if (editor.ativo) {
+      if (k === 'g') editor.grade = !editor.grade;
+      else entrada.teclas.add(k);
+      return;
+    }
+    // Atalhos de combate
+    const magia = motor.regras.magias.find((m) => m.tecla === k);
+    if (magia) lancarMagia(magia.id);
+    else if (k === 'escape') motor.cancelarMira(ID_JOGADOR);
+    else if (k === 't' && eu.mira) {
+      if (eu.ultimoAlvoId) motor.escolherAlvo(ID_JOGADOR, eu.ultimoAlvoId, agora);
+      else hud.avisar('Nenhum alvo anterior.', agora);
+    } else if (k === 'y' && eu.mira) motor.escolherAlvo(ID_JOGADOR, ID_JOGADOR, agora);
   });
   window.addEventListener('keyup', (e) => entrada.teclas.delete(e.key.toLowerCase()));
+
+  // ---------- combate por quadro ----------
+  const andar = (c: Combatente, dir: Direcao, correndo: boolean, agora: number): boolean =>
+    tentarAndar(c.mov, dir, correndo, agora, arena, catalogo, (x, y) => ocupadoPorOutro(x, y, c.id));
+
+  const atualizarCombate = (agora: number): void => {
+    motor.atualizar(agora);
+    for (const c of motor.listar()) {
+      if (c.id !== ID_JOGADOR) atualizarJogador(c.mov, agora);
+      if (!c.bot) continue;
+      const acao = decidirBot(c, eu, motor, agora, Math.random, (a, b) => temLinhaDeVisao(arena, catalogo, a, b));
+      if (acao.lancar) motor.iniciarCast(c.id, acao.lancar, agora);
+      else if (acao.alvo) motor.escolherAlvo(c.id, acao.alvo, agora);
+      else if (acao.cancelarMira) motor.cancelarMira(c.id);
+      else if (acao.mover !== undefined && motor.podeMover(c.id, agora)) {
+        // Se o caminho direto estiver bloqueado, tenta as direções vizinhas
+        const d = acao.mover;
+        void (andar(c, d, false, agora) || andar(c, ((d + 1) % 8) as Direcao, false, agora) ||
+          andar(c, ((d + 7) % 8) as Direcao, false, agora));
+      }
+    }
+    for (const ev of motor.coletarEventos()) {
+      efeitos.adicionar(ev, agora);
+      if (ev.tipo === 'som') sons.tocar(ev.som);
+      else if (ev.tipo === 'aviso' && ev.paraId === ID_JOGADOR) hud.avisar(ev.texto, agora);
+      else if (ev.tipo === 'morte') hud.avisar(`${motor.obter(ev.alvoId)?.nome ?? '?'} morreu.`, agora);
+    }
+  };
+
+  const personagens = (agora: number): PersonagemRender[] =>
+    motor.listar().map((c) => ({
+      mov: c.mov,
+      nome: c.nome,
+      cor: c.bot ? COR_BOT : COR_JOGADOR,
+      vidaFrac: c.vida / c.vidaMax,
+      morto: c.morto,
+      envenenado: Boolean(c.veneno),
+      paralisado: motor.paralisado(c, agora),
+      reflexo: c.reflexo > 0,
+      destaque: c.id === eu.ultimoAlvoId,
+    }));
+
+  const posicaoNoMundo = (agora: number) => (id: string): Ponto | null => {
+    const c = motor.obter(id);
+    if (!c) return null;
+    const v = posicaoVisual(c.mov, agora);
+    return tileParaMundo(v.x, v.y);
+  };
 
   // ---------- laço principal ----------
   let anterior = performance.now();
@@ -196,28 +347,32 @@ async function iniciar(): Promise<void> {
       };
     } else {
       atualizarJogador(jogador, agora);
-      if (entrada.segurando && entrada.mouse) {
+      if (entrada.segurando && entrada.mouse && motor.podeMover(ID_JOGADOR, agora)) {
         const vx = entrada.mouse.x - canvas.clientWidth / 2;
         const vy = entrada.mouse.y - (canvas.clientHeight / 2 - DESLOCAMENTO_CORPO_PX);
         const distancia = Math.hypot(vx, vy);
         if (distancia > ZONA_MORTA_PX) {
-          tentarAndar(jogador, direcaoPorVetorTela(vx, vy), distancia > DISTANCIA_CORRIDA_PX, agora, arena, catalogo);
+          andar(eu, direcaoPorVetorTela(vx, vy), distancia > DISTANCIA_CORRIDA_PX, agora);
         }
       }
+      atualizarCombate(agora);
     }
 
     const camera = cameraAtual(agora);
     const hover = editor.ativo ? tileSobMouse(camera) : null;
     renderizador.desenhar({
-      arena, jogador, agora, camera, hover,
+      arena, personagens: personagens(agora), agora, camera, hover,
       fantasma: editor.fantasma,
       grade: editor.ativo && editor.grade,
+      sobreposicao: editor.ativo ? undefined : (ctx) => efeitos.desenhar(ctx, agora, posicaoNoMundo(agora)),
     });
+    canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira));
+    if (!editor.ativo) hud.atualizar(eu, eu.ultimoAlvoId ? motor.obter(eu.ultimoAlvoId) : undefined, agora);
 
     const sobre = hover && arena.dentro(hover.x, hover.y) ? ` · cursor (${hover.x}, ${hover.y})` : '';
     elHud.textContent = editor.ativo
       ? `EDITOR · ${arena.nome} ${arena.largura}×${arena.altura}${sobre}`
-      : `JOGO · posição (${jogador.x}, ${jogador.y}) · segure o botão esquerdo na direção desejada (longe = correr) · E: editor`;
+      : `JOGO · (${jogador.x}, ${jogador.y}) · segure o botão esquerdo para andar · 1–0: magias · E: editor`;
 
     requestAnimationFrame(quadro);
   };
@@ -226,7 +381,7 @@ async function iniciar(): Promise<void> {
   // Gancho de depuração apenas em desenvolvimento (usado nos testes de navegador).
   if (import.meta.env.DEV) {
     Object.defineProperty(window, '__jogo', {
-      value: { get jogador() { return jogador; }, get arena() { return arena; }, editor },
+      value: { get jogador() { return jogador; }, get arena() { return arena; }, editor, motor, adicionarBot },
     });
   }
 }

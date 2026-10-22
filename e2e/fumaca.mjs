@@ -25,13 +25,18 @@ const estado = () => pagina.evaluate(() => {
 });
 
 await pagina.goto(URL);
+// Espera o primeiro carregamento terminar: recarregar no meio aborta o fetch do catálogo
+await pagina.waitForFunction(() => window.__jogo?.arena);
 await pagina.evaluate(() => localStorage.clear());
 await pagina.reload();
 await pagina.waitForFunction(() => window.__jogo?.arena);
 await pagina.screenshot({ path: join(SAIDA, 'jogo-inicio.png') });
 
 let e = await estado();
-ok(e.x === 24 && e.y === 24, `jogador nasce no spawn (24,24): (${e.x},${e.y})`);
+const spawn = await pagina.evaluate(() => window.__jogo.arena.spawn);
+ok(e.x === spawn.x && e.y === spawn.y, `jogador nasce no spawn (${spawn.x},${spawn.y}): (${e.x},${e.y})`);
+// O resto do teste parte do centro da arena, longe das bordas
+await pagina.evaluate(() => { const j = window.__jogo.jogador; j.x = 24; j.y = 24; });
 
 // 1) Andar para a direita da tela (Nordeste: x+1, y-1), longe do personagem = correr
 await pagina.mouse.move(1000, 340);
@@ -150,6 +155,35 @@ ok((await pagina.textContent('.status'))?.includes('inválido'), 'nome com ../ �
 await pagina.click('canvas', { position: { x: 5, y: 5 }, button: 'right' }); // tira o foco do input
 await pagina.keyboard.press('e');
 ok(!(await pagina.evaluate(() => window.__jogo.editor.ativo)), 'E fecha o editor');
+
+// 6) Combate: bot parado, Lightning (tecla 4) por clique e depois pelo último alvo (T)
+const bot = await pagina.evaluate(() => {
+  window.__jogo.adicionarBot('parado');
+  const b = window.__jogo.motor.listar().find((c) => c.bot);
+  const j = window.__jogo.jogador;
+  return { id: b.id, dx: b.mov.x - j.x, dy: b.mov.y - j.y };
+});
+const vidaBot = () => pagina.evaluate((id) => window.__jogo.motor.obter(id).vida, bot.id);
+await pagina.keyboard.press('4');
+await espera(1700); // Lightning: 4º círculo = 1,25 s
+ok(await pagina.evaluate(() => window.__jogo.motor.obter('jogador').mira?.id === 'lightning'), 'cast termina e abre a mira');
+await pagina.mouse.click(640 + (bot.dx - bot.dy) * 22, 360 + (bot.dx + bot.dy) * 22 - 25);
+await espera(200);
+const v1 = await vidaBot();
+ok(v1 < 100, `clique no bot causa dano (vida ${v1})`);
+const mana = await pagina.evaluate(() => window.__jogo.motor.obter('jogador').mana);
+ok(mana >= 89 && mana <= 90, `Lightning gasta 11 de mana (mana ${mana}, com regeneração)`);
+await pagina.keyboard.press('4');
+await espera(1700);
+await pagina.keyboard.press('t');
+await espera(200);
+const v2 = await vidaBot();
+ok(v2 < v1, `T acerta o último alvo (vida ${v1} -> ${v2})`);
+await pagina.keyboard.press('7');
+await espera(800);
+await pagina.keyboard.press('y');
+ok(await pagina.evaluate(() => window.__jogo.motor.obter('jogador').mira === null), 'Y mira em si mesmo (Heal)');
+await pagina.screenshot({ path: join(SAIDA, 'combate.png') });
 
 ok(erros.length === 0, `sem erros no console (${erros.length}) ${erros.slice(0, 3).join(' | ')}`);
 await navegador.close();

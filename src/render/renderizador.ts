@@ -5,15 +5,31 @@ import type { CatalogoTiles } from '../mundo/catalogo';
 import type { DefinicaoTile } from '../mundo/tipos';
 import { posicaoVisual, type EstadoJogador } from '../jogo/jogador';
 
+/** Um personagem a desenhar (jogador ou bot). */
+export interface PersonagemRender {
+  mov: EstadoJogador;
+  nome: string;
+  cor: string;
+  vidaFrac: number;
+  morto: boolean;
+  envenenado: boolean;
+  paralisado: boolean;
+  reflexo: boolean;
+  /** Último alvo do jogador: ganha um contorno. */
+  destaque: boolean;
+}
+
 export interface QuadroRender {
   arena: Arena;
-  jogador: EstadoJogador;
+  personagens: PersonagemRender[];
   agora: number;
   /** Centro da câmera em coordenadas de mundo (pixels, antes do zoom). */
   camera: Ponto;
   hover: { x: number; y: number } | null;
   fantasma: { def: DefinicaoTile; z: number } | null;
   grade: boolean;
+  /** Desenhado por cima de tudo, em coordenadas do mundo (efeitos de magia, textos). */
+  sobreposicao?: (ctx: CanvasRenderingContext2D) => void;
 }
 
 interface ItemOrdenado {
@@ -88,9 +104,10 @@ export class Renderizador {
 
     const itens: ItemOrdenado[] = [];
     this.coletarObjetos(q, visivel, itens);
-    this.coletarJogador(q, itens);
+    for (const p of q.personagens) this.coletarPersonagem(p, q.agora, itens);
     itens.sort((a, b) => a.chave - b.chave);
     for (const item of itens) item.desenhar();
+    q.sobreposicao?.(ctx);
 
     this.desenharEdicao(q);
     ctx.restore();
@@ -189,30 +206,46 @@ export class Renderizador {
     ctx.stroke();
   }
 
-  // ---------- jogador ----------
+  // ---------- personagens ----------
 
-  private coletarJogador(q: QuadroRender, saida: ItemOrdenado[]): void {
-    const pos = posicaoVisual(q.jogador, q.agora);
-    const m = q.jogador.movimento;
+  private coletarPersonagem(p: PersonagemRender, agora: number, saida: ItemOrdenado[]): void {
+    const pos = posicaoVisual(p.mov, agora);
+    const m = p.mov.movimento;
     // Tile de referência para ordenação: passa para o destino na metade do passo.
-    const meio = m && (q.agora - m.inicio) / m.duracao >= 0.5;
-    const refX = m ? (meio ? m.paraX : m.deX) : q.jogador.x;
-    const refY = m ? (meio ? m.paraY : m.deY) : q.jogador.y;
+    const meio = m && (agora - m.inicio) / m.duracao >= 0.5;
+    const refX = m ? (meio ? m.paraX : m.deX) : p.mov.x;
+    const refY = m ? (meio ? m.paraY : m.deY) : p.mov.y;
     saida.push({
       chave: (refX + refY) * 10000 + 9000,
-      desenhar: () => this.desenharPersonagem(tileParaMundo(pos.x, pos.y), q.jogador.dir),
+      desenhar: () => this.desenharPersonagem(tileParaMundo(pos.x, pos.y), p),
     });
   }
 
-  private desenharPersonagem(c: Ponto, dir: number): void {
+  private desenharPersonagem(c: Ponto, p: PersonagemRender): void {
     const { ctx } = this;
+    if (p.morto) {
+      // Corpo caído
+      ctx.fillStyle = 'rgba(120,120,120,0.85)';
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y + 2, 16, 6, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      this.textoCentral(`${p.nome} (morto)`, c.x, c.y - 14, '#b0b0b0');
+      return;
+    }
     // Sombra
     ctx.fillStyle = 'rgba(0,0,0,0.30)';
     ctx.beginPath();
     ctx.ellipse(c.x, c.y + 4, 13, 6, 0, 0, Math.PI * 2);
     ctx.fill();
+    if (p.destaque) {
+      ctx.strokeStyle = '#ffd24a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y + 4, 17, 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     // Indicador de direção no chão
-    const d = DESLOCAMENTO[dir] ?? { dx: 0, dy: 1 };
+    const d = DESLOCAMENTO[p.mov.dir] ?? { dx: 0, dy: 1 };
     const alvo = tileParaMundo(d.dx * 0.6, d.dy * 0.6);
     ctx.strokeStyle = 'rgba(255,230,120,0.9)';
     ctx.lineWidth = 3;
@@ -221,15 +254,44 @@ export class Renderizador {
     ctx.moveTo(c.x, c.y + 4);
     ctx.lineTo(c.x + alvo.x, c.y + 4 + alvo.y);
     ctx.stroke();
-    // Corpo e cabeça
-    ctx.fillStyle = '#3d6fd1';
+    // Corpo e cabeça (verde se envenenado)
+    ctx.fillStyle = p.envenenado ? '#3f9a3f' : p.cor;
     ctx.beginPath();
     ctx.roundRect(c.x - 8, c.y - 34, 16, 34, 6);
     ctx.fill();
-    ctx.fillStyle = '#f0c9a0';
+    ctx.fillStyle = p.envenenado ? '#9fd99f' : '#f0c9a0';
     ctx.beginPath();
     ctx.arc(c.x, c.y - 42, 8, 0, Math.PI * 2);
     ctx.fill();
+    if (p.paralisado) {
+      ctx.strokeStyle = 'rgba(255,220,90,0.9)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(c.x - 12, c.y - 52, 24, 56);
+    }
+    if (p.reflexo) {
+      ctx.strokeStyle = 'rgba(120,180,255,0.55)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y - 22, 18, 32, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // Nome e barra de vida
+    this.textoCentral(p.nome, c.x, c.y - 56, p.cor === '#3d6fd1' ? '#9cc0ff' : '#ffb0a8');
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(c.x - 15, c.y + 10, 30, 4);
+    ctx.fillStyle = p.envenenado ? '#55d655' : '#3c7bff';
+    ctx.fillRect(c.x - 15, c.y + 10, 30 * Math.max(0, Math.min(1, p.vidaFrac)), 4);
+  }
+
+  private textoCentral(texto: string, x: number, y: number, cor: string): void {
+    const { ctx } = this;
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    ctx.strokeText(texto, x, y);
+    ctx.fillStyle = cor;
+    ctx.fillText(texto, x, y);
   }
 
   // ---------- editor ----------
