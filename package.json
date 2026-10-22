@@ -1,0 +1,21 @@
+{
+  "name": "browseruo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PvP enxuto no estilo Ultima Online, rodando no navegador (projeto pessoal)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "tipos": "tsc --noEmit",
+    "e2e": "node e2e/fumaca.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "playwright": "^1.56.0",
+    "typescript": "5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "2.1.8"
+  }
+}

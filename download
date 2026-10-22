@@ -1,0 +1,6 @@
+node_modules
+dist
+*.log
+# Dados do cliente do jogo NÃO entram no repositório
+cliente/
+pacote-cliente/
