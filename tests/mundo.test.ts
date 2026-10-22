@@ -106,9 +106,11 @@ describe('colisão', () => {
     if (!r.ok) throw new Error('arena padrão inválida');
     const a = new Arena(r.mapa);
     const real = new CatalogoTiles(catalogoReal as never);
-    expect(tileBloqueado(a, real, 23, 12)).toBe(false);
-    expect(tileBloqueado(a, real, 12, 23)).toBe(false);
-    expect(tileBloqueado(a, real, 15, 12)).toBe(true);
+    // Muros norte (y = 11) e oeste (x = 11), com aberturas no meio
+    expect(tileBloqueado(a, real, 24, 11)).toBe(false);
+    expect(tileBloqueado(a, real, 11, 25)).toBe(false);
+    expect(tileBloqueado(a, real, 15, 11)).toBe(true);
+    expect(tileBloqueado(a, real, 11, 15)).toBe(true);
     expect(tileBloqueado(a, real, a.spawn.x, a.spawn.y)).toBe(false);
     // Todo id usado na arena existe no catálogo
     for (const id of [...r.mapa.terreno, ...r.mapa.objetos.map((o) => o.id)]) expect(real.obter(id)).toBeDefined();
