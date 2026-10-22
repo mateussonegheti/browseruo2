@@ -33,6 +33,7 @@ export function decidirBot(
   temVisao: (a: { x: number; y: number }, b: { x: number; y: number }) => boolean,
 ): AcaoBot {
   if (!bot.bot || bot.bot.modo === 'parado' || bot.morto) return {};
+  if (bot.bot.modo === 'criatura') return passear(bot, agora, rng);
 
   // Magia pronta: escolhe o alvo na hora (como uma macro de "último alvo" / "si mesmo")
   if (bot.mira) {
@@ -73,6 +74,13 @@ export function decidirBot(
   if (dist < 3) return { mover: direcaoPara(-dx, -dy) };
   if (rng() < 0.4) return { mover: aleatoria(rng) };
   return {};
+}
+
+/** Criaturas andam à toa, com pausas. */
+function passear(bot: Combatente, agora: number, rng: Aleatorio): AcaoBot {
+  if (!bot.bot || agora < bot.bot.proximaDecisaoMs) return {};
+  bot.bot.proximaDecisaoMs = agora + 500 + rng() * 1500;
+  return rng() < 0.6 ? { mover: aleatoria(rng) } : {};
 }
 
 function aleatoria(rng: Aleatorio): Direcao {

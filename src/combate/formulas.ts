@@ -104,10 +104,12 @@ export function danoVeneno(v: DefVeneno, vidaAtual: number): number {
   return Math.min(v.max, Math.max(v.min, dano));
 }
 
-/** ParalyzeSpell (AoS, SE+): EvalInt/10 − Resist/10 segundos, mínimo 0 (contra jogadores). */
-export function duracaoParalisiaMs(caster: Ficha, alvo: Ficha): number {
-  const s = Math.trunc(caster.skills.evalInt / 10 - alvo.skills.resist / 10);
-  return Math.max(0, s) * 1000;
+/** ParalyzeSpell pré-AoS: (base + Magery × fator) segundos, ×0,75 se o alvo resistir. */
+export function duracaoParalisiaMs(
+  caster: Ficha, ef: { baseS: number; porMagery: number; fatorResistido: number }, resistiu: boolean,
+): number {
+  const s = ef.baseS + caster.skills.magery * ef.porMagery;
+  return Math.round((resistiu ? s * ef.fatorResistido : s) * 1000);
 }
 
 /** MagicReflectSpell pré-AoS: 8 ou 15 pontos (15 com Magery + Inscription ≥ 200). */

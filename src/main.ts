@@ -8,6 +8,7 @@ import type { Direcao, Mapa } from './mundo/tipos';
 import { atualizarJogador, criarJogador, posicaoVisual, tentarAndar, type EstadoJogador } from './jogo/jogador';
 import { Renderizador, type PersonagemRender } from './render/renderizador';
 import { Efeitos } from './render/efeitos';
+import { Animacoes, type AcaoAnimacao, type Camada } from './render/animacoes';
 import { Editor } from './editor/editor';
 import { PainelEditor } from './editor/painel';
 import {
@@ -31,6 +32,17 @@ const ID_JOGADOR = 'jogador';
 const COR_JOGADOR = '#3d6fd1';
 const COR_BOT = '#c2453c';
 
+// Aparência (matizes do hues.mul): pele, sapatos, robe e cabelo
+const PELE = 1002, CABELO = 1102, SAPATOS = 1109;
+const ROBE_JOGADOR = 5, ROBE_BOT = 33;
+const camadasMago = (robe: number): Camada[] => [
+  { nome: 'humano', matiz: PELE }, { nome: 'sapatos', matiz: SAPATOS },
+  { nome: 'robe', matiz: robe }, { nome: 'cabelo', matiz: CABELO },
+];
+/** Vida das criaturas por tipo, com exceções para as mais fortes. */
+const VIDA_CRIATURA: Record<string, number> = { animal: 40, monstro: 120 };
+const VIDA_ESPECIAL: Record<string, number> = { ogro: 160, ettin: 180, troll: 150, lich: 200, daemon: 300, dragao: 400 };
+
 async function iniciar(): Promise<void> {
   const canvas = document.querySelector<HTMLCanvasElement>('#jogo')!;
   const elPainel = document.querySelector<HTMLElement>('#painel')!;
@@ -38,7 +50,9 @@ async function iniciar(): Promise<void> {
   const elCombate = document.querySelector<HTMLElement>('#combate')!;
 
   const catalogo = await carregarCatalogo('/catalogo/catalogo.json');
-  const renderizador = new Renderizador(canvas, catalogo);
+  const animacoes = new Animacoes();
+  await animacoes.carregar();
+  const renderizador = new Renderizador(canvas, catalogo, animacoes);
   const terrenoPadrao = catalogo.listar('terreno')[0]?.id ?? 1;
 
   // ---------- estado ----------
@@ -56,10 +70,16 @@ async function iniciar(): Promise<void> {
   // ---------- combate ----------
   const motor = new MotorCombate(regrasJson as Regras, {
     temVisao: (a, b) => temLinhaDeVisao(arena, catalogo, a, b),
-    posicaoRespawn: (c) => (c.id === ID_JOGADOR ? tileLivrePerto(arena.spawn, c.id) : tileLivrePerto(jogador, c.id, 6)),
+    posicaoRespawn: (c) => {
+      if (c.id === ID_JOGADOR) return tileLivrePerto(arena.spawn, c.id);
+      if (c.bot?.modo === 'criatura') return tileAleatorio(c.id);
+      return tileLivrePerto(jogador, c.id, 6);
+    },
   });
   const eu = motor.criar(ID_JOGADOR, 'Você', jogador, performance.now());
+  const aparencia = new Map<string, Camada[]>([[ID_JOGADOR, camadasMago(ROBE_JOGADOR)]]);
   const efeitos = new Efeitos();
+  void efeitos.carregar();
   const sons = new Sons();
   let contadorBots = 0;
 
@@ -83,15 +103,40 @@ async function iniciar(): Promise<void> {
     return { x: centro.x, y: centro.y };
   }
 
+  /** Tile livre sorteado dentro da arena (para criaturas). */
+  function tileAleatorio(id: string): { x: number; y: number } {
+    for (let i = 0; i < 200; i++) {
+      const x = Math.floor(Math.random() * arena.largura);
+      const y = Math.floor(Math.random() * arena.altura);
+      if (!tileBloqueado(arena, catalogo, x, y) && !ocupadoPorOutro(x, y, id)) return { x, y };
+    }
+    return tileLivrePerto(arena.spawn, id, 3);
+  }
+
   const adicionarBot = (modo: ModoBot): void => {
     contadorBots++;
     const id = `bot-${contadorBots}`;
     const p = tileLivrePerto(jogador, id, 5);
     motor.criar(id, `Bot ${modo} ${contadorBots}`, criarJogador(p.x, p.y), performance.now(), modo);
+    aparencia.set(id, camadasMago(ROBE_BOT));
     hud.avisar(`Bot ${modo} ${contadorBots} entrou na arena.`, performance.now());
   };
   const removerBots = (): void => {
-    for (const c of motor.listar()) if (c.bot) motor.remover(c.id);
+    for (const c of motor.listar()) if (c.bot && c.bot.modo !== 'criatura') motor.remover(c.id);
+  };
+
+  const adicionarCriatura = (nome: string): void => {
+    const info = animacoes.criaturas().find((c) => c.nome === nome);
+    if (!info) return;
+    contadorBots++;
+    const id = `criatura-${contadorBots}`;
+    const p = tileAleatorio(id);
+    const c = motor.criar(id, info.rotulo, criarJogador(p.x, p.y), performance.now(), 'criatura');
+    c.vidaMax = c.vida = VIDA_ESPECIAL[nome] ?? VIDA_CRIATURA[info.tipo] ?? 50;
+    aparencia.set(id, [{ nome }]);
+  };
+  const removerCriaturas = (): void => {
+    for (const c of motor.listar()) if (c.bot?.modo === 'criatura') motor.remover(c.id);
   };
 
   const lancarMagia = (magiaId: string): void => {
@@ -102,8 +147,14 @@ async function iniciar(): Promise<void> {
     lancar: lancarMagia,
     adicionarBot,
     removerBots,
+    adicionarCriatura,
+    spawnCriaturas: (n) => {
+      const lista = animacoes.criaturas();
+      for (let i = 0; i < n && lista.length; i++) adicionarCriatura(lista[Math.floor(Math.random() * lista.length)]!.nome);
+    },
+    removerCriaturas,
     alternarSom: () => (sons.ativo = !sons.ativo),
-  });
+  }, animacoes.criaturas());
 
   // ---------- editor ----------
   let temporizadorAutosave: number | undefined;
@@ -118,6 +169,7 @@ async function iniciar(): Promise<void> {
     jogador = criarJogador(arena.spawn.x, arena.spawn.y);
     eu.mov = jogador;
     removerBots();
+    removerCriaturas();
     painel.definirNome(mapa.nome);
     painel.mostrarStatus(mensagem);
     salvarLocal(arena.dados);
@@ -311,8 +363,26 @@ async function iniciar(): Promise<void> {
     }
   };
 
+  /** Ação de animação e o progresso dela (0 a 1) a partir do estado do combatente. */
+  const estadoAnimacao = (c: Combatente, agora: number): { acao: AcaoAnimacao; progresso: number } => {
+    if (c.morto) {
+      const morte = c.respawnEmMs - motor.regras.respawnMs;
+      return { acao: 'morrer', progresso: Math.min(0.999, (agora - morte) / 1000) };
+    }
+    if (c.cast) return { acao: 'castar', progresso: Math.min(0.999, (agora - c.cast.inicioMs) / (c.cast.fimMs - c.cast.inicioMs)) };
+    const m = c.mov.movimento;
+    if (m || agora - c.mov.ultimoFim < 120) {
+      const passo = m?.duracao ?? 400;
+      // Um ciclo de animação a cada dois passos, como no cliente
+      return { acao: passo <= 200 ? 'correr' : 'andar', progresso: (agora / (passo * 2)) % 1 };
+    }
+    return { acao: 'parado', progresso: (agora / 2000) % 1 };
+  };
+
   const personagens = (agora: number): PersonagemRender[] =>
     motor.listar().map((c) => ({
+      ...estadoAnimacao(c, agora),
+      camadas: aparencia.get(c.id),
       mov: c.mov,
       nome: c.nome,
       cor: c.bot ? COR_BOT : COR_JOGADOR,

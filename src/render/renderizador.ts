@@ -4,6 +4,7 @@ import type { Arena } from '../mundo/mapa';
 import type { CatalogoTiles } from '../mundo/catalogo';
 import type { DefinicaoTile } from '../mundo/tipos';
 import { posicaoVisual, type EstadoJogador } from '../jogo/jogador';
+import type { AcaoAnimacao, Animacoes, Camada } from './animacoes';
 
 /** Um personagem a desenhar (jogador ou bot). */
 export interface PersonagemRender {
@@ -17,6 +18,11 @@ export interface PersonagemRender {
   reflexo: boolean;
   /** Último alvo do jogador: ganha um contorno. */
   destaque: boolean;
+  /** Corpo e roupas (animações do cliente). Sem elas, desenha o boneco simples. */
+  camadas?: Camada[];
+  acao?: AcaoAnimacao;
+  /** 0 a 1 ao longo da ação atual. */
+  progresso?: number;
 }
 
 export interface QuadroRender {
@@ -60,7 +66,10 @@ export class Renderizador {
   private altura = 0;
   private readonly imagens = new Map<string, HTMLImageElement | 'carregando' | 'erro'>();
 
-  constructor(private readonly canvas: HTMLCanvasElement, private readonly catalogo: CatalogoTiles) {
+  constructor(
+    private readonly canvas: HTMLCanvasElement, private readonly catalogo: CatalogoTiles,
+    private readonly animacoes?: Animacoes,
+  ) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas 2D indisponível');
     this.ctx = ctx;
@@ -223,6 +232,10 @@ export class Renderizador {
 
   private desenharPersonagem(c: Ponto, p: PersonagemRender): void {
     const { ctx } = this;
+    if (p.camadas && this.animacoes?.tem(p.camadas[0]?.nome ?? '')) {
+      this.desenharAnimado(c, p);
+      return;
+    }
     if (p.morto) {
       // Corpo caído
       ctx.fillStyle = 'rgba(120,120,120,0.85)';
@@ -281,6 +294,53 @@ export class Renderizador {
     ctx.fillRect(c.x - 15, c.y + 10, 30, 4);
     ctx.fillStyle = p.envenenado ? '#55d655' : '#3c7bff';
     ctx.fillRect(c.x - 15, c.y + 10, 30 * Math.max(0, Math.min(1, p.vidaFrac)), 4);
+  }
+
+  /** Personagem com as animações do cliente: corpo, roupas, contornos de estado, nome e vida. */
+  private desenharAnimado(c: Ponto, p: PersonagemRender): void {
+    const { ctx } = this;
+    if (!p.morto) {
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y + 4, 13, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (p.destaque && !p.morto) {
+      ctx.strokeStyle = '#ffd24a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y + 4, 17, 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    const acao = p.morto ? 'morrer' : p.acao ?? 'parado';
+    this.animacoes!.desenhar(ctx, p.camadas!, acao, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6, p.morto ? 0.85 : 1);
+    if (p.morto) {
+      this.textoCentral(`${p.nome} (morto)`, c.x, c.y - 14, '#b0b0b0');
+      return;
+    }
+    if (p.envenenado) {
+      ctx.fillStyle = 'rgba(80,220,80,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y - 26, 14, 30, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (p.paralisado) {
+      ctx.strokeStyle = 'rgba(255,220,90,0.9)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(c.x - 14, c.y - 66, 28, 72);
+    }
+    if (p.reflexo) {
+      ctx.strokeStyle = 'rgba(120,180,255,0.55)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y - 28, 20, 38, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    this.textoCentral(p.nome, c.x, c.y - 72, p.cor === '#3d6fd1' ? '#9cc0ff' : '#ffb0a8');
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(c.x - 15, c.y + 12, 30, 4);
+    ctx.fillStyle = p.envenenado ? '#55d655' : '#3c7bff';
+    ctx.fillRect(c.x - 15, c.y + 12, 30 * Math.max(0, Math.min(1, p.vidaFrac)), 4);
   }
 
   private textoCentral(texto: string, x: number, y: number, cor: string): void {

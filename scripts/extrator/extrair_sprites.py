@@ -238,6 +238,209 @@ def extrair_sons(pasta_cliente: Path, ids: list[int], pasta: Path) -> int:
     return gravados
 
 
+def ler_animdata(caminho: Path) -> dict[int, tuple[int, list[int]]]:
+    """animdata.def do Outlands (texto): id, atraso inicial, intervalo, ids dos quadros."""
+    tabela: dict[int, tuple[int, list[int]]] = {}
+    for linha in caminho.read_text(encoding="latin-1").splitlines():
+        partes = linha.split()
+        if len(partes) >= 4 and partes[0].isdigit():
+            tabela[int(partes[0])] = (int(partes[2]), [int(p) for p in partes[3:]])
+    return tabela
+
+
+def montar_folha(quadros: list[Imagem]) -> tuple[Imagem, int, int]:
+    """Junta os quadros lado a lado em células do mesmo tamanho, alinhados pelo centro da base."""
+    larg = max(q.largura for q in quadros)
+    alt = max(q.altura for q in quadros)
+    rgba = bytearray(larg * len(quadros) * alt * 4)
+    linha_folha = larg * len(quadros) * 4
+    for i, q in enumerate(quadros):
+        ox = i * larg + (larg - q.largura) // 2
+        oy = alt - q.altura
+        for y in range(q.altura):
+            ini = (oy + y) * linha_folha + ox * 4
+            rgba[ini:ini + q.largura * 4] = q.rgba[y * q.largura * 4:(y + 1) * q.largura * 4]
+    return Imagem(larg * len(quadros), alt, bytes(rgba)), larg, alt
+
+
+def extrair_efeitos(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
+    """Efeitos de magia: itens animados (art.uoo + animdata.def) e sequências de gumps (raio)."""
+    animdata = ler_animdata(pasta_cliente / "animdata.def")
+    arte = ler_arquivo_uoo(pasta_cliente / "art.uoo")
+    indice_arte = indexar_entradas(arte)
+    gumps = ler_arquivo_uoo(pasta_cliente / "gumps.uoo")
+    indice_gumps = indexar_entradas(gumps)
+    saida: dict[str, dict] = {}
+
+    def gravar(nome: str, quadros: list[Imagem], intervalo_ms: int, ancora: str) -> None:
+        folha, larg, alt = montar_folha(quadros)
+        gravar_png(pasta / f"{nome}.png", folha)
+        saida[nome] = {"arquivo": f"{nome}.png", "quadros": len(quadros), "largura": larg, "altura": alt,
+                       "intervaloMs": intervalo_ms, "ancora": ancora}
+
+    for texto in selecao.get("efeitos", []):
+        gid = int(texto, 0)
+        intervalo, ids = animdata.get(gid, (1, [gid]))  # sem animdata: imagem parada (ex.: Energy Bolt)
+        quadros = [decodificar_imagem(arte, indice_arte[i]) for i in ids if i in indice_arte]
+        if not quadros:
+            print(f"  aviso: efeito 0x{gid:04X} sem arte", file=sys.stderr)
+            continue
+        # O cliente usa 50 ms por unidade de intervalo do animdata
+        gravar(f"0x{gid:04X}", quadros, max(1, intervalo) * 50, "item")
+
+    for nome, ids_texto in selecao.get("efeitosGump", {}).items():
+        quadros = [decodificar_imagem(gumps, indice_gumps[int(t, 0)]) for t in ids_texto if int(t, 0) in indice_gumps]
+        if quadros:
+            gravar(nome, quadros, 50, "gump")
+
+    pasta.mkdir(parents=True, exist_ok=True)
+    (pasta / "efeitos.json").write_text(json.dumps({"versao": 1, "efeitos": saida}, indent=1), encoding="utf-8")
+    return len(saida)
+
+
+# ---------------------------------------------------------------- animações (anim.uoo)
+#
+# Formato deduzido: cada entrada (id = corpo ou animação de roupa) contém
+#   nAções u32, reservado u32, e para cada ação: id u32, nDireções u32,
+#   e para cada direção: id u32, nQuadros u32, tamanho comprimido u32 + deflate puro.
+# Descomprimido, cada quadro é: centroX i16, centroY i16, largura u16, altura u16,
+#   largura*altura pixels ARGB1555 (0 = transparente) e 4 bytes de preenchimento.
+# Como no UO clássico, só 5 direções são guardadas; as outras 3 são espelhadas no cliente.
+
+@dataclass
+class Quadro:
+    cx: int
+    cy: int
+    img: Imagem
+
+
+def indexar_anim(caminho: Path) -> dict[int, tuple[int, int]]:
+    """Mapeia id -> (posição, tamanho) sem carregar o arquivo inteiro (ele tem mais de 1,5 GB)."""
+    indice: dict[int, tuple[int, int]] = {}
+    with open(caminho, "rb") as arq:
+        arq.seek(0, 2)
+        tamanho_arquivo = arq.tell()
+        pos = 8
+        while pos + 8 <= tamanho_arquivo:
+            arq.seek(pos)
+            ident, tamanho = struct.unpack("<II", arq.read(8))
+            if pos + 8 + tamanho > tamanho_arquivo:
+                break
+            if tamanho:
+                indice[ident] = (pos + 8, tamanho)
+            pos += 8 + tamanho
+    return indice
+
+
+def ler_acoes_anim(arq, pos: int, tamanho: int, acoes_desejadas: set[int]) -> dict[int, list[list[Quadro]]]:
+    """Lê as ações pedidas de uma entrada: ação -> [direção 0..4] -> quadros."""
+    arq.seek(pos)
+    dados = arq.read(tamanho)
+    n_acoes = struct.unpack_from("<I", dados, 0)[0]
+    p = 8
+    resultado: dict[int, list[list[Quadro]]] = {}
+    for _ in range(n_acoes):
+        acao, n_dirs = struct.unpack_from("<II", dados, p)
+        p += 8
+        direcoes: list[list[Quadro]] = []
+        for _ in range(n_dirs):
+            _, n_quadros, comprimido = struct.unpack_from("<III", dados, p)
+            if acao in acoes_desejadas:
+                bruto = zlib.decompress(dados[p + 12:p + 12 + comprimido], -15)
+                quadros: list[Quadro] = []
+                q = 0
+                for _ in range(n_quadros):
+                    cx, cy, larg, alt = struct.unpack_from("<hhHH", bruto, q)
+                    pixels = struct.unpack_from(f"<{larg * alt}H", bruto, q + 8)
+                    rgba = bytearray(larg * alt * 4)
+                    for i, px in enumerate(pixels):
+                        if px & 0x7FFF:
+                            o = i * 4
+                            rgba[o] = ((px >> 10) & 31) * 255 // 31
+                            rgba[o + 1] = ((px >> 5) & 31) * 255 // 31
+                            rgba[o + 2] = (px & 31) * 255 // 31
+                            rgba[o + 3] = 255
+                    quadros.append(Quadro(cx, cy, Imagem(larg, alt, bytes(rgba))))
+                    q += 8 + larg * alt * 2 + 4
+                direcoes.append(quadros)
+            p += 12 + comprimido
+        if acao in acoes_desejadas:
+            resultado[acao] = direcoes
+    return resultado
+
+
+def montar_atlas(linhas: list[list[Quadro]]) -> tuple[Imagem, list[list[dict]]]:
+    """Empilha as linhas (uma por ação/direção) num atlas; devolve os retângulos de cada quadro."""
+    largura = max((sum(q.img.largura for q in linha) for linha in linhas), default=1) or 1
+    alturas = [max((q.img.altura for q in linha), default=0) for linha in linhas]
+    altura = sum(alturas) or 1
+    rgba = bytearray(largura * altura * 4)
+    retangulos: list[list[dict]] = []
+    y0 = 0
+    for linha, alt_linha in zip(linhas, alturas):
+        x0 = 0
+        rets = []
+        for q in linha:
+            for y in range(q.img.altura):
+                ini = ((y0 + y) * largura + x0) * 4
+                rgba[ini:ini + q.img.largura * 4] = q.img.rgba[y * q.img.largura * 4:(y + 1) * q.img.largura * 4]
+            rets.append({"x": x0, "y": y0, "w": q.img.largura, "h": q.img.altura, "cx": q.cx, "cy": q.cy})
+            x0 += q.img.largura
+        retangulos.append(rets)
+        y0 += alt_linha
+    return Imagem(largura, altura, bytes(rgba)), retangulos
+
+
+def ler_matizes(caminho: Path, ids: list[int]) -> dict[str, list[str]]:
+    """hues.mul: blocos de 4 + 8 × 88 bytes; cada matiz tem 32 cores ARGB1555 (índice = tom de cinza)."""
+    dados = caminho.read_bytes()
+    saida: dict[str, list[str]] = {}
+    for h in ids:
+        i = (h & 0x7FFF) - 1
+        pos = (i // 8) * 708 + 4 + (i % 8) * 88
+        cores = struct.unpack_from("<32H", dados, pos)
+        saida[str(h)] = ["#%02x%02x%02x" % (((c >> 10) & 31) * 255 // 31, ((c >> 5) & 31) * 255 // 31,
+                                            (c & 31) * 255 // 31) for c in cores]
+    return saida
+
+
+def extrair_animacoes(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
+    conf = selecao.get("animacoes")
+    if not conf:
+        return 0
+    indice = indexar_anim(pasta_cliente / "anim.uoo")
+    gerados: dict[str, dict] = {}
+    with open(pasta_cliente / "anim.uoo", "rb") as arq:
+        for item in conf["corpos"] + conf.get("equipamentos", []):
+            anim = item["anim"]
+            if anim not in indice:
+                print(f"  aviso: animação {anim} não existe", file=sys.stderr)
+                continue
+            mapa_acoes: dict[str, int] = conf["acoes"][item["tipo"]]
+            acoes = ler_acoes_anim(arq, *indice[anim], set(mapa_acoes.values()))
+            linhas: list[list[Quadro]] = []
+            chaves: list[tuple[str, int]] = []
+            for nome_acao, acao in mapa_acoes.items():
+                for d, quadros in enumerate(acoes.get(acao, [])):
+                    linhas.append(quadros)
+                    chaves.append((nome_acao, d))
+            if not linhas:
+                continue
+            atlas, retangulos = montar_atlas(linhas)
+            gravar_png(pasta / f"{item['nome']}.png", atlas)
+            meta_acoes: dict[str, list[list[dict]]] = {}
+            for (nome_acao, d), rets in zip(chaves, retangulos):
+                meta_acoes.setdefault(nome_acao, []).append(rets)
+            gerados[item["nome"]] = {
+                "anim": anim, "tipo": item["tipo"], "arquivo": f"{item['nome']}.png",
+                "rotulo": item.get("rotulo", item["nome"]), "acoes": meta_acoes,
+            }
+    pasta.mkdir(parents=True, exist_ok=True)
+    meta = {"versao": 1, "animacoes": gerados, "matizes": ler_matizes(pasta_cliente / "hues.mul", conf.get("matizes", []))}
+    (pasta / "animacoes.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    return len(gerados)
+
+
 # ---------------------------------------------------------------- principal
 
 def main() -> int:
@@ -283,10 +486,15 @@ def main() -> int:
     n_gumps = extrair_gumps(args.cliente / "gumps.uoo", [int(g, 0) for g in selecao.get("gumps", [])],
                             args.saida / "gumps")
     n_sons = extrair_sons(args.cliente, [int(s, 0) for s in selecao.get("sons", [])], args.saida / "sons")
+    print("Gravando efeitos de magia...")
+    n_efeitos = extrair_efeitos(args.cliente, selecao, args.saida / "efeitos")
+    print("Gravando animacoes de personagens e criaturas (pode levar alguns minutos)...")
+    n_anim = extrair_animacoes(args.cliente, selecao, args.saida / "animacoes")
 
     n_terreno = sum(1 for t in tiles if t["tipo"] == "terreno")
     print(f"Pronto: {n_terreno} terrenos e {len(tiles) - n_terreno} objetos em {destino}")
     print(f"        {n_gumps} gumps em public/gumps e {n_sons} sons em public/sons")
+    print(f"        {n_efeitos} efeitos em public/efeitos e {n_anim} animações em public/animacoes")
     return 0
 
 

@@ -7,7 +7,7 @@ export type TipoAlvo = 'outro' | 'qualquer' | 'proprio';
 export type EfeitoMagia =
   | { tipo: 'dano'; bonus: number; dados: number; lados: number; elemento: Elemento; atrasoMs: number; visual: string }
   | { tipo: 'veneno'; alcanceForteTiles: number; limiares: number[]; niveis: number[] }
-  | { tipo: 'paralisia' }
+  | { tipo: 'paralisia'; baseS: number; porMagery: number; fatorResistido: number }
   | { tipo: 'cura'; formula: 'heal' | 'greater-heal' }
   | { tipo: 'cura-veneno' }
   | { tipo: 'reflexo'; somFim: string };
@@ -56,7 +56,8 @@ export interface Regras {
   magias: DefMagia[];
 }
 
-export type ModoBot = 'parado' | 'ativo';
+/** parado: boneco de treino · ativo: mago que luta · criatura: animal/monstro que só passeia. */
+export type ModoBot = 'parado' | 'ativo' | 'criatura';
 
 export interface Combatente {
   id: string;
@@ -68,9 +69,9 @@ export interface Combatente {
   vidaMax: number;
   mana: number;
   manaMax: number;
-  /** Magia sendo lançada (o personagem não anda até terminar). */
-  cast: { magia: DefMagia; inicioMs: number; fimMs: number } | null;
-  /** Magia pronta, esperando o alvo (cursor de mira). */
+  /** Magia sendo lançada no alvo já escolhido; o efeito sai no fim (o personagem não anda até lá). */
+  cast: { magia: DefMagia; alvoId: string; inicioMs: number; fimMs: number } | null;
+  /** Magia escolhida, esperando o alvo (cursor de mira). */
   mira: DefMagia | null;
   /** Recuperação entre magias (FCR). */
   proximaMagiaMs: number;

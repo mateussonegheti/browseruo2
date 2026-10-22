@@ -27,5 +27,45 @@
   "comentarioGumps": "Gumps exportados para public/gumps/. 0x08C0 + índice da magia = ícone do livro de Magery.",
   "gumps": ["0x08C3", "0x08CA", "0x08D3", "0x08DC", "0x08DD", "0x08E3", "0x08E5", "0x08E9", "0x08EA", "0x08F2"],
   "comentarioSons": "Sons exportados para public/sons/ (WAV). Ids iguais aos usados pelo ServUO (PlaySound).",
-  "sons": ["0x01E0", "0x01E9", "0x01ED", "0x01F2", "0x0202", "0x0204", "0x0205", "0x0208", "0x020A", "0x0029", "0x0307"]
+  "sons": ["0x01E0", "0x01E9", "0x01ED", "0x01F2", "0x0202", "0x0204", "0x0205", "0x0208", "0x020A", "0x0029", "0x0307"],
+  "comentarioEfeitos": "Efeitos de magia (art + animdata.def) e o raio (gumps 0x4E20-0x4E29), em public/efeitos/.",
+  "efeitos": ["0x379F", "0x36BD", "0x3709", "0x376A", "0x374A", "0x373A", "0x375A", "0x37B9"],
+  "efeitosGump": { "raio": ["0x4E20", "0x4E21", "0x4E22", "0x4E23", "0x4E24", "0x4E25", "0x4E26", "0x4E27", "0x4E28", "0x4E29"] },
+  "comentarioAnimacoes": "Animações do anim.uoo para public/animacoes/. 'anim' = id do corpo (mobtypes.txt) ou da roupa (tiledata). 'acoes' traduz as ações do jogo para os ids de cada tipo de corpo. 'matizes' = cores do hues.mul usadas no jogo.",
+  "animacoes": {
+    "acoes": {
+      "humano": { "andar": 0, "correr": 2, "parado": 4, "castar": 16, "apanhar": 20, "morrer": 21 },
+      "animal": { "andar": 0, "correr": 1, "parado": 2, "apanhar": 7, "morrer": 8 },
+      "monstro": { "andar": 0, "parado": 1, "atacar": 4, "apanhar": 10, "morrer": 2 }
+    },
+    "corpos": [
+      { "anim": 400, "nome": "humano", "tipo": "humano", "rotulo": "Humano" },
+      { "anim": 200, "nome": "cavalo-1", "tipo": "animal", "rotulo": "Cavalo" },
+      { "anim": 204, "nome": "cavalo-2", "tipo": "animal", "rotulo": "Cavalo" },
+      { "anim": 226, "nome": "cavalo-3", "tipo": "animal", "rotulo": "Cavalo" },
+      { "anim": 228, "nome": "cavalo-4", "tipo": "animal", "rotulo": "Cavalo" },
+      { "anim": 210, "nome": "ostard-deserto", "tipo": "animal", "rotulo": "Ostard do deserto" },
+      { "anim": 219, "nome": "ostard-floresta", "tipo": "animal", "rotulo": "Ostard da floresta" },
+      { "anim": 218, "nome": "ostard-frenetico", "tipo": "animal", "rotulo": "Ostard frenético" },
+      { "anim": 220, "nome": "lhama", "tipo": "animal", "rotulo": "Lhama" },
+      { "anim": 225, "nome": "lobo", "tipo": "animal", "rotulo": "Lobo" },
+      { "anim": 211, "nome": "urso", "tipo": "animal", "rotulo": "Urso" },
+      { "anim": 1, "nome": "ogro", "tipo": "monstro", "rotulo": "Ogro" },
+      { "anim": 17, "nome": "orc", "tipo": "monstro", "rotulo": "Orc" },
+      { "anim": 18, "nome": "ettin", "tipo": "monstro", "rotulo": "Ettin" },
+      { "anim": 53, "nome": "troll", "tipo": "monstro", "rotulo": "Troll" },
+      { "anim": 3, "nome": "zumbi", "tipo": "monstro", "rotulo": "Zumbi" },
+      { "anim": 50, "nome": "esqueleto", "tipo": "monstro", "rotulo": "Esqueleto" },
+      { "anim": 24, "nome": "lich", "tipo": "monstro", "rotulo": "Lich" },
+      { "anim": 4, "nome": "gargula", "tipo": "monstro", "rotulo": "Gárgula" },
+      { "anim": 9, "nome": "daemon", "tipo": "monstro", "rotulo": "Daemon" },
+      { "anim": 12, "nome": "dragao", "tipo": "monstro", "rotulo": "Dragão" }
+    ],
+    "equipamentos": [
+      { "anim": 469, "nome": "robe", "tipo": "humano" },
+      { "anim": 700, "nome": "cabelo", "tipo": "humano" },
+      { "anim": 480, "nome": "sapatos", "tipo": "humano" }
+    ],
+    "matizes": [1002, 1102, 1109, 3, 5, 33, 38, 88, 1150, 1153, 1175]
+  }
 }

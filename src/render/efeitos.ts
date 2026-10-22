@@ -19,18 +19,66 @@ interface TextoFlutuante {
   linha: number;
 }
 
+/** Folha de quadros de um efeito do cliente (gerada pelo extrator em public/efeitos/). */
+interface FolhaEfeito {
+  arquivo: string;
+  quadros: number;
+  largura: number;
+  altura: number;
+  intervaloMs: number;
+  /** "item": desenhado como objeto no tile do alvo; "gump": base da imagem nos pés do alvo (raio). */
+  ancora: 'item' | 'gump';
+  img?: HTMLImageElement;
+}
+
 const DURACAO_TEXTO_MS = 1600;
+const DURACAO_PROJETIL_MS = 350;
+
+/** Efeito do cliente usado em cada visual do motor (ids iguais aos do ServUO). */
+const EFEITO_DO_VISUAL: Record<string, string> = {
+  projetil: '0x379F', // Energy Bolt (MovingParticles)
+  explosao: '0x36BD',
+  'coluna-fogo': '0x3709',
+  raio: 'raio', // gumps 0x4E20–0x4E29
+  cura: '0x376A',
+  paralisia: '0x376A',
+  veneno: '0x374A',
+  'cura-veneno': '0x373A',
+  reflexo: '0x375A',
+  refletido: '0x37B9',
+};
 
 /** Efeitos de magia e textos sobre os personagens, criados a partir dos eventos do motor. */
 export class Efeitos {
   private visuais: Visual[] = [];
   private textos: TextoFlutuante[] = [];
+  private folhas = new Map<string, FolhaEfeito>();
+
+  /** Carrega as folhas extraídas do cliente. Sem elas, os efeitos são desenhados à mão. */
+  async carregar(url = '/efeitos/efeitos.json'): Promise<void> {
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) return;
+      const dados = (await resp.json()) as { efeitos: Record<string, FolhaEfeito> };
+      for (const [nome, f] of Object.entries(dados.efeitos)) {
+        const img = new Image();
+        img.onload = () => { f.img = img; };
+        img.src = `/efeitos/${f.arquivo}`;
+        this.folhas.set(nome, f);
+      }
+    } catch { /* sem efeitos extraídos */ }
+  }
 
   adicionar(ev: EventoCombate, agora: number): void {
     switch (ev.tipo) {
-      case 'visual':
-        this.visuais.push({ visual: ev.visual, origemId: ev.origemId, alvoId: ev.alvoId, inicio: agora, fim: agora + ev.duracaoMs });
+      case 'visual': {
+        const folha = this.folha(ev.visual);
+        let duracao = ev.duracaoMs;
+        if (ev.visual === 'projetil') duracao = DURACAO_PROJETIL_MS;
+        else if (folha) duracao = folha.quadros * folha.intervaloMs;
+        this.visuais.push({ visual: ev.visual, origemId: ev.origemId, alvoId: ev.alvoId, inicio: agora, fim: agora + duracao });
         break;
+      }
       case 'dano':
         this.texto(ev.alvoId, `-${ev.valor}`, '#ff5a4f', agora);
         break;
@@ -77,8 +125,33 @@ export class Efeitos {
     this.textos.push({ alvoId, texto, cor, inicio: agora, fim: agora + DURACAO_TEXTO_MS, linha });
   }
 
+  private folha(visual: string): FolhaEfeito | undefined {
+    const f = this.folhas.get(EFEITO_DO_VISUAL[visual] ?? '');
+    return f?.img ? f : undefined;
+  }
+
   private desenharVisual(ctx: CanvasRenderingContext2D, v: Visual, de: Ponto, para: Ponto, t: number): void {
     const corpo = (p: Ponto): Ponto => ({ x: p.x, y: p.y - 24 });
+    const f = this.folha(v.visual);
+    if (f?.img) {
+      if (v.visual === 'projetil') {
+        // Imagem parada que viaja girada na direção do alvo, como no cliente
+        const a = corpo(de);
+        const b = corpo(para);
+        ctx.save();
+        ctx.translate(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+        ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2);
+        ctx.drawImage(f.img, 0, 0, f.largura, f.altura, -f.largura / 2, -f.altura / 2, f.largura, f.altura);
+        ctx.restore();
+        return;
+      }
+      const quadro = Math.min(f.quadros - 1, Math.max(0, Math.floor(t * f.quadros)));
+      // item: base no vértice inferior do losango (como os objetos); gump: base nos pés do alvo
+      const baseY = f.ancora === 'item' ? para.y + 22 : para.y + 6;
+      ctx.drawImage(f.img, quadro * f.largura, 0, f.largura, f.altura,
+        para.x - f.largura / 2, baseY - f.altura, f.largura, f.altura);
+      return;
+    }
     switch (v.visual) {
       case 'projetil': {
         // Energy Bolt: esfera azul viajando até o alvo
@@ -128,12 +201,14 @@ export class Efeitos {
         bolhas(ctx, corpo(para), t, 'rgba(110,230,110,0.85)');
         break;
       case 'cura':
+      case 'cura-veneno':
         bolhas(ctx, corpo(para), t, 'rgba(200,230,255,0.9)');
         break;
       case 'paralisia':
         bolhas(ctx, corpo(para), Math.min(1, t * 4), 'rgba(255,220,90,0.9)');
         break;
-      case 'reflexo': {
+      case 'reflexo':
+      case 'refletido': {
         const c = corpo(para);
         ctx.strokeStyle = `rgba(120,180,255,${1 - t})`;
         ctx.lineWidth = 3;

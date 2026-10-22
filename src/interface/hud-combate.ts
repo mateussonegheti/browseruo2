@@ -5,6 +5,9 @@ export interface AcoesHud {
   lancar(magiaId: string): void;
   adicionarBot(modo: ModoBot): void;
   removerBots(): void;
+  adicionarCriatura(nome: string): void;
+  spawnCriaturas(quantidade: number): void;
+  removerCriaturas(): void;
   alternarSom(): boolean;
 }
 
@@ -30,7 +33,10 @@ export class HudCombate {
   private readonly dicaMira: HTMLElement;
   private avisos: Array<{ texto: string; ate: number }> = [];
 
-  constructor(private readonly raiz: HTMLElement, private readonly motor: MotorCombate, acoes: AcoesHud) {
+  constructor(
+    private readonly raiz: HTMLElement, private readonly motor: MotorCombate, acoes: AcoesHud,
+    criaturas: Array<{ nome: string; rotulo: string; tipo: string }> = [],
+  ) {
     raiz.innerHTML = '';
 
     const status = div('status-combate');
@@ -48,8 +54,25 @@ export class HudCombate {
       botao('+ Bot parado', () => acoes.adicionarBot('parado')),
       botao('+ Bot ativo', () => acoes.adicionarBot('ativo')),
       botao('Remover bots', () => acoes.removerBots()),
-      som,
     );
+    if (criaturas.length) {
+      const tituloCriaturas = document.createElement('strong');
+      tituloCriaturas.textContent = 'Criaturas';
+      const lista = document.createElement('select');
+      for (const tipo of ['animal', 'monstro']) {
+        const grupo = document.createElement('optgroup');
+        grupo.label = tipo === 'animal' ? 'Animais e montarias' : 'Monstros';
+        for (const c of criaturas.filter((c) => c.tipo === tipo)) grupo.append(new Option(c.rotulo, c.nome));
+        lista.append(grupo);
+      }
+      bots.append(
+        tituloCriaturas, lista,
+        botao('+ Criatura', () => acoes.adicionarCriatura(lista.value)),
+        botao('Spawn aleatório (6)', () => acoes.spawnCriaturas(6)),
+        botao('Remover criaturas', () => acoes.removerCriaturas()),
+      );
+    }
+    bots.append(som);
 
     const barra = div('barra-magias');
     for (const m of motor.regras.magias) {

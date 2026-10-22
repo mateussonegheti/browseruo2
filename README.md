@@ -2,7 +2,8 @@
 
 PvP enxuto no estilo Ultima Online, rodando no navegador. Projeto pessoal.
 **Marco 1:** arena com sprites reais do cliente, movimento no estilo UO e editor de arena interno.
-**Marco 2:** combate de magia (era ML) contra bots, com ícones e sons do cliente.
+**Marco 2:** combate de magia (era ML) contra bots, com ícones, sons e efeitos do cliente.
+**Marco 3:** animações originais de personagens e criaturas, com spawn de cavalos, montarias e monstros.
 
 ## Como rodar
 
@@ -24,8 +25,10 @@ python scripts/extrator/extrair_sprites.py
 # outra pasta: python scripts/extrator/extrair_sprites.py --cliente "D:/Jogos/Ultima Online Outlands"
 ```
 
-O mesmo comando grava os ícones das magias em `public/gumps/` e os sons em `public/sons/` (também fora do git).
-Sem esses arquivos o jogo funciona com losangos/caixas na cor média de cada tile, siglas no lugar dos ícones e sem som.
+O mesmo comando grava, também fora do git: ícones das magias (`public/gumps/`), sons (`public/sons/`),
+efeitos de magia (`public/efeitos/`) e animações de personagens e criaturas (`public/animacoes/`, ~35 s).
+Sem esses arquivos o jogo funciona com losangos/caixas, siglas no lugar dos ícones, efeitos desenhados, boneco simples
+e sem som.
 
 O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `npx playwright install chromium`
 (ou aponte `CHROMIUM_PATH` para um Chromium existente, ex.: o Edge em
@@ -42,9 +45,10 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Editor: apagar | Botão direito |
 | Editor: mover a câmera | W/A/S/D ou setas |
 | Editor: grade | Tecla **G** |
-| Lançar magia | Teclas **1** a **0** ou clique na barra de magias |
-| Escolher alvo | Clique no personagem (cursor de mira) · **T**: último alvo · **Y**: você mesmo · **Esc**: cancelar |
+| Lançar magia | Teclas **1** a **0** ou clique na barra de magias: a mira abre na hora |
+| Escolher alvo | Clique no personagem · **T**: último alvo · **Y**: você mesmo · **Esc**: cancelar |
 | Bots de teste | Painel no canto superior direito: bot parado (boneco) ou bot ativo (anda e lança magias) |
+| Criaturas | Mesmo painel: escolher na lista e **+ Criatura**, ou **Spawn aleatório (6)** |
 
 Tempos por passo (como no UO a pé): andar 400 ms, correr 200 ms.
 
@@ -57,19 +61,32 @@ resistências 70, FC 2 e FCR 6.
 | Tecla | Magia | Círculo | Mana |
 |---|---|---|---|
 | 1 | Energy Bolt | 6 | 20 |
-| 2 | Explosion (dano 3 s depois) | 6 | 20 |
+| 2 | Explosion | 6 | 20 |
 | 3 | Flamestrike | 7 | 40 |
 | 4 | Lightning | 4 | 11 |
 | 5 | Poison (Deadly a até 2 tiles) | 3 | 9 |
-| 6 | Paralyze | 5 | 14 |
+| 6 | Paralyze (27 s; 20 s se resistir) | 5 | 14 |
 | 7 | Heal | 1 | 4 |
 | 8 | Greater Heal | 4 | 11 |
 | 9 | Cure | 2 | 6 |
 | 0 | Magic Reflection (clássico: reflete magias) | 5 | 14 |
 
-- Durante o cast o personagem não anda; qualquer dano interrompe (*fizzle*). A mana só é gasta ao escolher o alvo.
+- **Mira primeiro** (estilo Sphere/DMS): a tecla abre a mira, o clique no alvo começa o cast e o efeito sai no fim
+  do tempo de cast. Durante o cast o personagem não anda; qualquer dano interrompe (*fizzle*). A mana só é gasta
+  quando a magia sai; se o alvo morreu, saiu do alcance ou da visão nesse meio tempo, a magia falha sem gastar mana.
+- `atrasoMs` em `regras.json` soma um atraso extra ao dano (o UO original usa 3000 na Explosion).
 - Heal e Greater Heal não funcionam em alvo envenenado. Dano quebra a paralisia.
 - Muros bloqueiam a linha de visão; alcance de mira de 10 tiles. Ao morrer, renasce em 5 s.
+
+## Animações e criaturas
+
+- Personagens (você em robe azul, bots em robe vermelho) e criaturas usam as animações do `anim.uoo`: parado, andar,
+  correr, castar e morrer, nas 8 direções (5 guardadas + 3 espelhadas, como no cliente).
+- Cores de pele, cabelo e roupa vêm do `hues.mul` (lista em `selecao.json` → `animacoes.matizes`).
+- Criaturas disponíveis: cavalos, ostards, lhama, lobo, urso, ogro, orc, ettin, troll, zumbi, esqueleto, lich,
+  gárgula, daemon e dragão. Elas passeiam pela arena e podem ser alvo das magias (morrem e renascem).
+- Para incluir outras criaturas, acrescente o id do corpo (veja `mobtypes.txt` no cliente) em `selecao.json` e rode
+  o extrator de novo.
 
 ## Editor de arena
 
@@ -94,7 +111,7 @@ src/
   editor/       editor.ts (lógica, sem DOM) · painel.ts (interface)
   combate/      regras.json · formulas.ts (ServUO) · motor.ts (cast, mira, dano, veneno…) · bot.ts (IA)
   interface/    hud-combate.ts (barras, barra de magias, bots) · sons.ts
-  render/       efeitos.ts (efeitos de magia e textos sobre os personagens)
+  render/       efeitos.ts (efeitos de magia e textos) · animacoes.ts (anim.uoo: camadas, matizes, espelho)
   persistencia/ arena-io.ts (JSON, localStorage, servidor de dev)
 public/
   catalogo/catalogo.json   catálogo de tiles gerado pelo extrator
@@ -145,7 +162,10 @@ Os tiles escolhidos vêm de `scripts/extrator/selecao.json` (grupos por nome do 
 - **Âncora dos sprites** (conferida com a arte real): terreno 44×44 centrado no tile; objeto com o centro da
   borda inferior no vértice inferior do losango do tile.
 
-### Formato `.uoo` do Outlands (deduzido; detalhes no topo do extrator)
+### Formato `.uoo` do Outlands (deduzido; detalhes no extrator)
+
+- `anim.uoo`: por corpo, lista de ações → 5 direções → quadros (centro, tamanho, ARGB1555) em deflate.
+- `animdata.def` (texto): id do efeito, atraso, intervalo (× 50 ms) e ids dos quadros.
 
 - `art.uoo` / `landtiles.uoo`: entradas em sequência (`id`, `tamanho`, `largura`, `altura`, caixa útil,
   tamanho comprimido), com pixels ARGB1555 comprimidos em deflate puro.
@@ -157,11 +177,12 @@ Os tiles escolhidos vêm de `scripts/extrator/selecao.json` (grupos por nome do 
 - Personagem é um boneco simples (as animações do cliente, em `anim.uoo`, entram numa etapa posterior).
 - A cópia da arena no navegador mudou de chave (`browseruo.arena.v2`): arenas antigas usavam ids de placeholder.
 - Cliente apenas local: ainda não há servidor autoritativo nem outros jogadores (os bots rodam no navegador).
-- Efeitos de magia desenhados no canvas (os efeitos animados do cliente ainda não foram extraídos).
+- Montar nas montarias ainda não existe (elas só aparecem no mundo); criaturas não atacam.
+- A animação de "apanhar" (get hit) ainda não é usada.
 
 ## Próximos marcos
 
-1. Animações do personagem (`anim.uoo`).
+1. Montar (cavalos e ostards) e criaturas agressivas.
 2. Servidor autoritativo (Node + WebSocket, tick fixo) reaproveitando `mundo/` e `jogo/`.
 3. Combate corpo a corpo e itens (swing timer, armas), com regras do ServUO como referência.
 4. Mais magias (Magic Arrow, Harm, Fireball, Mind Blast…).

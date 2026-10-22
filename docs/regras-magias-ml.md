@@ -8,7 +8,9 @@ Em ML o ServUO liga `Core.AOS`, `Core.SE` e `Core.ML` (não `Core.SA`). Sempre q
 ramos (pré-AoS × AoS), vale o **ramo AoS**, salvo onde indicado.
 
 > **Decisões do projeto (implementadas em `src/combate/`):** todas as skills em **100** (não há upar skills),
-> Str 100 / Dex 25 / Int 100, resistências 70 (teto de jogador), FC 2, FCR 6 e **Magic Reflect clássico**.
+> Str 100 / Dex 25 / Int 100, resistências 70 (teto de jogador), FC 2, FCR 6, **Magic Reflect clássico**,
+> **Paralyze pré-AoS** (7 + Magery × 0,2 = 27 s; ×0,75 se resistir) e **mira antes do cast** (estilo Sphere):
+> o efeito sai no fim do tempo de cast, sem os atrasos extras de dano do ServUO.
 > Os números ficam em `src/combate/regras.json`. Os valores abaixo marcados "com o template" foram calculados
 > para o rascunho anterior (skills em 120); a tabela "Valores com skills 100" no fim vale para o jogo.
 
@@ -136,13 +138,11 @@ Dano dos venenos (ramo AoS). Dano por tick = `1 + floor(vida_atual × %)`, preso
 | Greater Heal | 41–50 |
 | Cure | Lesser e Regular 100%, Greater 76%, Deadly 43%, Lethal 20% |
 | Poison | Deadly a até 2 tiles; Lesser mais longe; resiste ~34,5% |
-| Paralyze | `Eval/10 − Resist/10` = **0 s** entre magos iguais (ver pendência 1) |
+| Paralyze (pré-AoS) | 27 s; 20,25 s se resistir (~29,5% no 5º círculo); qualquer dano quebra |
 | Magic Reflect clássico | 15 pontos; cada magia gasta o próprio círculo |
 
 ## Pendências / decisões
-0. **Paralyze sem efeito entre magos iguais:** a fórmula de ML dá 0 s com Eval 100 contra Resist 100.
-   Para ter paralisia útil, trocar a fórmula (ex.: a pré-AoS, `7 + Magery × 0,2` s, ×0,75 se resistir)
-   ou baixar o Resist do template.
+0. ~~Paralyze sem efeito entre magos iguais~~: decidido, fórmula pré-AoS.
 1. ~~Template~~: decidido, todas as skills em 100.
 2. ~~Magic Reflect~~: decidido, clássico (reflete).
 3. ~~Bot~~: bots contam como jogadores (sem o ×3 do Paralyze contra monstros).

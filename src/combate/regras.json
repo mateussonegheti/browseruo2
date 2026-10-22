@@ -1,5 +1,5 @@
 {
-  "comentario": "Regras de combate (era ML, fonte: ServUO; ver docs/regras-magias-ml.md). Ajuste os números aqui sem mexer no código.",
+  "comentario": "Regras de combate (era ML, fonte: ServUO; ver docs/regras-magias-ml.md). Ajuste os números aqui sem mexer no código. Fluxo estilo Sphere: mira primeiro, efeito no fim do cast; atrasoMs > 0 soma um atraso extra ao dano (ex.: 3000 na Explosion do UO original). Paralyze usa a fórmula pré-AoS.",
   "modelo": {
     "atributos": { "str": 100, "dex": 25, "int": 100 },
     "skills": {
@@ -24,13 +24,13 @@
   "magias": [
     { "id": "energy-bolt", "nome": "Energy Bolt", "palavras": "Corp Por", "circulo": 6, "tecla": "1",
       "icone": "0x08E9", "som": "0x020A", "alvo": "outro",
-      "efeito": { "tipo": "dano", "bonus": 40, "dados": 1, "lados": 5, "elemento": "energia", "atrasoMs": 1000, "visual": "projetil" } },
+      "efeito": { "tipo": "dano", "bonus": 40, "dados": 1, "lados": 5, "elemento": "energia", "atrasoMs": 0, "visual": "projetil" } },
     { "id": "explosion", "nome": "Explosion", "palavras": "Vas Ort Flam", "circulo": 6, "tecla": "2",
       "icone": "0x08EA", "som": "0x0307", "alvo": "outro",
-      "efeito": { "tipo": "dano", "bonus": 40, "dados": 1, "lados": 5, "elemento": "fogo", "atrasoMs": 3000, "visual": "explosao" } },
+      "efeito": { "tipo": "dano", "bonus": 40, "dados": 1, "lados": 5, "elemento": "fogo", "atrasoMs": 0, "visual": "explosao" } },
     { "id": "flamestrike", "nome": "Flamestrike", "palavras": "Kal Vas Flam", "circulo": 7, "tecla": "3",
       "icone": "0x08F2", "som": "0x0208", "alvo": "outro",
-      "efeito": { "tipo": "dano", "bonus": 48, "dados": 1, "lados": 5, "elemento": "fogo", "atrasoMs": 1000, "visual": "coluna-fogo" } },
+      "efeito": { "tipo": "dano", "bonus": 48, "dados": 1, "lados": 5, "elemento": "fogo", "atrasoMs": 0, "visual": "coluna-fogo" } },
     { "id": "lightning", "nome": "Lightning", "palavras": "Por Ort Grav", "circulo": 4, "tecla": "4",
       "icone": "0x08DD", "som": "0x0029", "alvo": "outro",
       "efeito": { "tipo": "dano", "bonus": 23, "dados": 1, "lados": 4, "elemento": "energia", "atrasoMs": 0, "visual": "raio" } },
@@ -39,7 +39,7 @@
       "efeito": { "tipo": "veneno", "alcanceForteTiles": 2, "limiares": [1000, 850, 650], "niveis": [3, 2, 1] } },
     { "id": "paralyze", "nome": "Paralyze", "palavras": "An Ex Por", "circulo": 5, "tecla": "6",
       "icone": "0x08E5", "som": "0x0204", "alvo": "outro",
-      "efeito": { "tipo": "paralisia" } },
+      "efeito": { "tipo": "paralisia", "baseS": 7, "porMagery": 0.2, "fatorResistido": 0.75 } },
     { "id": "heal", "nome": "Heal", "palavras": "In Mani", "circulo": 1, "tecla": "7",
       "icone": "0x08C3", "som": "0x01F2", "alvo": "qualquer",
       "efeito": { "tipo": "cura", "formula": "heal" } },

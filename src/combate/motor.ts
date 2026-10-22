@@ -100,7 +100,10 @@ export class MotorCombate {
 
   // ---------------------------------------------------------------- ações
 
-  /** Começa a lançar uma magia. Retorna a mensagem de erro, ou null se começou. */
+  /**
+   * Escolhe uma magia (estilo Sphere/DMS: a mira vem primeiro). Magias de alvo abrem o cursor de mira
+   * na hora; magias em si mesmo (Magic Reflection) já começam o cast. Retorna o erro, ou null.
+   */
   iniciarCast(id: string, magiaId: string, agora: number): string | null {
     const c = this.combatentes.get(id);
     const m = this.magiasPorId.get(magiaId);
@@ -110,20 +113,22 @@ export class MotorCombate {
       this.avisar(c, erro);
       return erro;
     }
-    c.mira = null; // uma magia nova substitui o cursor de mira anterior
-    c.cast = { magia: m, inicioMs: agora, fimMs: agora + tempoCastMs(m.circulo, c.ficha) };
-    c.mov.movimento = null;
-    this.eventos.push({ tipo: 'texto', alvoId: c.id, texto: m.palavras, cor: COR_MAGIA });
+    if (m.alvo === 'proprio') {
+      c.mira = null;
+      this.comecarCast(c, m, c.id, agora);
+    } else {
+      c.mira = m; // uma magia nova substitui o cursor de mira anterior
+    }
     return null;
   }
 
-  /** Escolhe o alvo da magia que está na mira. Retorna a mensagem de erro, ou null se lançou. */
+  /** Escolhe o alvo da magia na mira e começa o cast. Retorna o erro, ou null se começou. */
   escolherAlvo(id: string, alvoId: string, agora: number): string | null {
     const c = this.combatentes.get(id);
     const alvo = this.combatentes.get(alvoId);
     const m = c?.mira;
     if (!c || !m) return 'Nenhuma magia na mira.';
-    const erro = this.erroAlvo(c, alvo, m, agora);
+    const erro = this.erroAoCastar(c, m, agora) ?? this.erroAlvo(c, alvo, m, agora);
     if (erro) {
       // Alvo inválido encerra a mira, como no cliente.
       c.mira = null;
@@ -132,7 +137,7 @@ export class MotorCombate {
     }
     c.mira = null;
     c.ultimoAlvoId = alvo!.id === c.id ? c.ultimoAlvoId : alvo!.id;
-    this.lancar(c, alvo!, m, agora);
+    this.comecarCast(c, m, alvo!.id, agora);
     return null;
   }
 
@@ -180,24 +185,31 @@ export class MotorCombate {
     if (distanciaTiles(c.mov, alvo.mov) > this.regras.alcanceMiraTiles) return 'O alvo está longe demais.';
     if (alvo.id !== c.id && !this.opcoes.temVisao(c.mov, alvo.mov)) return 'O alvo não pode ser visto.';
     if (c.mana < this.custo(c, m)) return `Mana insuficiente (precisa de ${this.custo(c, m)}).`;
-    // Checagens que no ServUO vêm antes de gastar a mana
-    const ef = m.efeito;
-    if (ef.tipo === 'paralisia' && (this.paralisado(alvo, agora) || alvo.cast)) return 'O alvo já está paralisado ou lançando magia.';
-    if (ef.tipo === 'cura' && alvo.veneno) return alvo === c ? 'Você não pode se curar envenenado.' : 'O alvo está envenenado.';
     return null;
   }
 
+  private comecarCast(c: Combatente, m: DefMagia, alvoId: string, agora: number): void {
+    c.cast = { magia: m, alvoId, inicioMs: agora, fimMs: agora + tempoCastMs(m.circulo, c.ficha) };
+    c.mov.movimento = null;
+    this.eventos.push({ tipo: 'texto', alvoId: c.id, texto: m.palavras, cor: COR_MAGIA });
+  }
+
+  /** Fim do tempo de cast: confere o alvo de novo e só então gasta a mana e aplica o efeito. */
   private concluirCast(c: Combatente, agora: number): void {
     if (!c.cast || agora < c.cast.fimMs) return;
-    const m = c.cast.magia;
+    const { magia: m, alvoId } = c.cast;
     c.cast = null;
     c.proximaMagiaMs = agora + recuperacaoMs(c.ficha);
-    if (m.alvo === 'proprio') {
-      if (this.paralisado(c, agora) || c.mana < this.custo(c, m)) return;
-      this.lancar(c, c, m, agora);
-    } else {
-      c.mira = m;
+    const alvo = this.combatentes.get(alvoId);
+    const envenenado = m.efeito.tipo === 'cura' && alvo?.veneno;
+    const erro = this.erroAlvo(c, alvo, m, agora) ??
+      (envenenado ? (alvo === c ? 'Você não pode se curar envenenado.' : 'O alvo está envenenado.') : null);
+    if (erro) {
+      this.avisar(c, `${erro} A magia falhou.`);
+      this.eventos.push({ tipo: 'texto', alvoId: c.id, texto: '*fizzle*', cor: COR_SISTEMA });
+      return;
     }
+    this.lancar(c, alvo!, m, agora);
   }
 
   /** Gasta a mana e aplica o efeito (equivalente a CheckSequence + Target no ServUO). */
@@ -233,12 +245,15 @@ export class MotorCombate {
       }
       case 'paralisia': {
         const { destino } = this.checarReflexo(m.circulo, c, alvoOriginal);
-        const ms = duracaoParalisiaMs(c.ficha, destino.ficha);
+        const resistiu = this.rng() < chanceResistir(c.ficha, destino.ficha, m.circulo);
+        const ms = duracaoParalisiaMs(c.ficha, ef, resistiu);
         destino.paralisadoAteMs = Math.max(destino.paralisadoAteMs, agora + ms);
         if (ms > 0) destino.mov.movimento = null;
         this.eventos.push({ tipo: 'som', som: m.som, alvoId: destino.id });
         this.eventos.push({ tipo: 'visual', visual: 'paralisia', origemId: c.id, alvoId: destino.id, duracaoMs: Math.max(600, ms) });
-        this.eventos.push({ tipo: 'texto', alvoId: destino.id, texto: ms > 0 ? `*paralisado ${ms / 1000}s*` : '*resiste à paralisia*', cor: COR_ALERTA });
+        this.interromper(destino);
+        const texto = `*paralisado ${Math.round(ms / 1000)}s${resistiu ? ' (resistiu)' : ''}*`;
+        this.eventos.push({ tipo: 'texto', alvoId: destino.id, texto, cor: COR_ALERTA });
         break;
       }
       case 'cura': {
@@ -253,7 +268,7 @@ export class MotorCombate {
       case 'cura-veneno': {
         const alvo = alvoOriginal;
         this.eventos.push({ tipo: 'som', som: m.som, alvoId: alvo.id });
-        this.eventos.push({ tipo: 'visual', visual: 'cura', origemId: c.id, alvoId: alvo.id, duracaoMs: 600 });
+        this.eventos.push({ tipo: 'visual', visual: 'cura-veneno', origemId: c.id, alvoId: alvo.id, duracaoMs: 600 });
         if (!alvo.veneno) break;
         if (chanceCure(c.ficha, alvo.veneno.nivel) > Math.floor(this.rng() * 100)) {
           alvo.veneno = null;
@@ -286,6 +301,7 @@ export class MotorCombate {
       if (somFim?.tipo === 'reflexo') this.eventos.push({ tipo: 'som', som: somFim.somFim, alvoId: alvo.id });
     }
     if (!refletiu) return { origem: caster, destino: alvo };
+    this.eventos.push({ tipo: 'visual', visual: 'refletido', origemId: alvo.id, alvoId: alvo.id, duracaoMs: 600 });
     this.eventos.push({ tipo: 'texto', alvoId: alvo.id, texto: '*reflete*', cor: COR_MAGIA });
     return { origem: alvo, destino: caster };
   }
