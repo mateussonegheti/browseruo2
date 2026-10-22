@@ -30,9 +30,16 @@ html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--tex
 #painel button.primario { background: #2c4a86; border-color: #3d63b3; }
 .linha { display: flex; gap: 6px; margin-bottom: 10px; }
 .linha.quebra { flex-wrap: wrap; margin-top: 16px; }
-.paleta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.paleta button { display: flex; align-items: center; gap: 8px; text-align: left; }
+.paleta { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 4px; margin-top: 6px; }
+.paleta button { position: relative; display: flex; align-items: center; justify-content: center; height: 56px; padding: 2px; }
+.paleta button.com-nome { grid-column: span 2; justify-content: flex-start; gap: 8px; }
+.paleta button.bloqueia::after { content: ""; position: absolute; top: 3px; right: 3px; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--erro); }
+.paleta img { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: pixelated; }
 .paleta i { flex: none; width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(255,255,255,.25); }
+#painel select, #painel input[type=search] { width: 100%; padding: 6px 8px; margin-bottom: 6px; color: var(--texto);
+  background: var(--fundo); border: 1px solid var(--borda); border-radius: 6px; font: inherit; }
+.selecionado { margin: 12px 0 0; padding: 6px 8px; font-size: 12px; background: var(--fundo); border-radius: 6px; }
 .status { min-height: 2.8em; margin: 12px 0 0; font-size: 12px; color: var(--suave); }
 .status[data-erro="1"] { color: var(--erro); }
 .dica { margin: 8px 0 0; font-size: 12px; color: var(--suave); }

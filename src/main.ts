@@ -27,9 +27,10 @@ async function iniciar(): Promise<void> {
 
   const catalogo = await carregarCatalogo('/catalogo/catalogo.json');
   const renderizador = new Renderizador(canvas, catalogo);
+  const terrenoPadrao = catalogo.listar('terreno')[0]?.id ?? 1;
 
   // ---------- estado ----------
-  let arena = new Arena(await obterMapaInicial());
+  let arena = new Arena(await obterMapaInicial(terrenoPadrao));
   let jogador: EstadoJogador = criarJogador(arena.spawn.x, arena.spawn.y);
   let cameraEditor: Ponto = { x: 0, y: 0 };
   const entrada = {
@@ -81,7 +82,6 @@ async function iniciar(): Promise<void> {
         return;
       }
       if (!window.confirm('Descartar a arena atual e criar uma nova em branco?')) return;
-      const terrenoPadrao = catalogo.listar('terreno')[0]?.id ?? 1;
       trocarArena(criarMapaVazio('nova-arena', largura, altura, terrenoPadrao), 'Nova arena criada.');
     },
     async restaurar() {
@@ -232,13 +232,13 @@ async function iniciar(): Promise<void> {
 }
 
 /** Prioridade: cópia local do navegador -> arquivo do projeto -> arena vazia. */
-async function obterMapaInicial(): Promise<Mapa> {
+async function obterMapaInicial(terrenoPadrao: number): Promise<Mapa> {
   const local = carregarLocal();
   if (local) return local;
   const doProjeto = await carregarDoProjeto(NOME_ARENA_PADRAO);
   if (doProjeto.ok) return doProjeto.valor;
   console.warn('Arena padrão indisponível, criando uma vazia:', doProjeto.erro);
-  return criarMapaVazio(NOME_ARENA_PADRAO, 48, 48, 1);
+  return criarMapaVazio(NOME_ARENA_PADRAO, 48, 48, terrenoPadrao);
 }
 
 iniciar().catch((e) => {

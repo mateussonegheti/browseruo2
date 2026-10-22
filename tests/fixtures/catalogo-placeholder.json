@@ -1,0 +1,18 @@
+{
+  "versao": 1,
+  "origem": "placeholder",
+  "tiles": [
+    { "id": 1,   "nome": "Grama",            "tipo": "terreno", "altura": 0,  "bloqueia": false, "cor": "#4f8f3a" },
+    { "id": 2,   "nome": "Terra",            "tipo": "terreno", "altura": 0,  "bloqueia": false, "cor": "#8a6a43" },
+    { "id": 3,   "nome": "Areia",            "tipo": "terreno", "altura": 0,  "bloqueia": false, "cor": "#d6c58a" },
+    { "id": 4,   "nome": "Piso de pedra",    "tipo": "terreno", "altura": 0,  "bloqueia": false, "cor": "#8c8f96" },
+    { "id": 5,   "nome": "Piso de madeira",  "tipo": "terreno", "altura": 0,  "bloqueia": false, "cor": "#a8794a" },
+    { "id": 6,   "nome": "Água",             "tipo": "terreno", "altura": 0,  "bloqueia": true,  "cor": "#2f6fb5" },
+    { "id": 101, "nome": "Muro de pedra",    "tipo": "objeto",  "altura": 20, "bloqueia": true,  "cor": "#9a9da5" },
+    { "id": 102, "nome": "Muro baixo",       "tipo": "objeto",  "altura": 8,  "bloqueia": true,  "cor": "#b1a28a" },
+    { "id": 103, "nome": "Pilar",            "tipo": "objeto",  "altura": 28, "bloqueia": true,  "cor": "#c9c3b5" },
+    { "id": 104, "nome": "Caixote",          "tipo": "objeto",  "altura": 10, "bloqueia": true,  "cor": "#9b6b35" },
+    { "id": 105, "nome": "Arbusto",          "tipo": "objeto",  "altura": 6,  "bloqueia": false, "cor": "#2f7a3a" },
+    { "id": 106, "nome": "Degrau",           "tipo": "objeto",  "altura": 4,  "bloqueia": false, "cor": "#7d7f86" }
+  ]
+}

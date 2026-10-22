@@ -4,3 +4,4 @@ dist
 # Dados do cliente do jogo NÃO entram no repositório
 cliente/
 pacote-cliente/
+public/sprites/

@@ -26,6 +26,10 @@ export interface DefinicaoTile {
   /** Cor do placeholder (#rrggbb). */
   cor: string;
   sprite?: SpriteTile | null;
+  /** Grupo da paleta do editor (ex.: "Muro de pedra"). */
+  grupo?: string;
+  /** Id do gráfico no cliente do UO (terreno: landtiles; objeto: art). */
+  grafico?: number;
 }
 
 export interface Catalogo {

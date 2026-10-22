@@ -1,7 +1,8 @@
 import { validarMapa } from '../mundo/mapa';
 import type { Mapa } from '../mundo/tipos';
 
-const CHAVE_LOCAL = 'browseruo.arena.v1';
+// v2: ids do catálogo extraído do cliente (as cópias v1 usavam ids de placeholder).
+const CHAVE_LOCAL = 'browseruo.arena.v2';
 /** Mesma regra aplicada no servidor de desenvolvimento (vite.config.ts). */
 export const REGEX_NOME_ARENA = /^[a-z0-9_-]{1,40}$/i;
 

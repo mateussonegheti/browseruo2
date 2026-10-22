@@ -4,7 +4,8 @@ import { CatalogoTiles, validarCatalogo } from '../src/mundo/catalogo';
 import { podeAndar, tileBloqueado } from '../src/mundo/colisao';
 import { Editor } from '../src/editor/editor';
 import { atualizarJogador, criarJogador, posicaoVisual, tentarAndar, PASSO_ANDAR_MS, PASSO_CORRER_MS } from '../src/jogo/jogador';
-import catalogoJson from '../public/catalogo/catalogo.json';
+import catalogoJson from './fixtures/catalogo-placeholder.json';
+import catalogoReal from '../public/catalogo/catalogo.json';
 import arenaPadrao from '../public/arenas/arena-padrao.json';
 
 const cat = new CatalogoTiles(catalogoJson as never);
@@ -17,6 +18,9 @@ function arenaVazia(): Arena {
 describe('catálogo', () => {
   it('o catálogo placeholder é válido', () => {
     expect(validarCatalogo(catalogoJson).ok).toBe(true);
+  });
+  it('o catálogo gerado do cliente é válido', () => {
+    expect(validarCatalogo(catalogoReal).ok).toBe(true);
   });
   it('rejeita ids repetidos e cor inválida', () => {
     const ruim = { versao: 1, origem: 'x', tiles: [
@@ -101,10 +105,13 @@ describe('colisão', () => {
     const r = validarMapa(arenaPadrao);
     if (!r.ok) throw new Error('arena padrão inválida');
     const a = new Arena(r.mapa);
-    expect(tileBloqueado(a, cat, 23, 12)).toBe(false);
-    expect(tileBloqueado(a, cat, 12, 23)).toBe(false);
-    expect(tileBloqueado(a, cat, 15, 12)).toBe(true);
-    expect(tileBloqueado(a, cat, a.spawn.x, a.spawn.y)).toBe(false);
+    const real = new CatalogoTiles(catalogoReal as never);
+    expect(tileBloqueado(a, real, 23, 12)).toBe(false);
+    expect(tileBloqueado(a, real, 12, 23)).toBe(false);
+    expect(tileBloqueado(a, real, 15, 12)).toBe(true);
+    expect(tileBloqueado(a, real, a.spawn.x, a.spawn.y)).toBe(false);
+    // Todo id usado na arena existe no catálogo
+    for (const id of [...r.mapa.terreno, ...r.mapa.objetos.map((o) => o.id)]) expect(real.obter(id)).toBeDefined();
   });
 });
 

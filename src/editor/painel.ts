@@ -2,6 +2,14 @@ import type { CatalogoTiles } from '../mundo/catalogo';
 import type { DefinicaoTile } from '../mundo/tipos';
 import type { Editor, Ferramenta } from './editor';
 
+/** Máximo de miniaturas por paleta (o resto aparece pela busca). */
+const LIMITE_PALETA = 400;
+
+/** Id legível: gráfico do cliente em hexadecimal quando existir. */
+function descreverId(t: DefinicaoTile): string {
+  return t.grafico !== undefined ? `0x${t.grafico.toString(16).toUpperCase().padStart(4, '0')}` : `id ${t.id}`;
+}
+
 /** Ações que o painel dispara; quem implementa é o main.ts. */
 export interface AcoesPainel {
   salvar(): void;
@@ -19,6 +27,7 @@ export class PainelEditor {
   private readonly botoesPaleta = new Map<number, HTMLButtonElement>();
   private readonly botoesFerramenta = new Map<Ferramenta, HTMLButtonElement>();
   private readonly campoNome: HTMLInputElement;
+  private readonly infoSelecionado: HTMLElement;
 
   constructor(raiz: HTMLElement, private readonly editor: Editor, catalogo: CatalogoTiles, acoes: AcoesPainel) {
     this.raiz = raiz;
@@ -55,8 +64,11 @@ export class PainelEditor {
     raiz.append(this.rotulo('Altura Z do objeto (1 Z = 4 px)', z));
 
     // Paletas
-    raiz.append(this.titulo('Terreno', 'h3'), this.paleta(catalogo.listar('terreno')));
-    raiz.append(this.titulo('Objetos', 'h3'), this.paleta(catalogo.listar('objeto')));
+    this.infoSelecionado = document.createElement('p');
+    this.infoSelecionado.className = 'selecionado';
+    raiz.append(this.infoSelecionado);
+    raiz.append(this.paleta('Terreno', catalogo.listar('terreno')));
+    raiz.append(this.paleta('Objetos', catalogo.listar('objeto')));
 
     // Arquivo
     const arq = document.createElement('div');
@@ -104,6 +116,10 @@ export class PainelEditor {
   atualizar(): void {
     for (const [id, b] of this.botoesPaleta) b.classList.toggle('ativo', id === this.editor.selecionadoId);
     for (const [f, b] of this.botoesFerramenta) b.classList.toggle('ativo', f === this.editor.ferramenta);
+    const t = this.editor.selecionado;
+    this.infoSelecionado.textContent = t
+      ? `${t.nome} · ${descreverId(t)} · altura ${t.altura}${t.bloqueia ? ' · bloqueia' : ''}`
+      : 'Nada selecionado';
   }
 
   // ---------- helpers de DOM ----------
@@ -131,26 +147,85 @@ export class PainelEditor {
     return b;
   }
 
-  private paleta(tiles: DefinicaoTile[]): HTMLElement {
+  /** Paleta de uma seção: filtro por grupo, busca por nome/id e grade de miniaturas. */
+  private paleta(titulo: string, tiles: DefinicaoTile[]): HTMLElement {
+    const secao = document.createElement('section');
+    secao.append(this.titulo(titulo, 'h3'));
+
+    const grupos = [...new Set(tiles.map((t) => t.grupo).filter((g): g is string => Boolean(g)))];
+    const filtro = document.createElement('select');
+    filtro.append(new Option('Todos os grupos', ''));
+    for (const g of grupos) filtro.append(new Option(g, g));
+    filtro.value = grupos[0] ?? '';
+
+    const busca = document.createElement('input');
+    busca.type = 'search';
+    busca.placeholder = 'Buscar por nome ou id (ex.: wall, 0x1B)';
+
+    const contador = document.createElement('p');
+    contador.className = 'dica';
     const grade = document.createElement('div');
     grade.className = 'paleta';
-    for (const t of tiles) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.title = `${t.nome} (id ${t.id}${t.bloqueia ? ', bloqueia' : ''})`;
-      const amostra = document.createElement('i');
-      amostra.style.background = t.cor;
-      const nome = document.createElement('span');
-      nome.textContent = t.nome + (t.bloqueia ? ' ⛔' : '');
-      b.append(amostra, nome);
-      b.addEventListener('click', () => {
-        this.editor.selecionadoId = t.id;
-        this.editor.ferramenta = 'colocar';
-        this.atualizar();
-      });
-      this.botoesPaleta.set(t.id, b);
-      grade.append(b);
-    }
-    return grade;
+    const daSecao = new Set<number>();
+
+    const desenhar = (): void => {
+      for (const id of daSecao) this.botoesPaleta.delete(id);
+      daSecao.clear();
+      grade.replaceChildren();
+      const termo = busca.value.trim().toLowerCase();
+      const filtrados = tiles.filter((t) =>
+        (!filtro.value || t.grupo === filtro.value) &&
+        (!termo || t.nome.toLowerCase().includes(termo) || descreverId(t).toLowerCase().includes(termo)));
+      for (const t of filtrados.slice(0, LIMITE_PALETA)) {
+        const b = this.botaoTile(t);
+        this.botoesPaleta.set(t.id, b);
+        daSecao.add(t.id);
+        grade.append(b);
+      }
+      contador.textContent = filtrados.length > LIMITE_PALETA
+        ? `Mostrando ${LIMITE_PALETA} de ${filtrados.length}. Refine a busca.`
+        : `${filtrados.length} tile(s)`;
+      this.atualizar();
+    };
+    filtro.addEventListener('change', desenhar);
+    busca.addEventListener('input', desenhar);
+
+    if (grupos.length) secao.append(filtro);
+    secao.append(busca, grade, contador);
+    desenhar();
+    return secao;
   }
+
+  private botaoTile(t: DefinicaoTile): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.id = String(t.id);
+    b.title = `${t.nome} (${descreverId(t)}${t.bloqueia ? ', bloqueia' : ''})`;
+    const amostra = (): HTMLElement => {
+      const i = document.createElement('i');
+      i.style.background = t.cor;
+      return i;
+    };
+    if (t.sprite) {
+      const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.alt = t.nome;
+      img.src = `/sprites/${t.sprite.arquivo}`;
+      img.addEventListener('error', () => img.replaceWith(amostra()));
+      b.append(img);
+    } else {
+      const nome = document.createElement('span');
+      nome.textContent = t.nome;
+      b.append(amostra(), nome);
+      b.classList.add('com-nome');
+    }
+    if (t.bloqueia) b.classList.add('bloqueia');
+    b.addEventListener('click', () => {
+      this.editor.selecionadoId = t.id;
+      this.editor.ferramenta = 'colocar';
+      this.atualizar();
+    });
+    return b;
+  }
+
 }

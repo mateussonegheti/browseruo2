@@ -2,8 +2,14 @@
 // Uso: (com `npm run dev` ativo) node e2e/fumaca.mjs [url]
 import { chromium } from 'playwright';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const URL = process.argv[2] ?? 'http://localhost:5173/';
+// Capturas de tela vão para E2E_SAIDA (padrão: pasta temporária do sistema).
+const SAIDA = process.env.E2E_SAIDA ?? tmpdir();
+// Ids do catálogo extraído (objeto = 0x4000 + gráfico do art).
+const MURO = 0x4000 + 0x1c, COLUNA = 0x4000 + 0x11b, AGUA = 168;
 const falhas = [];
 const ok = (cond, msg) => { console.log(`${cond ? 'OK  ' : 'FALHA'} ${msg}`); if (!cond) falhas.push(msg); };
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -22,7 +28,7 @@ await pagina.goto(URL);
 await pagina.evaluate(() => localStorage.clear());
 await pagina.reload();
 await pagina.waitForFunction(() => window.__jogo?.arena);
-await pagina.screenshot({ path: '/tmp/claude-0/-home-claude/9327f7ba-abf7-5a15-b34d-347700155b3a/scratchpad/jogo-inicio.png' });
+await pagina.screenshot({ path: join(SAIDA, 'jogo-inicio.png') });
 
 let e = await estado();
 ok(e.x === 24 && e.y === 24, `jogador nasce no spawn (24,24): (${e.x},${e.y})`);
@@ -46,10 +52,10 @@ const depois = await estado();
 ok(parado.x === depois.x && parado.y === depois.y && !depois.movendo, 'para ao soltar o botão');
 
 // 3) Colisão: muro ao lado e tentar andar contra ele
-await pagina.evaluate(() => {
+await pagina.evaluate((id) => {
   const j = window.__jogo.jogador;
-  window.__jogo.arena.adicionarObjeto(j.x + 1, j.y, 0, 101); // Leste
-});
+  window.__jogo.arena.adicionarObjeto(j.x + 1, j.y, 0, id); // Leste
+}, MURO);
 const antes = await estado();
 await pagina.mouse.move(900, 500); // baixo-direita = Leste
 await pagina.mouse.down();
@@ -57,7 +63,7 @@ await espera(900);
 await pagina.mouse.up();
 e = await estado();
 ok(e.x === antes.x && e.y === antes.y && e.dir === 2, `muro barra o passo para Leste e o personagem vira (${e.x},${e.y}, dir=${e.dir})`);
-await pagina.screenshot({ path: '/tmp/claude-0/-home-claude/9327f7ba-abf7-5a15-b34d-347700155b3a/scratchpad/jogo-muro.png' });
+await pagina.screenshot({ path: join(SAIDA, 'jogo-muro.png') });
 
 // 4) Andar a pé (cursor perto) = 400ms/passo
 await pagina.evaluate(() => {
@@ -78,7 +84,12 @@ await pagina.keyboard.press('e');
 ok(await pagina.evaluate(() => window.__jogo.editor.ativo), 'tecla E abre o editor');
 ok(await pagina.isVisible('#painel'), 'painel visível');
 const arenaAntes = await pagina.evaluate(() => window.__jogo.arena.objetosEm(30, 24).length);
-await pagina.click('text=Pilar');
+// Escolhe um tile da paleta: grupo da seção (0 = terreno, 1 = objetos) e id do catálogo.
+const escolher = async (secao, grupo, id) => {
+  await pagina.locator('#painel section').nth(secao).locator('select').selectOption(grupo);
+  await pagina.click(`#painel button[data-id="${id}"]`);
+};
+await escolher(1, 'Colunas', COLUNA);
 // câmera do editor começa onde o jogador estava: converte tile -> tela
 const alvo = await pagina.evaluate(() => {
   const j = window.__jogo.jogador;
@@ -91,14 +102,14 @@ const paraTela = (tx, ty) => ({
 const p = paraTela(alvo.jx - 3, alvo.jy);
 await pagina.mouse.click(p.x, p.y);
 const colocado = await pagina.evaluate(([x, y]) => window.__jogo.arena.objetosEm(x, y).map((o) => o.id), [alvo.jx - 3, alvo.jy]);
-ok(colocado.includes(103), `clique esquerdo coloca Pilar no tile sob o cursor: ${JSON.stringify(colocado)}`);
+ok(colocado.includes(COLUNA), `clique esquerdo coloca coluna no tile sob o cursor: ${JSON.stringify(colocado)}`);
 await pagina.mouse.click(p.x, p.y, { button: 'right' });
 const apagado = await pagina.evaluate(([x, y]) => window.__jogo.arena.objetosEm(x, y).length, [alvo.jx - 3, alvo.jy]);
 ok(apagado === 0, 'clique direito apaga');
 void arenaAntes;
 
 // Pintar arrastando (muro) por 4 tiles
-await pagina.click('text=Muro de pedra');
+await escolher(1, 'Muro de pedra', MURO);
 const a = paraTela(alvo.jx + 2, alvo.jy + 2);
 const b = paraTela(alvo.jx + 5, alvo.jy + 2);
 await pagina.mouse.move(a.x, a.y);
@@ -109,17 +120,17 @@ const pintados = await pagina.evaluate(([x, y]) => [0, 1, 2, 3].map((i) => windo
 ok(pintados.every((n) => n === 1), `arrastar pinta uma linha de 4 muros: ${JSON.stringify(pintados)}`);
 
 // Terreno: água
-await pagina.click('text=Água');
+await escolher(0, 'Água', AGUA);
 const t = paraTela(alvo.jx, alvo.jy + 6);
 await pagina.mouse.click(t.x, t.y);
-ok(await pagina.evaluate(([x, y]) => window.__jogo.arena.terrenoEm(x, y) === 6, [alvo.jx, alvo.jy + 6]), 'terreno Água colocado');
+ok(await pagina.evaluate(([x, y, id]) => window.__jogo.arena.terrenoEm(x, y) === id, [alvo.jx, alvo.jy + 6, AGUA]), 'terreno Água colocado');
 
-await pagina.screenshot({ path: '/tmp/claude-0/-home-claude/9327f7ba-abf7-5a15-b34d-347700155b3a/scratchpad/editor.png' });
+await pagina.screenshot({ path: join(SAIDA, 'editor.png') });
 
 // Salvar no projeto com outro nome (não sobrescreve a arena padrão)
 await pagina.fill('#painel input[type=text]', 'teste-e2e');
 await pagina.dispatchEvent('#painel input[type=text]', 'change');
-await pagina.click('text=Salvar');
+await pagina.click('#painel button.primario');
 await pagina.waitForFunction(() => document.querySelector('.status')?.textContent?.includes('Salvo em'), null, { timeout: 5000 }).catch(() => {});
 const arquivo = 'public/arenas/teste-e2e.json';
 ok(existsSync(arquivo), 'Salvar grava o JSON em public/arenas/');
@@ -128,7 +139,7 @@ if (existsSync(arquivo)) {
   ok(j.nome === 'teste-e2e' && j.objetos.length > 90, `arquivo salvo contém a arena editada (${j.objetos.length} objetos)`);
   rmSync(arquivo);
 }
-ok(await pagina.evaluate(() => localStorage.getItem('browseruo.arena.v1') !== null), 'cópia local no navegador gravada');
+ok(await pagina.evaluate(() => localStorage.getItem('browseruo.arena.v2') !== null), 'cópia local no navegador gravada');
 
 // Nome inválido é recusado
 await pagina.fill('#painel input[type=text]', '../hack');

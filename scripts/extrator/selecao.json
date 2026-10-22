@@ -1,0 +1,27 @@
+{
+  "comentario": "Quais tiles do cliente entram no catálogo. 'nomes' compara com o nome do tiledata (sem diferenciar maiúsculas). 'faixa' limita os ids do gráfico; sem ela vale 'faixaPadrao' (arte clássica, antes dos ids próprios do Outlands).",
+  "faixaPadrao": ["0x0001", "0x3FFF"],
+  "terreno": [
+    { "grupo": "Grama", "nomes": ["grass", "dark grass", "medium grass", "forest grass", "tall grass"] },
+    { "grupo": "Terra", "nomes": ["dirt", "medium dirt", "gravel", "furrows"] },
+    { "grupo": "Areia", "nomes": ["sand", "beach sand"] },
+    { "grupo": "Pedra", "nomes": ["cobblestones", "stone", "sand stone", "brick", "tile", "cave"] },
+    { "grupo": "Madeira", "nomes": ["wooden floor", "planks"] },
+    { "grupo": "Neve e gelo", "nomes": ["snow"] },
+    { "grupo": "Água", "nomes": ["water"] },
+    { "grupo": "Rocha e lava", "nomes": ["rock", "lava"] }
+  ],
+  "objetos": [
+    { "grupo": "Muro de pedra", "nomes": ["stone wall"] },
+    { "grupo": "Muro de arenito", "nomes": ["sandstone wall"] },
+    { "grupo": "Muro de mármore", "nomes": ["marble wall"] },
+    { "grupo": "Muro de madeira", "nomes": ["wooden wall", "log wall", "palisade"] },
+    { "grupo": "Muro de reboco", "nomes": ["plaster wall"] },
+    { "grupo": "Colunas", "nomes": ["marble column", "stone column", "sandstone column", "stone pillar", "pillar"] },
+    { "grupo": "Pisos", "nomes": ["flagstones", "cobblestones", "marble floor", "sandstone floor", "floor tile", "wooden floor", "cave floor"] },
+    { "grupo": "Escadas", "nomes": ["stone stairs", "wooden stairs", "marble stairs", "sandstone stairs"] },
+    { "grupo": "Cercas", "nomes": ["wooden fence", "iron fence"] },
+    { "grupo": "Natureza", "nomes": ["tree", "bush", "hedge", "rock", "rocks"] },
+    { "grupo": "Decoração", "nomes": ["crate", "brazier", "pedestal", "statue"] }
+  ]
+}
