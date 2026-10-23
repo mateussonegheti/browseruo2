@@ -15,9 +15,9 @@ const GUMP_MOCHILA_PAPERDOLL = '0xC4F6';
 const GUMP_MOCHILA = '0x003C';
 const GUMP_LIVRO = '0x08AC';
 const ITEM_SPELLBOOK = '0x0EFA';
-/** Onde o corpo fica dentro do paperdoll (posição do cliente clássico). */
+/** Onde o corpo fica dentro do paperdoll — arco da versão Outlands (262×324). */
 const CORPO_X = 8;
-const CORPO_Y = 19;
+const CORPO_Y = 35;
 const GUMP_BAU = '0x004C';
 /** Área útil de cada contêiner (onde os itens podem ficar) e a grade inicial. */
 const AREA_MOCHILA = { x: 44, y: 65, w: 142, h: 94, colunas: 5, celulaX: 29, celulaY: 31 };
@@ -54,6 +54,9 @@ export interface AcoesJanelas {
   lootar(corpoId: string, item: string): void;
   magias(): Array<{ id: string; nome: string; circulo: number }>;
   lancar(magia: string): void;
+  alternarGuerra(): void;
+  estadoGuerra(): boolean;
+  obterStatus(): DadosStatus;
 }
 
 function carregar(src: string): Promise<HTMLImageElement | null> {
@@ -66,11 +69,14 @@ function carregar(src: string): Promise<HTMLImageElement | null> {
 }
 
 export class Janelas {
-  private paperdoll: { el: HTMLElement; canvas: HTMLCanvasElement; nome: string; pecas: () => PecaPaperdoll[] } | null = null;
+  private paperdoll: { el: HTMLElement; canvas: HTMLCanvasElement; nome: string; pecas: () => PecaPaperdoll[]; btnGuerra: HTMLButtonElement } | null = null;
   private conteineres: Record<ChaveConteiner, { el: HTMLElement; caixa: HTMLElement } | null> = { mochila: null, bau: null, corpo: null };
   private corpoAberto: string | null = null;
   private livro: HTMLElement | null = null;
   private status: { el: HTMLElement; canvas: HTMLCanvasElement; fundo: HTMLImageElement; obter: () => DadosStatus } | null = null;
+  private jornalEl: HTMLElement | null = null;
+  private jornalMsgs: HTMLElement | null = null;
+  jornal: Array<{ texto: string; cor: 'normal' | 'sistema' | 'alerta' | 'magia' }> = [];
   private posicoes = new Map<string, { x: number; y: number }>();
   /** Posição de cada item dentro da mochila (mantida ao fechar e abrir). */
   private itensMochila = new Map<string, { x: number; y: number }>();
@@ -81,7 +87,7 @@ export class Janelas {
   ) {}
 
   get abertas(): boolean {
-    return Boolean(this.paperdoll || this.conteineres.mochila || this.conteineres.bau || this.conteineres.corpo || this.livro);
+    return Boolean(this.paperdoll || this.conteineres.mochila || this.conteineres.bau || this.conteineres.corpo || this.livro || this.jornalEl);
   }
 
   /** Paperdoll: `pecas` é chamado de novo a cada redesenho (ao equipar ou desequipar). */
@@ -96,9 +102,92 @@ export class Janelas {
     canvas.width = fundo.width;
     canvas.height = fundo.height;
     canvas.addEventListener('dblclick', (e) => void this.duploCliquePaperdoll(e.offsetX, e.offsetY));
-    const el = this.janela('paperdoll', canvas, { x: 80, y: 120 });
-    this.paperdoll = { el, canvas, nome, pecas };
+    const { col, btnGuerra } = this.criarBotoesPaperdoll();
+    const wrapper = document.createElement('div');
+    wrapper.className = 'paperdoll-wrapper';
+    wrapper.append(canvas, col);
+    const el = this.janela('paperdoll', wrapper, { x: 80, y: 60 });
+    this.paperdoll = { el, canvas, nome, pecas, btnGuerra };
     await this.redesenharPaperdoll();
+  }
+
+  private criarBotoesPaperdoll(): { col: HTMLElement; btnGuerra: HTMLButtonElement } {
+    const col = document.createElement('div');
+    col.className = 'paperdoll-botoes';
+    const G = (nome: string) => `/interface/gumps-outlands-preview/${nome}`;
+    const bGump = (src: string, rotulo: string, titulo: string, acao: () => void): HTMLButtonElement => {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.title = titulo; btn.className = 'paperdoll-btn';
+      const img = document.createElement('img');
+      img.src = src; img.alt = rotulo; img.draggable = false;
+      btn.append(img);
+      btn.addEventListener('click', acao);
+      btn.addEventListener('mouseup', () => btn.blur());
+      return btn;
+    };
+    const bCss = (rotulo: string, titulo: string, acao: () => void): HTMLButtonElement => {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.textContent = rotulo; btn.title = titulo;
+      btn.className = 'paperdoll-btn sem-gump';
+      btn.addEventListener('click', acao);
+      btn.addEventListener('mouseup', () => btn.blur());
+      return btn;
+    };
+    const emGuerra = this.acoes.estadoGuerra();
+    const btnGuerra = bCss(emGuerra ? 'WAR' : 'PEACE', 'Guerra / Paz (Tab)', () => {
+      this.acoes.alternarGuerra();
+      this.atualizarGuerraPaperdoll();
+    });
+    if (emGuerra) btnGuerra.classList.add('em-guerra');
+    col.append(
+      bGump(G('0x07EF_64x21.png'), 'HELP',    'Ajuda',                   () => {}),
+      bGump(G('0x07D8_64x21.png'), 'OPTIONS', 'Opções',                  () => {}),
+      bGump(G('0x07DA_64x22.png'), 'LOG OUT', 'Sair',                    () => {}),
+      bGump(G('0x0839_66x19.png'), 'SKILLS',  'Habilidades',             () => {}),
+      bGump(G('0x0830_66x19.png'), 'JOURNAL', 'Diário de mensagens (J)', () => this.alternarJornal()),
+      btnGuerra,
+      bCss('STATUS', 'Status (S)', () => void this.alternarStatus(this.acoes.obterStatus)),
+    );
+    return { col, btnGuerra };
+  }
+
+  atualizarGuerraPaperdoll(): void {
+    if (!this.paperdoll) return;
+    const em = this.acoes.estadoGuerra();
+    this.paperdoll.btnGuerra.textContent = em ? 'WAR' : 'PEACE';
+    this.paperdoll.btnGuerra.classList.toggle('em-guerra', em);
+  }
+
+  adicionarLog(texto: string, cor: 'normal' | 'sistema' | 'alerta' | 'magia' = 'normal'): void {
+    this.jornal.push({ texto, cor });
+    if (this.jornal.length > 200) this.jornal.shift();
+    if (!this.jornalMsgs) return;
+    const p = document.createElement('p');
+    p.textContent = texto;
+    if (cor !== 'normal') p.className = cor;
+    this.jornalMsgs.append(p);
+    this.jornalMsgs.scrollTop = this.jornalMsgs.scrollHeight;
+  }
+
+  alternarJornal(): void {
+    if (this.jornalEl) { this.fechar('jornal'); return; }
+    const div = document.createElement('div');
+    div.className = 'jornal-gump';
+    const titulo = document.createElement('div');
+    titulo.className = 'jornal-titulo';
+    titulo.textContent = 'JOURNAL';
+    const msgs = document.createElement('div');
+    msgs.className = 'jornal-msgs';
+    for (const m of this.jornal) {
+      const p = document.createElement('p');
+      p.textContent = m.texto;
+      if (m.cor !== 'normal') p.className = m.cor;
+      msgs.append(p);
+    }
+    div.append(titulo, msgs);
+    this.jornalMsgs = msgs;
+    this.jornalEl = this.janela('jornal', div, { x: 360, y: 80 });
+    requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
   }
 
   async redesenharPaperdoll(): Promise<void> {
@@ -286,17 +375,17 @@ export class Janelas {
         g.fillText(texto, x, y + 10);
       }
     };
-    // Posições dos campos no gump do cliente
-    escrever(d.nome, 86, 40);
-    const esquerda: Array<[number, number]> = [[d.str, 61], [d.dex, 73], [d.int, 85]];
-    for (const [v, y] of esquerda) escrever(String(v), 86, y);
-    escrever('Masc.', 86, 97);
-    escrever(String(d.ar), 86, 109);
+    // Posições dos campos no gump Outlands 0x0802 (282×151)
+    escrever(d.nome, 68, 34);
+    const esquerda: Array<[number, number]> = [[d.str, 51], [d.dex, 68], [d.int, 85]];
+    for (const [v, y] of esquerda) escrever(String(v), 47, y);
+    escrever('Masc.', 47, 102);
+    escrever(String(d.ar), 47, 119);
     const direita: Array<[string, number]> = [
-      [`${d.vida}/${d.vidaMax}`, 61], [`${d.mana}/${d.manaMax}`, 73], [`${d.stam}/${d.stamMax}`, 85],
-      [String(d.ouro), 97], [String(d.peso), 109],
+      [`${d.vida}/${d.vidaMax}`, 51], [`${d.mana}/${d.manaMax}`, 68], [`${d.stam}/${d.stamMax}`, 85],
+      [String(d.ouro), 102], [String(d.peso), 119],
     ];
-    for (const [v, y] of direita) escrever(v, 172, y);
+    for (const [v, y] of direita) escrever(v, 183, y);
   }
 
   /** Atualiza a mochila e o baú abertos (itens que chegaram, acabaram ou mudaram de quantidade). */
@@ -362,7 +451,7 @@ export class Janelas {
       this.fechar(chave);
     });
     el.addEventListener('mousedown', (e) => {
-      if (e.button !== 0 || (e.target as HTMLElement).tagName === 'IMG') return;
+      if (e.button !== 0 || ['IMG', 'BUTTON'].includes((e.target as HTMLElement).tagName)) return;
       e.preventDefault();
       const inicio = { x: e.clientX - el.offsetLeft, y: e.clientY - el.offsetTop };
       const mover = (m: MouseEvent) => {
@@ -391,6 +480,10 @@ export class Janelas {
     } else if (chave === 'status') {
       this.status?.el.remove();
       this.status = null;
+    } else if (chave === 'jornal') {
+      this.jornalEl?.remove();
+      this.jornalEl = null;
+      this.jornalMsgs = null;
     } else if (chave === 'mochila' || chave === 'bau') {
       this.conteineres[chave]?.el.remove();
       this.conteineres[chave] = null;

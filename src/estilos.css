@@ -11,6 +11,11 @@
 html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--texto); overflow: hidden;
   font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 #jogo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+#chat { position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%); z-index: 100; }
+#chat[hidden] { display: none; }
+#chat input { width: 320px; padding: 6px 10px; background: rgba(13,15,18,.92); color: #ffff80;
+  border: 1px solid var(--destaque); border-radius: 6px; font: 13px/1.4 system-ui, sans-serif;
+  outline: none; box-shadow: 0 2px 12px rgba(0,0,0,.6); }
 #hud { position: fixed; left: 12px; bottom: 12px; padding: 6px 10px; background: rgba(13,15,18,.78);
   border: 1px solid var(--borda); border-radius: 6px; color: var(--suave); font-size: 12px; pointer-events: none; max-width: calc(100% - 24px); }
 
@@ -138,9 +143,53 @@ body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui,
 .menu-batalha-opcao.ativo { outline: 2px solid #e0b84a; font-weight: bold; }
 .menu-batalha-entrar { display: block; margin: 12px auto 4px; }
 
+/* ---------- paperdoll com botões na área lateral ---------- */
+.paperdoll-wrapper { position: relative; line-height: 0; }
+.paperdoll-botoes {
+  position: absolute;
+  left: 173px; top: 62px; width: 64px;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: auto;
+}
+/* Botão com imagem gump */
+.paperdoll-btn { display: block; width: 64px; background: none; border: none; padding: 0; cursor: var(--cursor-ui, pointer); }
+.paperdoll-btn img { display: block; width: 64px; height: auto; image-rendering: pixelated; }
+.paperdoll-btn:hover img { filter: brightness(1.15); }
+.paperdoll-btn:active img { filter: brightness(0.82); }
+/* Botão CSS (para labels sem gump dedicado) */
+.paperdoll-btn.sem-gump {
+  height: 21px;
+  background: linear-gradient(to bottom, #8ac4f0 0%, #3a78d0 45%, #1848a0 100%);
+  border: 1px solid #9ad0ff; border-bottom-color: #0a2860; border-radius: 11px;
+  color: #e8f4ff; font: 700 9px/21px sans-serif; letter-spacing: .06em;
+  text-align: center; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,.9);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+.paperdoll-btn.sem-gump:hover { filter: brightness(1.15); }
+.paperdoll-btn.sem-gump:active { filter: brightness(0.85); box-shadow: none; }
+.paperdoll-btn.em-guerra { background: linear-gradient(to bottom, #f09090 0%, #c03030 45%, #901010 100%); border-color: #ff9090; border-bottom-color: #500000; }
+
+/* ---------- journal ---------- */
+.jornal-gump { width: 280px; max-height: 360px; display: flex; flex-direction: column; overflow: hidden;
+  background: #c8b47a; border: 2px solid #7a5c18; border-radius: 4px; }
+.jornal-titulo { background: linear-gradient(to bottom, #b8a060, #9a7c3c);
+  color: #2a1200; font: 700 13px/1 serif; text-align: center; padding: 7px 4px; letter-spacing: .12em;
+  border-bottom: 1px solid #7a5c18; }
+.jornal-msgs { flex: 1; overflow-y: auto; padding: 8px 10px; scroll-behavior: smooth; }
+.jornal-msgs p { margin: 0 0 3px; font: 12px/1.5 serif; color: #1a0e00; word-break: break-word; }
+.jornal-msgs p.sistema { color: #cc44cc; }
+.jornal-msgs p.alerta { color: #c03030; font-weight: 700; }
+.jornal-msgs p.magia { color: #3060d0; }
+
 /* Sub-editor de criaturas */
 #painel .previa-criatura { display: block; margin: 0 auto 8px; background: #0f1115; border: 1px solid var(--borda); border-radius: 4px; }
-#painel .cores-criatura { display: flex; flex-wrap: wrap; gap: 3px; }
-#painel .cores-criatura button { width: 18px; height: 18px; padding: 0; border-radius: 3px; }
+#painel .cores-criatura { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+#painel .cores-criatura button { width: 26px; height: 18px; padding: 0; border-radius: 3px; border: 1px solid var(--borda); }
 #painel .cores-criatura button.cor-original { width: auto; padding: 0 6px; font-size: 11px; }
+#painel .cores-criatura button.ativo { outline: 2px solid var(--destaque); outline-offset: 1px; }
+#painel .rotulo-grupo-cor { width: 100%; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--suave); margin-top: 4px; }
+#painel .linha-codigo-cor { display: flex; align-items: center; gap: 4px; width: 100%; margin-top: 4px; }
+#painel .input-codigo-cor { flex: 1; min-width: 0; padding: 3px 6px; font-size: 12px; }
+#painel .linha-codigo-cor button { padding: 3px 8px; font-size: 12px; flex-shrink: 0; }
+#painel .erro-codigo-cor { font-size: 11px; color: var(--erro); flex-shrink: 0; }
 #painel .grade-campos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 8px; }

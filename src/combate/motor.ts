@@ -32,7 +32,7 @@ interface Agendado {
 }
 
 /** Distância máxima (em tiles) para abrir um corpo, como no UO. */
-const ALCANCE_LOOT_TILES = 2;
+const ALCANCE_LOOT_TILES = 4;
 const COR_MAGIA = '#7fb7ff';
 const COR_FALA_CAST = '#9a9a9a';
 const COR_SISTEMA = '#e6e8ec';

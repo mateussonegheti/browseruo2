@@ -64,7 +64,6 @@ async function iniciar(): Promise<void> {
   const elPainel = document.querySelector<HTMLElement>('#painel')!;
   const elHud = document.querySelector<HTMLElement>('#hud')!;
   const elCombate = document.querySelector<HTMLElement>('#combate')!;
-
   const catalogo = await carregarCatalogo('/catalogo/catalogo.json');
   const animacoes = new Animacoes();
   await animacoes.carregar();
@@ -94,6 +93,12 @@ async function iniciar(): Promise<void> {
     itemBau: (regrasJson as Regras).itemBau,
     itemDeed: ITEM_DEED,
     usarDeed: () => abrirDeed(),
+    obterStatus: () => dadosStatus(),
+    alternarGuerra: () => {
+      motor.alternarGuerra(ID_JOGADOR);
+      hud.avisar(eu.guerra ? 'Modo de guerra.' : 'Modo de paz.', performance.now());
+    },
+    estadoGuerra: () => eu.guerra,
   });
   const menu = new MenuContexto(document.querySelector<HTMLElement>('#janelas')!, fonte);
   // Barras do cliente só se os gumps foram extraídos
@@ -118,6 +123,34 @@ async function iniciar(): Promise<void> {
     pintando: null as null | { apagar: boolean },
     ultimoTile: null as null | { x: number; y: number },
   };
+
+  // ---------- chat ----------
+  const DURACAO_FALA_MS = 4000;
+  const falas = new Map<string, { texto: string; ate: number }>();
+  let miraId = false;
+  const elChat = document.querySelector<HTMLElement>('#chat')!;
+  const inputChat = document.createElement('input');
+  inputChat.type = 'text';
+  inputChat.maxLength = 100;
+  inputChat.placeholder = 'Digite sua fala...';
+  elChat.append(inputChat);
+  const fecharChat = (): void => { elChat.hidden = true; inputChat.blur(); };
+  const enviarChat = (): void => {
+    const texto = inputChat.value.trim();
+    fecharChat();
+    if (!texto) return;
+    if (texto === '/id') {
+      miraId = true;
+      return;
+    }
+    falas.set(ID_JOGADOR, { texto, ate: performance.now() + DURACAO_FALA_MS });
+    janelas.adicionarLog(`Você: ${texto}`, 'normal');
+  };
+  inputChat.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') { fecharChat(); return; }
+    if (e.key === 'Enter') enviarChat();
+  });
 
   // ---------- combate ----------
   /** Batalha contra bots em andamento (o lobby é onde o jogador estava ao entrar). */
@@ -566,6 +599,8 @@ async function iniciar(): Promise<void> {
   const painel = new PainelEditor(elPainel, editor, catalogo, {
     criaturas: animacoes.criaturas().map((c) => ({ ...c, perfil: perfilDe(c.nome)!, padraoFabrica: perfilPadrao(c.nome, c.tipo, c.rotulo, motor.regras.modelo) })),
     matizes: animacoes.matizesDisponiveis(),
+    grupos: animacoes.gruposMatizes(),
+    temMatiz: (id) => animacoes.temMatiz(id),
     previaCriatura: (ctx, nome, matiz, x, y) => void animacoes.desenhar(ctx, [{ nome, ...(matiz ? { matiz } : {}) }], 'parado', 4, 0, x, y),
     colocarCriatura(nome, perfil) {
       pedirPosicao(perfil.nome.toLowerCase(), (p) => criarCriatura(nome, p, perfil));
@@ -752,6 +787,35 @@ async function iniciar(): Promise<void> {
       }
       colocando.criar(t);
       colocando = null;
+    } else if (e.button === 0 && miraId) {
+      const agora = performance.now();
+      miraId = false;
+      const t = tileSobMouse(cameraAtual(agora));
+      if (!t) return;
+      const { x, y } = t;
+      // Prioridade: combatente > objetos > terreno
+      const cbt = combatenteSobMouse(agora);
+      if (cbt) {
+        const c = motor.obter(cbt.id)!;
+        const cams = aparencia.get(c.id) ?? camadasHumano(c);
+        const matiz = cams[0]?.matiz ?? 0;
+        hud.avisar(`${c.nome} · vida: ${c.vida}/${c.vidaMax} · matiz: ${matiz} · pos: (${Math.round(c.mov.x)},${Math.round(c.mov.y)})`, agora);
+        return;
+      }
+      const objetos = arena.objetosEm(x, y);
+      const topoObj = objetos.at(-1);
+      if (topoObj) {
+        const def = catalogo.obter(topoObj.id);
+        const hex = def?.grafico !== undefined ? `0x${def.grafico.toString(16).toUpperCase().padStart(4, '0')}` : '—';
+        hud.avisar(`${def?.nome ?? '?'} (objeto) · id: ${topoObj.id} · gráfico: ${hex} · z: ${topoObj.z} · pos: (${x},${y})`, agora);
+        return;
+      }
+      const terrenoId = arena.terrenoEm(x, y);
+      if (terrenoId !== undefined) {
+        const def = catalogo.obter(terrenoId);
+        const hex = def?.grafico !== undefined ? `0x${def.grafico.toString(16).toUpperCase().padStart(4, '0')}` : '—';
+        hud.avisar(`${def?.nome ?? '?'} (terreno) · id: ${terrenoId} · gráfico: ${hex} · pos: (${x},${y})`, agora);
+      }
     } else if (e.button === 0 && eu.mira?.alvo === 'local') {
       // Teleport e Wall of Stone: a mira escolhe o tile
       const agora = performance.now();
@@ -825,6 +889,13 @@ async function iniciar(): Promise<void> {
     if (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA' || alvo.tagName === 'SELECT') return;
     const k = e.key.toLowerCase();
     const agora = performance.now();
+    if (k === 'enter' && !editor.ativo) {
+      e.preventDefault();
+      elChat.hidden = false;
+      inputChat.value = '';
+      inputChat.focus();
+      return;
+    }
     if (k === 'e') {
       alternarEditor(agora);
       return;
@@ -847,6 +918,7 @@ async function iniciar(): Promise<void> {
     const magia = motor.regras.magias.find((m) => m.tecla === tecla);
     if (magia) lancarMagia(magia.id);
     else if (k === 'escape') {
+      if (miraId) { miraId = false; return; }
       if (colocando) colocando = null;
       else motor.cancelarMira(ID_JOGADOR);
     } else if (k === 'p') abrirPaperdoll();
@@ -854,8 +926,11 @@ async function iniciar(): Promise<void> {
       e.preventDefault();
       motor.alternarGuerra(ID_JOGADOR);
       hud.avisar(eu.guerra ? 'Modo de guerra.' : 'Modo de paz.', agora);
+      janelas.atualizarGuerraPaperdoll();
     }
+    else if (k === 's') void janelas.alternarStatus(dadosStatus);
     else if (k === 'b') void janelas.alternarMochila();
+    else if (k === 'j') janelas.alternarJornal();
     else if (k === 't' && eu.mira) {
       if (eu.ultimoAlvoId) motor.escolherAlvo(ID_JOGADOR, eu.ultimoAlvoId, agora);
       else hud.avisar('Nenhum alvo anterior.', agora);
@@ -909,10 +984,15 @@ async function iniciar(): Promise<void> {
       efeitos.adicionar(ev, agora);
       if (ev.tipo === 'dano') apanharAte.set(ev.alvoId, agora + DURACAO_APANHAR_MS);
       if (ev.tipo === 'som') sons.tocar(ev.som);
-      else if (ev.tipo === 'aviso' && ev.paraId === ID_JOGADOR) hud.avisar(ev.texto, agora);
+      else if (ev.tipo === 'aviso' && ev.paraId === ID_JOGADOR) {
+        hud.avisar(ev.texto, agora);
+        janelas.adicionarLog(ev.texto, 'sistema');
+      }
       else if (ev.tipo === 'morte') {
         if (ev.alvoId === ID_JOGADOR) desmontar();
-        hud.avisar(`${motor.obter(ev.alvoId)?.nome ?? '?'} morreu.`, agora);
+        const nomeMorto = motor.obter(ev.alvoId)?.nome ?? '?';
+        hud.avisar(`${nomeMorto} morreu.`, agora);
+        janelas.adicionarLog(`${nomeMorto} morreu.`, 'alerta');
       }
     }
   };
@@ -949,7 +1029,9 @@ async function iniciar(): Promise<void> {
     motor.listar().map((c) => ({
       ...estadoAnimacao(c, agora),
       camadas: c.bot?.modo === 'criatura' ? aparencia.get(c.id) : camadasHumano(c),
-      montaria: c.id === ID_JOGADOR ? montaria?.anim : undefined,
+      montaria: c.id === ID_JOGADOR && montaria
+        ? { nome: montaria.anim, matiz: aparencia.get(montaria.c.id)?.[0]?.matiz }
+        : undefined,
       mov: c.mov,
       nome: c.nome,
       cor: c.bot ? (batalha?.b.aliados(ID_JOGADOR, c.id) ? COR_ALIADO : COR_BOT) : COR_JOGADOR,
@@ -959,6 +1041,7 @@ async function iniciar(): Promise<void> {
       paralisado: motor.paralisado(c, agora),
       reflexo: c.reflexo > 0,
       destaque: c.id === eu.ultimoAlvoId,
+      fala: (() => { const f = falas.get(c.id); return f && f.ate > agora ? f.texto : undefined; })(),
     }));
 
   // Telhados somem quando o jogador está debaixo deles (recalcula só ao mudar de tile ou de objetos)
@@ -989,7 +1072,7 @@ async function iniciar(): Promise<void> {
   const atualizarCursor = (): void => {
     let id = CURSOR_PADRAO;
     if (!editor.ativo) {
-      if (eu.mira || colocando) id = CURSOR_MIRA;
+      if (eu.mira || colocando || miraId) id = CURSOR_MIRA;
       else if (entrada.mouse) {
         id = cursorDirecional(entrada.mouse.x - canvas.clientWidth / 2,
           entrada.mouse.y - (canvas.clientHeight / 2 - DESLOCAMENTO_CORPO_PX));
@@ -1046,7 +1129,7 @@ async function iniciar(): Promise<void> {
         if (!editor.ativo) efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y, alturaDoChao(arena, catalogo, Math.round(x), Math.round(y))));
       },
     });
-    canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando));
+    canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando || miraId));
     atualizarCursor();
     if (agora - ultimaMochila > 300) {
       janelas.atualizarMochila();
@@ -1059,7 +1142,7 @@ async function iniciar(): Promise<void> {
     const sobre = hover && arena.dentro(hover.x, hover.y) ? ` · cursor (${hover.x}, ${hover.y})` : '';
     elHud.textContent = editor.ativo
       ? `EDITOR · ${arena.nome} ${arena.largura}×${arena.altura}${sobre}`
-      : `JOGO${eu.guerra ? ' · GUERRA' : ''} · (${jogador.x}, ${jogador.y}) · segure o botão esquerdo para andar · 1–0: magias · Tab: guerra/paz · E: editor`;
+      : `JOGO${eu.guerra ? ' · GUERRA' : ''} · (${jogador.x}, ${jogador.y}) · segure o botão esquerdo para andar · 1–0: magias · Tab: guerra/paz · P: paperdoll · B: mochila · S: status · J: journal · E: editor`;
 
     requestAnimationFrame(quadro);
   };
