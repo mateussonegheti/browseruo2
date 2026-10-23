@@ -94,6 +94,13 @@ body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui,
 .gump { position: fixed; pointer-events: auto; user-select: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
 .gump canvas { display: block; }
 .mochila { position: relative; background-repeat: no-repeat; }
+.menu-contexto { position: fixed; pointer-events: auto; display: flex; flex-direction: column; min-width: 120px; padding: 4px;
+  background: #2b2620; border: 2px solid #8a7a52; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
+.menu-contexto .titulo { margin: 2px 6px 4px; align-self: flex-start; }
+.menu-contexto span.titulo { color: #e8d9a8; font-weight: 700; font-size: 13px; }
+.menu-contexto button { display: flex; align-items: center; padding: 3px 8px; background: transparent; border: 0;
+  color: #fff; font: inherit; font-size: 13px; text-align: left; cursor: var(--cursor-ui, pointer); }
+.menu-contexto button:hover { background: #4a3f2c; }
 .mochila img { position: absolute; image-rendering: pixelated; }
 .mochila img:hover { filter: brightness(1.25); }
 .mochila img.arrastando { cursor: var(--cursor-pegar, grabbing); filter: brightness(1.25) drop-shadow(0 0 2px #fff); }

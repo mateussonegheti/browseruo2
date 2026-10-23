@@ -202,6 +202,16 @@ await pagina.keyboard.press('p');
 await pagina.keyboard.press('b');
 await espera(500);
 ok(await pagina.evaluate(() => document.querySelectorAll('#janelas .gump').length === 2), 'P abre o paperdoll e B a mochila');
+await pagina.mouse.click(640, 360 - 25, { button: 'right' });
+await espera(100);
+ok(await pagina.isVisible('.menu-contexto'), 'botão direito em si mesmo abre o menu');
+await pagina.click('.menu-contexto [data-opcao="Paperdoll"]');
+ok(await pagina.evaluate(() => document.querySelectorAll('#janelas .gump').length === 1 && !document.querySelector('.menu-contexto')),
+  'opção Paperdoll do menu alterna o paperdoll e fecha o menu');
+await pagina.mouse.click(640, 360 - 25, { button: 'right' });
+await espera(100);
+await pagina.screenshot({ path: join(SAIDA, 'menu.png') });
+await pagina.keyboard.press('Escape');
 
 // Criaturas
 await pagina.click('text=Spawn aleatório (6)');

@@ -21,6 +21,7 @@ import type { Combatente, ModoBot, Regras } from './combate/tipos';
 import { HudCombate } from './interface/hud-combate';
 import { carregarRecursosInterface, cssCursor, cursorDirecional } from './interface/recursos';
 import { Janelas, type PecaPaperdoll } from './interface/janelas';
+import { MenuContexto, type OpcaoMenu } from './interface/menu-contexto';
 import { Sons } from './interface/sons';
 
 const NOME_ARENA_PADRAO = 'arena-padrao';
@@ -63,10 +64,15 @@ async function iniciar(): Promise<void> {
   await animacoes.carregar();
   const renderizador = new Renderizador(canvas, catalogo, animacoes);
   const recursos = await carregarRecursosInterface();
-  renderizador.fonte = recursos.fontes.texto;
+  // Fonte com curvas do cliente (unifont.mul); a simples (unifont1.mul) fica de reserva
+  const fonte = recursos.fontes.titulo ?? recursos.fontes.texto;
+  renderizador.fonte = fonte;
   document.documentElement.style.setProperty('--cursor-ui', cssCursor(recursos, CURSOR_PADRAO));
   document.documentElement.style.setProperty('--cursor-pegar', cssCursor(recursos, '0x2075', 'grabbing'));
   const janelas = new Janelas(document.querySelector<HTMLElement>('#janelas')!, recursos, animacoes);
+  const menu = new MenuContexto(document.querySelector<HTMLElement>('#janelas')!, fonte);
+  /** O botão direito que cancelou um posicionamento não abre o menu. */
+  let ignorarMenu = false;
   const terrenoPadrao = catalogo.listar('terreno')[0]?.id ?? 1;
 
   // ---------- estado ----------
@@ -93,7 +99,7 @@ async function iniciar(): Promise<void> {
   const eu = motor.criar(ID_JOGADOR, 'Você', jogador, performance.now());
   const aparencia = new Map<string, Camada[]>([[ID_JOGADOR, camadasMago(ROBE_JOGADOR)]]);
   const efeitos = new Efeitos();
-  efeitos.fonte = recursos.fontes.texto;
+  efeitos.fonte = fonte;
   void efeitos.carregar();
   /** Criatura em que o jogador está montado (fica fora do mundo enquanto isso). */
   let montaria: { c: Combatente; anim: string } | null = null;
@@ -182,6 +188,17 @@ async function iniciar(): Promise<void> {
     montaria = null;
     jogador.montado = false;
   };
+
+  /** Monta se a criatura estiver ao lado e o jogador puder. */
+  const tentarMontar = (c: Combatente, anim: string): void => {
+    const agora = performance.now();
+    if (montaria) hud.avisar('Você já está montado.', agora);
+    else if (eu.morto) hud.avisar('Você está morto.', agora);
+    else if (Math.max(Math.abs(c.mov.x - jogador.x), Math.abs(c.mov.y - jogador.y)) > 1) hud.avisar('Chegue mais perto para montar.', agora);
+    else montar(c, anim);
+  };
+  const montariaDaCriatura = (c: Combatente): string | undefined =>
+    c.bot?.modo === 'criatura' ? animacoes.montariaDe(aparencia.get(c.id)?.[0]?.nome ?? '') : undefined;
 
   /** Botões do painel: o cursor vira target e o clique no chão escolhe o lugar. */
   const pedirPosicao = (texto: string, criar: (p: { x: number; y: number }) => void): void => {
@@ -313,10 +330,31 @@ async function iniciar(): Promise<void> {
   };
 
   // ---------- eventos ----------
-  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  // Botão direito num personagem: menu com paperdoll, mochila, montar e desmontar
+  canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (ignorarMenu || editor.ativo || colocando || eu.mira) {
+      ignorarMenu = false;
+      return;
+    }
+    const c = combatenteSobMouse(performance.now());
+    if (!c) return;
+    if (c.id === ID_JOGADOR) {
+      const opcoes: OpcaoMenu[] = [
+        { rotulo: 'Paperdoll', acao: () => void janelas.alternarPaperdoll('Você', PAPERDOLL_JOGADOR) },
+        { rotulo: 'Mochila', acao: () => void janelas.alternarMochila() },
+      ];
+      if (montaria) opcoes.push({ rotulo: 'Desmontar', acao: desmontar });
+      menu.abrir(e.clientX, e.clientY, 'Você', opcoes);
+      return;
+    }
+    const anim = montariaDaCriatura(c);
+    if (anim) menu.abrir(e.clientX, e.clientY, c.nome, [{ rotulo: 'Montar', acao: () => tentarMontar(c, anim) }]);
+  });
 
   canvas.addEventListener('mousedown', (e) => {
     entrada.mouse = posicaoNoCanvas(e);
+    if (menu.aberto) return; // o clique fora só fecha o menu
     if (editor.ativo) {
       if (e.button !== 0 && e.button !== 2) return;
       entrada.pintando = { apagar: e.button === 2 };
@@ -330,6 +368,7 @@ async function iniciar(): Promise<void> {
       const agora = performance.now();
       if (e.button === 2) {
         colocando = null;
+        ignorarMenu = true;
         return;
       }
       const t = e.button === 0 ? tileSobMouse(cameraAtual(agora)) : null;
@@ -376,12 +415,8 @@ async function iniciar(): Promise<void> {
       else void janelas.alternarPaperdoll('Você', PAPERDOLL_JOGADOR);
       return;
     }
-    const anim = c.bot?.modo === 'criatura' ? animacoes.montariaDe(aparencia.get(c.id)?.[0]?.nome ?? '') : undefined;
-    if (!anim) return;
-    if (montaria) hud.avisar('Você já está montado.', agora);
-    else if (eu.morto) hud.avisar('Você está morto.', agora);
-    else if (Math.max(Math.abs(c.mov.x - jogador.x), Math.abs(c.mov.y - jogador.y)) > 1) hud.avisar('Chegue mais perto para montar.', agora);
-    else montar(c, anim);
+    const anim = montariaDaCriatura(c);
+    if (anim) tentarMontar(c, anim);
   });
 
   canvas.addEventListener('mouseleave', () => { entrada.mouse = null; });

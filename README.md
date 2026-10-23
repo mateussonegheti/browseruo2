@@ -52,8 +52,9 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Bots de teste | Painel no canto superior direito: **+ Bot parado** / **+ Bot ativo** e clique no chão (target) |
 | Criaturas | Mesmo painel: escolher na lista, **+ Criatura** e clique no chão; ou **Spawn aleatório (6)** |
 | Cancelar o posicionamento | **Esc** ou botão direito |
+| Menu do personagem | **Botão direito** em você: Paperdoll, Mochila e (montado) Desmontar · numa montaria: Montar |
 | Montar / desmontar | Duplo clique no cavalo, ostard ou lhama ao lado · duplo clique em si mesmo desmonta |
-| Paperdoll / mochila | **P** / **B** (a pé, duplo clique em si mesmo abre o paperdoll; duplo clique na mochila dele abre a mochila) |
+| Paperdoll / mochila | **P** / **B**, pelo menu do botão direito ou duplo clique (em você a pé / na mochila do paperdoll) |
 | Fechar janela | Botão direito na janela (como no UO); arraste para mover |
 
 Tempos por passo (como no UO a pé): andar 400 ms, correr 200 ms.
@@ -97,7 +98,8 @@ resistências 70, FC 2 e FCR 6.
 ## Interface do cliente
 
 - **Cursores** originais (luva): aponta para onde o personagem andaria, vira o target na mira e ao posicionar.
-- **Fonte** `unifont1.mul` nos nomes, no dano e nas palavras de poder; `unifont.mul` no nome do paperdoll.
+- **Fonte** com curvas do cliente (`unifont.mul`) nos nomes, no dano, nas palavras de poder, no menu e no paperdoll.
+  A fonte simples (`unifont1.mul`) também é extraída e fica de reserva.
 - **Paperdoll** (gump 0x07D0) com o corpo e as roupas nas mesmas cores do personagem, e **mochila** (0x003C) com
   spellbook, reagentes e poções que dá para arrastar lá dentro (por enquanto são decorativos).
 - **Montarias:** cavalos, ostards e lhama. Montado, anda em 200 ms e corre em 100 ms por passo. Ao morrer, você cai
