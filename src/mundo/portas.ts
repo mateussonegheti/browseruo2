@@ -15,11 +15,10 @@ export function podeUsarPorta(porta: ObjetoMapa, lado: Lado | null): boolean {
 
 /**
  * Abre ou fecha a porta. Retorna a mensagem de erro, ou null se alternou.
- * `ocupado` diz se há alguém no tile: não dá para fechar a porta em cima de uma pessoa.
+ * Fecha mesmo com alguém no tile: quem estiver lá só precisa sair andando.
  */
 export function alternarPorta(
   arena: Arena, cat: CatalogoTiles, porta: ObjetoMapa, lado: Lado | null,
-  ocupado: (x: number, y: number) => boolean,
 ): string | null {
   const def = cat.obter(porta.id)?.porta;
   if (!def) return 'Isso não é uma porta.';
@@ -27,7 +26,6 @@ export function alternarPorta(
   const x = porta.x + def.dx;
   const y = porta.y + def.dy;
   if (!arena.dentro(x, y)) return 'A porta não abre aí.';
-  if (def.aberta && ocupado(x, y)) return 'Tem alguém no caminho da porta.';
   arena.removerExato(porta.x, porta.y, porta.z, porta.id);
   arena.adicionarVarios([{ x, y, z: porta.z, id: def.par, dono: porta.dono, casa: porta.casa }]);
   return null;

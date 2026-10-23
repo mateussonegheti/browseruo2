@@ -58,7 +58,7 @@ export const PORTA_PAREDE_Y = 0x4000 + 0x6bd;
 /** Placa que a casa ganha quando a estrutura não traz uma. */
 export const PLACA_PADRAO = 0x4000 + 0xb98;
 const PLACA_LATAO = 0x4000 + 0xbd2;
-const Z_PLACA_LATAO = 15;
+const Z_PLACA_LATAO = 2;
 
 type Tile = [number, number, number, number];
 

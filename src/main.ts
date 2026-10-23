@@ -359,7 +359,7 @@ async function iniciar(): Promise<void> {
       }
       return;
     }
-    const erro = alternarPorta(arena, catalogo, alvo.porta!, batalha?.b.lado ?? EQUIPE_JOGADOR, (x, y) => ocupadoPorOutro(x, y, ''));
+    const erro = alternarPorta(arena, catalogo, alvo.porta!, batalha?.b.lado ?? EQUIPE_JOGADOR);
     if (erro) hud.avisar(erro, agora);
     else salvarLocal(arena.dados);
   };
@@ -851,7 +851,7 @@ async function iniciar(): Promise<void> {
     proximaPortaBot.set(c.id, agora + 1200);
     if (temLinhaDeVisao(arena, catalogo, c.mov, inimigo.mov)) return;
     const porta = portaFechadaPerto(arena, catalogo, c.mov.x, c.mov.y, lado);
-    if (porta) alternarPorta(arena, catalogo, porta, lado, (x, y) => ocupadoPorOutro(x, y, ''));
+    if (porta) alternarPorta(arena, catalogo, porta, lado);
   };
 
   const atualizarCombate = (agora: number): void => {

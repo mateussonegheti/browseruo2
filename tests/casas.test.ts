@@ -77,25 +77,25 @@ describe('portas', () => {
     const a = arena();
     a.adicionarObjeto(5, 5, 0, 50, 'A');
     expect(tileBloqueado(a, portaCat, 5, 5)).toBe(true);
-    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 5, 5)!, 'A', nunca)).toBeNull();
+    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 5, 5)!, 'A')).toBeNull();
     expect(tileBloqueado(a, portaCat, 5, 5)).toBe(false);
     const aberta = portaEm(a, portaCat, 4, 6)!;
     expect(aberta).toMatchObject({ id: 51, dono: 'A' });
-    expect(alternarPorta(a, portaCat, aberta, 'A', nunca)).toBeNull();
+    expect(alternarPorta(a, portaCat, aberta, 'A')).toBeNull();
     expect(portaEm(a, portaCat, 5, 5)!.id).toBe(50);
   });
   it('só o dono usa a porta; sem dono, qualquer um', () => {
     const a = arena();
     a.adicionarObjeto(5, 5, 0, 50, 'A');
-    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 5, 5)!, 'B', nunca)).toMatch(/outro jogador/);
+    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 5, 5)!, 'B')).toMatch(/outro jogador/);
     expect(portaEm(a, portaCat, 5, 5)!.id).toBe(50);
     a.adicionarObjeto(8, 8, 0, 50);
-    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 8, 8)!, 'B', nunca)).toBeNull();
+    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 8, 8)!, 'B')).toBeNull();
   });
-  it('não fecha a porta em cima de alguém', () => {
+  it('fecha a porta mesmo com alguém no tile', () => {
     const a = arena();
     a.adicionarObjeto(4, 6, 0, 51);
-    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 4, 6)!, null, (x, y) => x === 5 && y === 5)).toMatch(/caminho/);
+    expect(alternarPorta(a, portaCat, portaEm(a, portaCat, 4, 6)!, null)).toBeNull();
   });
   it('mapa aceita spawn B e dono, e rejeita dono inválido', () => {
     const m = criarMapaVazio('t', 16, 16, 1);

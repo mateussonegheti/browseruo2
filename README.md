@@ -160,7 +160,7 @@ Limitações: casas construídas antes dessa versão não têm identificador e s
 ## Totem, portas e batalhas
 
 - **Totem** (grupo *Especiais* da paleta, sprite 0x3B0F): oferece os itens listados em `totem.itens` de `src/combate/regras.json`; novos itens entram só nessa lista (e em `interface.itens` do `selecao.json`). O deed não vem mais na mochila.
-- **Portas** (grupos *Portas* e *Portas abertas*): 7 tipos × 8 orientações. Abrir troca o objeto de tile e de sprite (offsets do ServUO). No editor, o seletor *Dono das portas colocadas* grava `dono` (`A` = quem nasce no spawn A); a porta só responde a esse lado, e não fecha sobre alguém. Para uma casa, posicione a porta no vão e escolha dono A.
+- **Portas** (grupos *Portas* e *Portas abertas*): 7 tipos × 8 orientações. Abrir troca o objeto de tile e de sprite (offsets do ServUO). No editor, o seletor *Dono das portas colocadas* grava `dono` (`A` = quem nasce no spawn A); a porta só responde a esse lado,. Para uma casa, posicione a porta no vão e escolha dono A.
 - **Spawns A e B**: ferramentas *Spawn A* (verde) e *Spawn B* (laranja) do editor; `spawnB` é opcional no mapa.
 - **Editor**: *Casa pronta…* escolhe uma estrutura do menu do deed e a ferramenta *Casa* a carimba (sem gastar deed); *Pegar deed* põe um na mochila.
 - **Batalha contra bots**: duplo clique no totem de batalha (virtue stone `0x1870` sobre o altar `0x120E`) abre o menu. Escolha modo (1x1, 2x2, 3x3, FFA), tipo e lado.
