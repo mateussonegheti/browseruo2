@@ -26,9 +26,11 @@ export interface DefinicaoTile {
   /** Cor do placeholder (#rrggbb). */
   cor: string;
   sprite?: SpriteTile | null;
-  /** Grupo da paleta do editor (ex.: "Muro de pedra"). */
   /** Telhado (flag Roof do tiledata): some quando o jogador está debaixo dele. */
   teto?: boolean;
+  /** Porta: `par` é o tile da outra posição (aberta/fechada) e (dx, dy) o deslocamento ao alternar. */
+  porta?: { par: number; dx: number; dy: number; aberta?: boolean };
+  /** Grupo da paleta do editor (ex.: "Muro de pedra"). */
   grupo?: string;
   /** Id do gráfico no cliente do UO (terreno: landtiles; objeto: art). */
   grafico?: number;
@@ -46,7 +48,12 @@ export interface ObjetoMapa {
   y: number;
   z: number;
   id: number;
+  /** Lado que controla a porta (A = quem nasce no spawn A); sem valor, qualquer um abre. */
+  dono?: Lado;
 }
+
+/** Lados da batalha: A nasce dentro da casa, B fora. */
+export type Lado = 'A' | 'B';
 
 export interface Mapa {
   versao: number;
@@ -57,4 +64,6 @@ export interface Mapa {
   terreno: number[];
   objetos: ObjetoMapa[];
   spawn: { x: number; y: number };
+  /** Ponto de nascimento do lado B (opcional). */
+  spawnB?: { x: number; y: number };
 }

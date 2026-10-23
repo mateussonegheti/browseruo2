@@ -57,7 +57,8 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Paperdoll / mochila | **P** / **B**, pelo menu do botão direito ou duplo clique (em você a pé / na mochila do paperdoll) |
 | Fechar janela | Botão direito na janela (como no UO); arraste para mover |
 | Lootar | **Duplo clique** (ou botão direito → Lootar) no corpo de quem morreu, a até 2 tiles · duplo clique no item da janela pega a pilha para a sua mochila · o corpo some quando a pessoa renasce |
-| Construir casa | **Duplo clique no deed** (pergaminho na mochila) → menu com as 38 casas e estruturas do `multi.mul` → clique no chão livre (verde = cabe, vermelho = não) · direito/Esc cancela · o deed é consumido |
+| Totem / portas | **Duplo clique** num totem (a até 2 tiles) abre o menu de itens (por ora o deed de casa) · duplo clique numa porta abre/fecha; portas com dono só respondem ao lado dono |
+| Construir casa | **Duplo clique no deed** (pergaminho na mochila, pegue-o no totem) → menu com as 38 casas e estruturas do `multi.mul` → clique no chão livre (verde = cabe, vermelho = não) · direito/Esc cancela · o deed é consumido |
 | Usar item | Duplo clique na mochila: poções; o spellbook abre o livro (clique numa magia para lançar) |
 | Status completo | Duplo clique na sua barra de vida (canto superior esquerdo) |
 | Guerra / paz | **Tab** · em guerra, duplo clique num alvo (ou "Atacar" no menu do botão direito) e chegue ao lado |
@@ -153,6 +154,14 @@ resistências 70, FC 2 e FCR 6.
 O extrator lê `multi.mul` e grava `public/casas/casas.json` (ignorado pelo git, como os sprites). O deed da mochila abre o menu; a casa escolhida só pode ser construída em terreno livre (sem objetos, água, bots ou o ponto de nascimento) e fica salva com a arena. Telhados e andares de cima somem quando você entra na casa e não bloqueiam o chão.
 
 Limitações: sem portas (os marcadores de porta do multi não têm sprite), sem demolir/dono/trancas, o 2º andar não é acessível e o deed volta a cada renascimento.
+
+## Totem, portas e batalhas
+
+- **Totem** (grupo *Especiais* da paleta, sprite 0x3B0F): oferece os itens listados em `totem.itens` de `src/combate/regras.json`; novos itens entram só nessa lista (e em `interface.itens` do `selecao.json`). O deed não vem mais na mochila.
+- **Portas** (grupos *Portas* e *Portas abertas*): 7 tipos × 8 orientações. Abrir troca o objeto de tile e de sprite (offsets do ServUO). No editor, o seletor *Dono das portas colocadas* grava `dono` (`A` = quem nasce no spawn A); a porta só responde a esse lado, e não fecha sobre alguém. Para uma casa, posicione a porta no vão e escolha dono A.
+- **Spawns A e B**: ferramentas *Spawn A* (verde) e *Spawn B* (laranja) do editor; `spawnB` é opcional no mapa.
+- **Editor**: *Casa pronta…* escolhe uma estrutura do menu do deed e a ferramenta *Casa* a carimba (sem gastar deed); *Pegar deed* põe um na mochila.
+- **Previsto (ainda não implementado)**: totem de batalha com modos 1x1/2x2/3x3/FFA, contagem com todos paralisados, modo *treino* (kit completo, ao morrer sai com o que tinha) e modo *a vera* (loot próprio, o vencedor loota e sai pelo totem). A base já está: lados A/B, spawns, donos de porta e corpo lootável.
 
 ## Editor de arena
 

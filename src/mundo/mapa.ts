@@ -1,4 +1,4 @@
-import type { Mapa, ObjetoMapa } from './tipos';
+import type { Lado, Mapa, ObjetoMapa } from './tipos';
 
 export const VERSAO_MAPA = 1;
 export const TAMANHO_MIN = 8;
@@ -48,6 +48,13 @@ export function validarMapa(obj: unknown): { ok: true; mapa: Mapa } | { ok: fals
     });
   }
 
+  if (Array.isArray(m.objetos) && m.objetos.some((o) => o.dono !== undefined && o.dono !== 'A' && o.dono !== 'B')) {
+    erros.push('objetos com dono inválido');
+  }
+  const b = m.spawnB;
+  if (b && (!Number.isInteger(b.x) || !Number.isInteger(b.y) || b.x < 0 || b.x >= largura || b.y < 0 || b.y >= altura)) {
+    erros.push('spawnB fora do mapa');
+  }
   const s = m.spawn;
   if (!s || !Number.isInteger(s.x) || !Number.isInteger(s.y) || s.x < 0 || s.x >= largura || s.y < 0 || s.y >= altura) {
     erros.push('spawn fora do mapa');
@@ -86,11 +93,11 @@ export class Arena {
   }
 
   /** Adiciona um objeto; se já existir algo no mesmo (x, y, z), substitui. */
-  adicionarObjeto(x: number, y: number, z: number, id: number): void {
+  adicionarObjeto(x: number, y: number, z: number, id: number, dono?: Lado): void {
     if (!this.dentro(x, y)) return;
     const existente = this.objetosEm(x, y).find((o) => o.z === z);
     if (existente) this.removerObjeto(existente);
-    const novo: ObjetoMapa = { x, y, z, id };
+    const novo: ObjetoMapa = dono ? { x, y, z, id, dono } : { x, y, z, id };
     this.dados.objetos.push(novo);
     const chave = this.chave(x, y);
     const lista = this.indice.get(chave) ?? [];
@@ -100,9 +107,9 @@ export class Arena {
 
   /** Acrescenta vários objetos sem substituir os que já estão no mesmo (x, y, z) (estruturas de casa). */
   adicionarVarios(objetos: readonly ObjetoMapa[]): void {
-    for (const { x, y, z, id } of objetos) {
+    for (const { x, y, z, id, dono } of objetos) {
       if (!this.dentro(x, y)) continue;
-      const novo: ObjetoMapa = { x, y, z, id };
+      const novo: ObjetoMapa = dono ? { x, y, z, id, dono } : { x, y, z, id };
       this.dados.objetos.push(novo);
       const chave = this.chave(x, y);
       const lista = this.indice.get(chave) ?? [];
@@ -126,9 +133,13 @@ export class Arena {
     if (o) this.removerObjeto(o);
   }
 
-  definirSpawn(x: number, y: number): void {
-    if (this.dentro(x, y)) this.dados.spawn = { x, y };
+  definirSpawn(x: number, y: number, lado: Lado = 'A'): void {
+    if (!this.dentro(x, y)) return;
+    if (lado === 'B') this.dados.spawnB = { x, y };
+    else this.dados.spawn = { x, y };
   }
+
+  get spawnB(): { x: number; y: number } | undefined { return this.dados.spawnB; }
 
   private removerObjeto(o: ObjetoMapa): void {
     const i = this.dados.objetos.indexOf(o);

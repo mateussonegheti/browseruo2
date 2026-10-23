@@ -125,3 +125,5 @@ body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui,
 .menu-casas-cartao { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px; background: #14120e; border: 1px solid #4a3f2a; border-radius: 4px; color: inherit; font: inherit; }
 .menu-casas-cartao:hover { background: #26221a; border-color: #c9a85c; }
 .menu-casas-cartao small { opacity: .7; }
+.menu-totem { width: min(420px, 92vw); }
+.menu-totem .menu-casas-cartao img { max-height: 60px; image-rendering: pixelated; }

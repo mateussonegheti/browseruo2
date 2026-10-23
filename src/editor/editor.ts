@@ -1,9 +1,10 @@
 import type { Arena } from '../mundo/mapa';
 import type { CatalogoTiles } from '../mundo/catalogo';
-import type { DefinicaoTile, Mapa } from '../mundo/tipos';
+import type { DefinicaoTile, Lado, Mapa } from '../mundo/tipos';
+import { construirCasa, type CasaDef } from '../mundo/casas';
 import { conjuntosMuro, reajustarMuros, type ConjuntoMuro } from './muros';
 
-export type Ferramenta = 'colocar' | 'apagar' | 'spawn' | 'muro';
+export type Ferramenta = 'colocar' | 'apagar' | 'spawn' | 'spawnB' | 'muro' | 'casa';
 
 /** Quantos passos o Ctrl+Z guarda. */
 const LIMITE_HISTORICO = 50;
@@ -16,6 +17,10 @@ export class Editor {
   /** Altura Z usada ao colocar objetos. */
   z = 0;
   grade = true;
+  /** Dono das portas colocadas (ferramenta Colocar): vazio = qualquer um abre. */
+  donoPorta: Lado | '' = '';
+  /** Casa pronta escolhida para a ferramenta Casa. */
+  casa: CasaDef | null = null;
   /** Conjuntos de muro do catálogo e o escolhido para a ferramenta Muro. */
   readonly conjuntos: ConjuntoMuro[];
   conjunto: ConjuntoMuro | undefined;
@@ -90,8 +95,14 @@ export class Editor {
       }
       return Boolean(removido);
     }
-    if (this.ferramenta === 'spawn') {
-      arena.definirSpawn(x, y);
+    if (this.ferramenta === 'spawn' || this.ferramenta === 'spawnB') {
+      arena.definirSpawn(x, y, this.ferramenta === 'spawnB' ? 'B' : 'A');
+      this.aoMudar();
+      return true;
+    }
+    if (this.ferramenta === 'casa') {
+      if (!this.casa) return false;
+      construirCasa(arena, this.casa, x, y);
       this.aoMudar();
       return true;
     }
@@ -108,7 +119,7 @@ export class Editor {
       if (arena.terrenoEm(x, y) === def.id) return false;
       arena.definirTerreno(x, y, def.id);
     } else {
-      arena.adicionarObjeto(x, y, this.z, def.id);
+      arena.adicionarObjeto(x, y, this.z, def.id, def.porta && this.donoPorta ? this.donoPorta : undefined);
     }
     this.aoMudar();
     return true;

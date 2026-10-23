@@ -521,7 +521,6 @@
     }
   },
   "mochilaInicial": {
-    "0x14F0": 1,
     "0x0EFA": 1,
     "0x0F7A": 100,
     "0x0F7B": 100,
@@ -817,6 +816,10 @@
     }
   },
   "itemBau": "0x0E40",
+  "totem": {
+    "tile": 31503,
+    "itens": ["0x14F0"]
+  },
   "equipamentoInicial": {
     "arma": null,
     "escudo": null,

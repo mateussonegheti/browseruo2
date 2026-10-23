@@ -202,6 +202,58 @@ def extrair_tipo(tipo: str, pasta_saida: str, obter, infos: list[es.InfoTile],
     return tiles
 
 
+# (gráfico fechado, aberto) por orientação; offset do tile da porta aberta (BaseDoor.m_Offsets do ServUO)
+OFFSETS_PORTA = [(-1, 1), (1, 1), (-1, 0), (1, -1), (1, 1), (1, -1), (0, 0), (0, -1)]
+NOMES_ORIENTACAO = ["Oeste", "Leste", "Oeste inv.", "Leste inv.", "Sul", "Norte", "Sul inv.", "Norte inv."]
+
+
+def extrair_portas_e_especiais(arte: Arte, infos: list[es.InfoTile], tiles: list[dict], selecao: dict,
+                               pasta_sprites: Path) -> tuple[int, int]:
+    """Portas (fechada/aberta) e objetos especiais (totem); substitui entradas já existentes com o mesmo id."""
+    def acrescentar(grupo_de: dict[int, str]) -> dict[int, dict]:
+        ids = {ID_BASE_OBJETO + g for g in grupo_de}
+        tiles[:] = [t for t in tiles if t["id"] not in ids]
+        novos = extrair_tipo("objeto", "objetos", arte.estatico, infos, sorted((gr, g) for g, gr in grupo_de.items()),
+                             pasta_sprites, deduplicar=False)
+        tiles.extend(novos)
+        return {t["id"]: t for t in novos}
+
+    pedidos: dict[int, str] = {}
+    rotulos: dict[int, str] = {}
+    pares: list[tuple[int, int, int, int]] = []
+    for porta in selecao.get("portas", []):
+        base = int(porta["base"], 0)
+        for f, (dx, dy) in enumerate(OFFSETS_PORTA):
+            fechada, aberta = base + 2 * f, base + 2 * f + 1
+            pedidos[fechada], pedidos[aberta] = "Portas", "Portas abertas"
+            rotulos[fechada] = f"{porta['nome']} ({NOMES_ORIENTACAO[f]})"
+            rotulos[aberta] = f"{porta['nome']} ({NOMES_ORIENTACAO[f]}, aberta)"
+            pares.append((fechada, aberta, dx, dy))
+    for e in selecao.get("especiais", []):
+        g = int(e["id"], 0)
+        pedidos[g] = "Especiais"
+        rotulos[g] = e["nome"]
+    criados = acrescentar(pedidos)
+    for g, nome in rotulos.items():
+        t = criados.get(ID_BASE_OBJETO + g)
+        if t:
+            t["nome"] = nome
+    n_portas = 0
+    for fechada, aberta, dx, dy in pares:
+        tf, ta = criados.get(ID_BASE_OBJETO + fechada), criados.get(ID_BASE_OBJETO + aberta)
+        if not tf or not ta:
+            continue
+        tf["bloqueia"], ta["bloqueia"] = True, False
+        tf["porta"] = {"par": ta["id"], "dx": dx, "dy": dy}
+        ta["porta"] = {"par": tf["id"], "dx": -dx, "dy": -dy, "aberta": True}
+        n_portas += 1
+    for e in selecao.get("especiais", []):
+        t = criados.get(ID_BASE_OBJETO + int(e["id"], 0))
+        if t:
+            t["bloqueia"] = True
+    return n_portas, len(selecao.get("especiais", []))
+
+
 def ler_multis(cliente: Path) -> dict[int, list[tuple[int, int, int, int]]]:
     """multi.mul: por estrutura, os tiles visíveis (gráfico, x, y, z) relativos à origem."""
     idx = (cliente / "multi.idx").read_bytes()
@@ -521,6 +573,7 @@ def main() -> int:
     tiles += extrair_tipo("objeto", "objetos", arte.estatico, infos_objeto,
                           es.selecionar(infos_objeto, selecao["objetos"], faixa_padrao, existe_objeto), pasta_sprites)
 
+    n_portas, n_especiais = extrair_portas_e_especiais(arte, infos_objeto, tiles, selecao, pasta_sprites)
     n_casas = extrair_casas(cliente, arte, infos_objeto, tiles, selecao, pasta_sprites, args.saida / "casas" / "casas.json")
 
     destino = args.saida / "catalogo" / "catalogo.json"
@@ -543,6 +596,7 @@ def main() -> int:
     n_terreno = sum(1 for t in tiles if t["tipo"] == "terreno")
     print(f"Pronto: {n_terreno} terrenos e {len(tiles) - n_terreno} objetos em {destino}")
     print(f"        {n_casas} estruturas de casa em casas/casas.json")
+    print(f"        {n_portas} portas (fechada/aberta), {n_especiais} objeto(s) especial(is)")
     print(f"        {n_gumps} gumps, {n_sons} sons, {n_efeitos} efeitos, {n_anim} animacoes, {n_interface} itens de interface")
     return 0
 

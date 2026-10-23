@@ -293,6 +293,14 @@ export class MotorCombate {
     return null;
   }
 
+  /** Põe itens na mochila (totem). */
+  darItem(id: string, item: string, qtd = 1): boolean {
+    const c = this.combatentes.get(id);
+    if (!c) return false;
+    c.itens[item] = (c.itens[item] ?? 0) + qtd;
+    return true;
+  }
+
   /** Consome itens da mochila (deed ao construir). Retorna false se não houver. */
   gastarItem(id: string, item: string, qtd = 1): boolean {
     const c = this.combatentes.get(id);

@@ -133,6 +133,8 @@ export interface Regras {
   equipamentoInicial: Equipamento;
   /** Item da mochila que guarda os equipáveis (o baú). */
   itemBau: string;
+  /** Totem: objeto do mapa (id do catálogo) que oferece itens ao jogador; novos itens entram em `itens`. */
+  totem: { tile: number; itens: string[] };
 }
 
 /** parado: boneco de treino · ativo: mago que luta · criatura: animal/monstro que só passeia. */

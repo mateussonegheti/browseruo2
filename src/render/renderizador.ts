@@ -436,15 +436,25 @@ export class Renderizador {
       ctx.lineWidth = 2;
       ctx.stroke();
     }
-    // Marcador de spawn
-    const s = tileParaMundo(q.arena.spawn.x, q.arena.spawn.y);
+    // Marcadores de spawn (A verde, B laranja)
     if (q.grade) {
-      losango(ctx, s.x, s.y);
-      ctx.strokeStyle = '#5ee0a0';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      const marcadores: Array<[string, { x: number; y: number } | undefined, string]> = [
+        ['A', q.arena.spawn, '#5ee0a0'], ['B', q.arena.spawnB, '#ffa850'],
+      ];
+      for (const [letra, ponto, cor] of marcadores) {
+        if (!ponto) continue;
+        const s = tileParaMundo(ponto.x, ponto.y);
+        losango(ctx, s.x, s.y);
+        ctx.strokeStyle = cor;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = cor;
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(letra, s.x, s.y + 4);
+      }
     }
   }
 

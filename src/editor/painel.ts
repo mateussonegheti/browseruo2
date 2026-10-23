@@ -18,6 +18,10 @@ export interface AcoesPainel {
   nova(): void;
   restaurar(): void;
   renomear(nome: string): void;
+  /** Escolhe uma casa pronta (menu do deed) para a ferramenta Casa. */
+  escolherCasa(): void;
+  /** Põe um deed na mochila do jogador. */
+  pegarDeed(): void;
 }
 
 /** Painel HTML do editor (paleta, ferramentas, Z e arquivo). */
@@ -46,7 +50,7 @@ export class PainelEditor {
     // Ferramentas
     const barra = document.createElement('div');
     barra.className = 'linha';
-    const defs: Array<[Ferramenta, string]> = [['colocar', 'Colocar'], ['muro', 'Muro'], ['apagar', 'Apagar'], ['spawn', 'Spawn']];
+    const defs: Array<[Ferramenta, string]> = [['colocar', 'Colocar'], ['muro', 'Muro'], ['apagar', 'Apagar'], ['spawn', 'Spawn A'], ['spawnB', 'Spawn B'], ['casa', 'Casa']];
     for (const [f, rotulo] of defs) {
       const b = this.botao(rotulo, () => { editor.ferramenta = f; this.atualizar(); });
       this.botoesFerramenta.set(f, b);
@@ -65,6 +69,19 @@ export class PainelEditor {
       });
       raiz.append(this.rotulo('Material do muro (ferramenta Muro)', material));
     }
+
+    // Itens do jogo: casas prontas (deed) e dono das portas
+    const jogo = document.createElement('div');
+    jogo.className = 'linha quebra';
+    jogo.append(
+      this.botao('Casa pronta…', acoes.escolherCasa),
+      this.botao('Pegar deed', acoes.pegarDeed),
+    );
+    raiz.append(jogo);
+    const dono = document.createElement('select');
+    dono.append(new Option('Qualquer um abre', ''), new Option('Só o lado A (dentro da casa)', 'A'), new Option('Só o lado B', 'B'));
+    dono.addEventListener('change', () => { editor.donoPorta = dono.value as '' | 'A' | 'B'; });
+    raiz.append(this.rotulo('Dono das portas colocadas (grupo Portas)', dono));
 
     // Z
     const z = document.createElement('input');
@@ -129,7 +146,9 @@ export class PainelEditor {
     for (const [id, b] of this.botoesPaleta) b.classList.toggle('ativo', id === this.editor.selecionadoId);
     for (const [f, b] of this.botoesFerramenta) b.classList.toggle('ativo', f === this.editor.ferramenta);
     const t = this.editor.selecionado;
-    this.infoSelecionado.textContent = t
+    this.infoSelecionado.textContent = this.editor.ferramenta === 'casa'
+      ? (this.editor.casa ? `Casa: ${this.editor.casa.nome}` : 'Escolha uma casa em "Casa pronta…"')
+      : t
       ? `${t.nome} · ${descreverId(t)} · altura ${t.altura}${t.bloqueia ? ' · bloqueia' : ''}`
       : 'Nada selecionado';
   }

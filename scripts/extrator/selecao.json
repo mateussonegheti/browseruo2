@@ -499,6 +499,20 @@
       1175
     ]
   },
+  "comentarioPortas": "Portas do cliente: 16 gráficos por tipo, 8 orientações com par fechada/aberta. A aberta troca de tile (offsets do ServUO BaseDoor).",
+  "portas": [
+    {"nome": "Porta de madeira escura", "base": "0x06A5"},
+    {"nome": "Porta de madeira", "base": "0x06B5"},
+    {"nome": "Porta de madeira reforçada", "base": "0x06D5"},
+    {"nome": "Porta de madeira ferrada", "base": "0x06E5"},
+    {"nome": "Porta de ferro", "base": "0x0675"},
+    {"nome": "Grade de ferro", "base": "0x0685"},
+    {"nome": "Porta de vime", "base": "0x0695"}
+  ],
+  "comentarioEspeciais": "Objetos com função no jogo (grupo Especiais do editor). O totem abre o menu de itens.",
+  "especiais": [
+    {"id": "0x3B0F", "nome": "Totem"}
+  ],
   "comentarioCasas": "Estruturas de multi.mul oferecidas pelo deed (public/casas/casas.json). Pares com o mesmo desenho são variantes (A/B).",
   "casas": [
     {"id": "0x064", "nome": "Casa pequena de pedra e reboco (A)"},

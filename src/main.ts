@@ -25,9 +25,15 @@ import { MenuContexto, type OpcaoMenu } from './interface/menu-contexto';
 import { Sons } from './interface/sons';
 import { MenuCasas } from './interface/menu-casas';
 import { carregarCasas, construirCasa, motivoNaoConstruir, pegadaDaCasa, tetosSobre, type CasaDef } from './mundo/casas';
-import type { ObjetoMapa } from './mundo/tipos';
+import type { Lado, ObjetoMapa } from './mundo/tipos';
+import { alternarPorta, portaEm } from './mundo/portas';
+import { MenuTotem } from './interface/menu-totem';
 
 const ITEM_DEED = '0x14F0';
+/** Lado do jogador (A nasce dentro da casa); a batalha definirá isso por partida. */
+const EQUIPE_JOGADOR: Lado = 'A';
+/** Alcance (tiles) para usar totem e portas. */
+const ALCANCE_USO_TILES = 2;
 const NOME_ARENA_PADRAO = 'arena-padrao';
 /** Distância (px) do cursor ao personagem acima da qual ele corre. */
 const DISTANCIA_CORRIDA_PX = 130;
@@ -289,6 +295,48 @@ async function iniciar(): Promise<void> {
   /** Botões do painel: o cursor vira target e o clique no chão escolhe o lugar. */
   const casas = await carregarCasas('/casas/casas.json');
   const menuCasas = new MenuCasas(document.querySelector<HTMLElement>('#janelas')!, renderizador, casas);
+  const menuTotem = new MenuTotem(document.querySelector<HTMLElement>('#janelas')!);
+  const abrirTotem = (): void => {
+    menuTotem.abrir(
+      (regrasJson as Regras).totem.itens.map((id) => ({ id, meta: recursos.itens[id] })),
+      (id) => {
+        motor.darItem(ID_JOGADOR, id);
+        janelas.atualizarMochila();
+        hud.avisar(`Você pegou: ${recursos.itens[id]?.nome ?? id}.`, performance.now());
+      },
+    );
+  };
+
+  /** Objeto do mapa (totem ou porta) sob o cursor; sprites altos também cobrem os tiles de trás. */
+  const interativoSobMouse = (agora: number) => {
+    const t = tileSobMouse(cameraAtual(agora));
+    if (!t) return null;
+    for (const [dx = 0, dy = 0] of [[0, 0], [1, 1], [1, 0], [0, 1], [2, 2]]) {
+      const x = t.x + dx;
+      const y = t.y + dy;
+      const totem = arena.objetosEm(x, y).find((o) => o.id === (regrasJson as Regras).totem.tile);
+      const porta = portaEm(arena, catalogo, x, y);
+      if (totem || porta) return { totem, porta, x, y };
+    }
+    return null;
+  };
+
+  const usarObjetoDoMapa = (agora: number): void => {
+    const alvo = interativoSobMouse(agora);
+    if (!alvo) return;
+    if (Math.max(Math.abs(alvo.x - jogador.x), Math.abs(alvo.y - jogador.y)) > ALCANCE_USO_TILES) {
+      hud.avisar('Chegue mais perto.', agora);
+      return;
+    }
+    if (alvo.totem) {
+      abrirTotem();
+      return;
+    }
+    const erro = alternarPorta(arena, catalogo, alvo.porta!, EQUIPE_JOGADOR, (x, y) => ocupadoPorOutro(x, y, ''));
+    if (erro) hud.avisar(erro, agora);
+    else salvarLocal(arena.dados);
+  };
+
   const abrirDeed = (): void => {
     if (!casas.length) {
       hud.avisar('As casas não foram extraídas do cliente (rode o extrator).', performance.now());
@@ -361,6 +409,22 @@ async function iniciar(): Promise<void> {
   };
 
   const painel = new PainelEditor(elPainel, editor, catalogo, {
+    escolherCasa() {
+      if (!casas.length) {
+        painel.mostrarStatus('As casas não foram extraídas do cliente (rode o extrator).', true);
+        return;
+      }
+      menuCasas.abrir((casa) => {
+        editor.casa = casa;
+        editor.ferramenta = 'casa';
+        painel.atualizar();
+      });
+    },
+    pegarDeed() {
+      motor.darItem(ID_JOGADOR, ITEM_DEED);
+      janelas.atualizarMochila();
+      painel.mostrarStatus('Deed de casa adicionado à mochila.');
+    },
     async salvar() {
       salvarLocal(arena.dados);
       const r = await salvarNoProjeto(arena.dados);
@@ -537,7 +601,7 @@ async function iniciar(): Promise<void> {
 
   canvas.addEventListener('mousemove', (e) => {
     entrada.mouse = posicaoNoCanvas(e);
-    if (editor.ativo && entrada.pintando) {
+    if (editor.ativo && entrada.pintando && editor.ferramenta !== 'casa') {
       const t = tileSobMouse(cameraEditor);
       const mudou = t && (!entrada.ultimoTile || t.x !== entrada.ultimoTile.x || t.y !== entrada.ultimoTile.y);
       if (t && mudou) {
@@ -554,6 +618,7 @@ async function iniciar(): Promise<void> {
     if (!c) {
       const corpo = combatenteSobMouse(agora, true);
       if (corpo && corpo.id !== ID_JOGADOR) abrirCorpo(corpo);
+      else usarObjetoDoMapa(agora);
       return;
     }
     if (c.id === ID_JOGADOR) {
@@ -777,19 +842,20 @@ async function iniciar(): Promise<void> {
 
     const camera = cameraAtual(agora);
     const hover = editor.ativo ? tileSobMouse(camera) : null;
-    const alvoCasa = !editor.ativo && colocando?.casa ? tileSobMouse(camera) : null;
+    const casaPrevia = editor.ativo ? (editor.ferramenta === 'casa' ? editor.casa : null) : colocando?.casa ?? null;
+    const alvoCasa = casaPrevia ? (editor.ativo ? hover : tileSobMouse(camera)) : null;
     renderizador.desenhar({
       arena, personagens: personagens(agora), agora, camera, hover,
       ocultos: editor.ativo ? undefined : tetosDoJogador(),
       fantasma: editor.fantasma,
       grade: editor.ativo && editor.grade,
-      sobreposicao: editor.ativo ? undefined : (ctx) => {
-        if (colocando?.casa && alvoCasa) {
-          const livre = colocando.validar?.(alvoCasa) === null;
-          renderizador.desenharPegada(ctx, pegadaDaCasa(colocando.casa, alvoCasa.x, alvoCasa.y), livre);
-          renderizador.desenharEstrutura(ctx, colocando.casa.tiles, alvoCasa.x, alvoCasa.y, 0.55);
+      sobreposicao: (ctx) => {
+        if (casaPrevia && alvoCasa) {
+          const livre = editor.ativo || colocando?.validar?.(alvoCasa) === null;
+          renderizador.desenharPegada(ctx, pegadaDaCasa(casaPrevia, alvoCasa.x, alvoCasa.y), livre);
+          renderizador.desenharEstrutura(ctx, casaPrevia.tiles, alvoCasa.x, alvoCasa.y, 0.55);
         }
-        efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y));
+        if (!editor.ativo) efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y));
       },
     });
     canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando));
