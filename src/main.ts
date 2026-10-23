@@ -1,8 +1,8 @@
 import './estilos.css';
 import { direcaoPorVetorTela } from './nucleo/direcoes';
-import { tileParaMundo, type Ponto } from './nucleo/projecao';
+import { PIXELS_POR_Z, tileParaMundo, type Ponto } from './nucleo/projecao';
 import { carregarCatalogo } from './mundo/catalogo';
-import { tileBloqueado, temLinhaDeVisao } from './mundo/colisao';
+import { alturaDoChao, alturaVisual, tileBloqueado, temLinhaDeVisao } from './mundo/colisao';
 import { Arena, TAMANHO_MAX, TAMANHO_MIN, criarMapaVazio } from './mundo/mapa';
 import type { Direcao, Mapa } from './mundo/tipos';
 import { atualizarJogador, criarJogador, posicaoVisual, tentarAndar, type EstadoJogador } from './jogo/jogador';
@@ -597,11 +597,15 @@ async function iniciar(): Promise<void> {
   const cameraAtual = (agora: number): Ponto => {
     if (editor.ativo) return cameraEditor;
     const p = posicaoVisual(jogador, agora);
-    return tileParaMundo(p.x, p.y);
+    return tileParaMundo(p.x, p.y, alturaVisual(arena, catalogo, jogador, agora));
   };
 
   const tileSobMouse = (camera: Ponto): { x: number; y: number } | null =>
-    entrada.mouse ? renderizador.canvasParaTile(entrada.mouse.x, entrada.mouse.y, camera) : null;
+    entrada.mouse
+      // A câmera acompanha o z do jogador; o clique é resolvido no plano em que ele está
+      ? renderizador.canvasParaTile(entrada.mouse.x, entrada.mouse.y,
+        editor.ativo ? camera : { x: camera.x, y: camera.y + alturaDoChao(arena, catalogo, jogador.x, jogador.y) * PIXELS_POR_Z })
+      : null;
 
   /** Personagem sob o cursor (o da frente, se houver mais de um); `mortos` escolhe entre vivos e corpos. */
   const combatenteSobMouse = (agora: number, mortos = false): Combatente | undefined => {
@@ -611,7 +615,7 @@ async function iniciar(): Promise<void> {
     for (const c of motor.listar()) {
       if (c.morto !== mortos) continue;
       const v = posicaoVisual(c.mov, agora);
-      const p = renderizador.tileParaCanvas(v.x, v.y, camera);
+      const p = renderizador.tileParaCanvas(v.x, v.y, camera, alturaVisual(arena, catalogo, c.mov, agora));
       const dentro = Math.abs(entrada.mouse.x - p.x) <= 16 && entrada.mouse.y >= p.y - 60 && entrada.mouse.y <= p.y + 12;
       if (dentro && (!escolhido || p.y > escolhido.y)) escolhido = { c, y: p.y };
     }
@@ -932,7 +936,7 @@ async function iniciar(): Promise<void> {
     const c = motor.obter(id);
     if (!c) return null;
     const v = posicaoVisual(c.mov, agora);
-    return tileParaMundo(v.x, v.y);
+    return tileParaMundo(v.x, v.y, alturaVisual(arena, catalogo, c.mov, agora));
   };
 
   /** Cursor do cliente: target na mira, luva apontando para onde o personagem andaria no jogo. */
@@ -998,7 +1002,7 @@ async function iniciar(): Promise<void> {
           renderizador.desenharPegada(ctx, pegadaDaCasa(casaPrevia, alvoCasa.x, alvoCasa.y), livre);
           renderizador.desenharEstrutura(ctx, casaPrevia.tiles, alvoCasa.x, alvoCasa.y, 0.55);
         }
-        if (!editor.ativo) efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y));
+        if (!editor.ativo) efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y, alturaDoChao(arena, catalogo, Math.round(x), Math.round(y))));
       },
     });
     canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando));

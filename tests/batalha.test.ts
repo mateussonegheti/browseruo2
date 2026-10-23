@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import regras from '../src/combate/regras.json';
 import { MotorCombate } from '../src/combate/motor';
 import { criarJogador } from '../src/jogo/jogador';
+import { Arena, criarMapaVazio } from '../src/mundo/mapa';
+import { alturaDoChao, chaveOrdem } from '../src/mundo/colisao';
 import { Batalha, CONTAGEM_MS, composicao, montarParticipantes } from '../src/combate/batalha';
 
 const lista = (modo: Parameters<typeof composicao>[0], lado: 'A' | 'B' = 'A') =>
@@ -77,5 +79,29 @@ describe('motor em batalha', () => {
     expect(a.itens['x']).toBeUndefined();
     motor.restaurarFoto('a', foto);
     expect(a.itens).toEqual({ x: 3 });
+  });
+});
+
+describe('ordem de desenho e altura do chão', () => {
+  it('piso desenha antes da parede no mesmo tile e z', () => {
+    const piso = chaveOrdem(3, 3, 7, { altura: 0, bloqueia: false });
+    const parede = chaveOrdem(3, 3, 7, { altura: 19, bloqueia: true });
+    expect(piso).toBeLessThan(parede);
+    expect(chaveOrdem(4, 3, 0, { altura: 5, bloqueia: true })).toBeGreaterThan(parede);
+  });
+
+  it('o chão da casa e o topo da escada elevam o personagem', () => {
+    const cat = { obter: (id: number) => ({
+      1: { altura: 0, bloqueia: false, grupo: 'Casas' },
+      2: { altura: 5, bloqueia: false, grupo: 'Escadas' },
+      3: { altura: 3, bloqueia: false, grupo: 'Casas' },
+    } as Record<number, object>)[id] } as never;
+    const a = new Arena(criarMapaVazio('t', 8, 8, 1));
+    a.adicionarObjeto(1, 1, 7, 1);
+    a.adicionarObjeto(2, 1, 2, 2);
+    a.adicionarObjeto(3, 1, 27, 3);
+    expect(alturaDoChao(a, cat, 1, 1)).toBe(7);
+    expect(alturaDoChao(a, cat, 2, 1)).toBe(7);
+    expect(alturaDoChao(a, cat, 5, 5)).toBe(0);
   });
 });

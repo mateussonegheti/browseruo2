@@ -3,6 +3,7 @@ import { METADE_ALTURA as A, METADE_LARGURA as L, PIXELS_POR_Z, tileParaMundo, m
 import type { Arena } from '../mundo/mapa';
 import type { CatalogoTiles } from '../mundo/catalogo';
 import type { DefinicaoTile, ObjetoMapa } from '../mundo/tipos';
+import { alturaVisual, chaveOrdem } from '../mundo/colisao';
 import { posicaoVisual, type EstadoJogador } from '../jogo/jogador';
 import type { AcaoAnimacao, Animacoes, Camada } from './animacoes';
 import type { FonteUO } from '../interface/recursos';
@@ -120,7 +121,7 @@ export class Renderizador {
 
     const itens: ItemOrdenado[] = [];
     this.coletarObjetos(q, visivel, itens);
-    for (const p of q.personagens) this.coletarPersonagem(p, q.agora, itens);
+    for (const p of q.personagens) this.coletarPersonagem(p, q.agora, itens, q.arena);
     itens.sort((a, b) => a.chave - b.chave);
     for (const item of itens) item.desenhar();
     q.sobreposicao?.(ctx);
@@ -176,7 +177,7 @@ export class Renderizador {
       if (!visivel(m.x, m.y, 160)) continue;
       const def = this.catalogo.obter(o.id);
       saida.push({
-        chave: (o.x + o.y) * 10000 + o.z,
+        chave: chaveOrdem(o.x, o.y, o.z, def),
         desenhar: () => this.desenharObjeto(def, m, 1),
       });
     }
@@ -205,10 +206,10 @@ export class Renderizador {
   ): boolean {
     let completo = true;
     const ordenados = tiles
-      .map(([id, x, y, z]) => ({ id, x: ox + x, y: oy + y, z }))
-      .sort((a, b) => (a.x + a.y) * 10000 + a.z - ((b.x + b.y) * 10000 + b.z));
+      .map(([id, x, y, z]) => ({ id, x: ox + x, y: oy + y, z, def: this.catalogo.obter(id) }))
+      .sort((a, b) => chaveOrdem(a.x, a.y, a.z, a.def) - chaveOrdem(b.x, b.y, b.z, b.def));
     for (const t of ordenados) {
-      const def = this.catalogo.obter(t.id);
+      const def = t.def;
       if (!def?.sprite || (apenasChao && t.z >= 20)) continue;
       const sprite = this.imagem(def.sprite.arquivo);
       if (!sprite) {
@@ -263,8 +264,9 @@ export class Renderizador {
 
   // ---------- personagens ----------
 
-  private coletarPersonagem(p: PersonagemRender, agora: number, saida: ItemOrdenado[]): void {
+  private coletarPersonagem(p: PersonagemRender, agora: number, saida: ItemOrdenado[], arena: Arena): void {
     const pos = posicaoVisual(p.mov, agora);
+    const z = alturaVisual(arena, this.catalogo, p.mov, agora);
     const m = p.mov.movimento;
     // Tile de referência para ordenação: passa para o destino na metade do passo.
     const meio = m && (agora - m.inicio) / m.duracao >= 0.5;
@@ -272,7 +274,7 @@ export class Renderizador {
     const refY = m ? (meio ? m.paraY : m.deY) : p.mov.y;
     saida.push({
       chave: (refX + refY) * 10000 + 9000,
-      desenhar: () => this.desenharPersonagem(tileParaMundo(pos.x, pos.y), p),
+      desenhar: () => this.desenharPersonagem(tileParaMundo(pos.x, pos.y, z), p),
     });
   }
 

@@ -48,3 +48,35 @@ export function temLinhaDeVisao(
   }
   return true;
 }
+
+/** Ordem de desenho dentro do mesmo tile: pisos (planos) antes de paredes e outros objetos, como no cliente do UO. */
+export function chaveOrdem(x: number, y: number, z: number, def: { altura: number; bloqueia: boolean } | undefined): number {
+  const plano = def !== undefined && def.altura === 0 && !def.bloqueia;
+  return (x + y) * 10000 + Math.max(0, z) * 10 + (plano ? 0 : 1);
+}
+
+const GRUPOS_SUPERFICIE = new Set(['Casas', 'Escadas']);
+
+/** Altura (z) em que se pisa no tile: piso de casa ou topo de escada; 0 no chão. */
+export function alturaDoChao(arena: Arena, cat: CatalogoTiles, x: number, y: number): number {
+  let z = 0;
+  for (const o of arena.objetosEm(x, y)) {
+    const def = cat.obter(o.id);
+    if (!def || def.bloqueia || o.z >= Z_ANDAR_SUPERIOR || !def.grupo || !GRUPOS_SUPERFICIE.has(def.grupo)) continue;
+    z = Math.max(z, o.z + def.altura);
+  }
+  return z;
+}
+
+/** z suavizado durante o passo (sobe a escada aos poucos). */
+export function alturaVisual(
+  arena: Arena, cat: CatalogoTiles,
+  mov: { x: number; y: number; movimento: { deX: number; deY: number; paraX: number; paraY: number; inicio: number; duracao: number } | null },
+  agora: number,
+): number {
+  const m = mov.movimento;
+  if (!m) return alturaDoChao(arena, cat, mov.x, mov.y);
+  const t = Math.min(1, Math.max(0, (agora - m.inicio) / m.duracao));
+  const a = alturaDoChao(arena, cat, m.deX, m.deY);
+  return a + (alturaDoChao(arena, cat, m.paraX, m.paraY) - a) * t;
+}
