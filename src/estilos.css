@@ -116,3 +116,12 @@ body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui,
 .livro .magia:hover { filter: drop-shadow(0 0 2px #fff6c0); }
 .mochila img:hover { filter: brightness(1.25); }
 .mochila img.arrastando { cursor: var(--cursor-pegar, grabbing); filter: brightness(1.25) drop-shadow(0 0 2px #fff); }
+
+/* ---------- menu do deed de casas ---------- */
+.menu-casas { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(760px, 92vw); max-height: 80vh; display: flex; flex-direction: column; background: #1c1a16; border: 2px solid #6b5a3a; border-radius: 6px; color: #e8dcc0; }
+.menu-casas-titulo { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #2b261c; font-weight: bold; }
+.menu-casas-titulo button { background: none; border: 0; color: inherit; font-size: 20px; line-height: 1; }
+.menu-casas-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; padding: 10px; overflow-y: auto; }
+.menu-casas-cartao { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px; background: #14120e; border: 1px solid #4a3f2a; border-radius: 4px; color: inherit; font: inherit; }
+.menu-casas-cartao:hover { background: #26221a; border-color: #c9a85c; }
+.menu-casas-cartao small { opacity: .7; }

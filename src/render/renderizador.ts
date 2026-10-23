@@ -2,7 +2,7 @@ import { DESLOCAMENTO } from '../nucleo/direcoes';
 import { METADE_ALTURA as A, METADE_LARGURA as L, PIXELS_POR_Z, tileParaMundo, mundoParaTile, type Ponto } from '../nucleo/projecao';
 import type { Arena } from '../mundo/mapa';
 import type { CatalogoTiles } from '../mundo/catalogo';
-import type { DefinicaoTile } from '../mundo/tipos';
+import type { DefinicaoTile, ObjetoMapa } from '../mundo/tipos';
 import { posicaoVisual, type EstadoJogador } from '../jogo/jogador';
 import type { AcaoAnimacao, Animacoes, Camada } from './animacoes';
 import type { FonteUO } from '../interface/recursos';
@@ -38,6 +38,8 @@ export interface QuadroRender {
   fantasma: { def: DefinicaoTile; z: number } | null;
   grade: boolean;
   /** Desenhado por cima de tudo, em coordenadas do mundo (efeitos de magia, textos). */
+  /** Telhados e andares de cima escondidos (jogador dentro da casa). */
+  ocultos?: ReadonlySet<ObjetoMapa>;
   sobreposicao?: (ctx: CanvasRenderingContext2D) => void;
 }
 
@@ -169,6 +171,7 @@ export class Renderizador {
 
   private coletarObjetos(q: QuadroRender, visivel: (x: number, y: number, f: number) => boolean, saida: ItemOrdenado[]): void {
     for (const o of q.arena.dados.objetos) {
+      if (q.ocultos?.has(o)) continue;
       const m = tileParaMundo(o.x, o.y, o.z);
       if (!visivel(m.x, m.y, 160)) continue;
       const def = this.catalogo.obter(o.id);
@@ -190,6 +193,44 @@ export class Renderizador {
       this.desenharCaixa(base, def ? def.altura : 10, def ? def.cor : COR_DESCONHECIDO);
     }
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Desenha uma estrutura (casa) em qualquer contexto, com a origem em (ox, oy) do mapa.
+   * Devolve false se algum sprite ainda estiver carregando.
+   */
+  desenharEstrutura(
+    ctx: CanvasRenderingContext2D, tiles: ReadonlyArray<readonly [number, number, number, number]>,
+    ox: number, oy: number, alfa: number, apenasChao = false,
+  ): boolean {
+    let completo = true;
+    const ordenados = tiles
+      .map(([id, x, y, z]) => ({ id, x: ox + x, y: oy + y, z }))
+      .sort((a, b) => (a.x + a.y) * 10000 + a.z - ((b.x + b.y) * 10000 + b.z));
+    for (const t of ordenados) {
+      const def = this.catalogo.obter(t.id);
+      if (!def?.sprite || (apenasChao && t.z >= 20)) continue;
+      const sprite = this.imagem(def.sprite.arquivo);
+      if (!sprite) {
+        completo = false;
+        continue;
+      }
+      const m = tileParaMundo(t.x, t.y, t.z);
+      ctx.globalAlpha = alfa;
+      ctx.drawImage(sprite, m.x - def.sprite.largura / 2, m.y + A - def.sprite.altura);
+    }
+    ctx.globalAlpha = 1;
+    return completo;
+  }
+
+  /** Pegada da estrutura: losangos verdes (livre) ou vermelhos (não dá). */
+  desenharPegada(ctx: CanvasRenderingContext2D, tiles: ReadonlyArray<{ x: number; y: number }>, livre: boolean): void {
+    ctx.fillStyle = livre ? 'rgba(80,220,100,.35)' : 'rgba(230,60,60,.4)';
+    for (const t of tiles) {
+      const m = tileParaMundo(t.x, t.y);
+      losango(ctx, m.x, m.y);
+      ctx.fill();
+    }
   }
 
   /** Placeholder: caixa isométrica com faces sombreadas. */

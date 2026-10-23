@@ -98,6 +98,19 @@ export class Arena {
     this.indice.set(chave, lista);
   }
 
+  /** Acrescenta vários objetos sem substituir os que já estão no mesmo (x, y, z) (estruturas de casa). */
+  adicionarVarios(objetos: readonly ObjetoMapa[]): void {
+    for (const { x, y, z, id } of objetos) {
+      if (!this.dentro(x, y)) continue;
+      const novo: ObjetoMapa = { x, y, z, id };
+      this.dados.objetos.push(novo);
+      const chave = this.chave(x, y);
+      const lista = this.indice.get(chave) ?? [];
+      lista.push(novo);
+      this.indice.set(chave, lista);
+    }
+  }
+
   /** Remove o objeto mais alto do tile (o "de cima"). */
   removerTopo(x: number, y: number): ObjetoMapa | undefined {
     const lista = this.objetosEm(x, y);

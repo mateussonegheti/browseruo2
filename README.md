@@ -57,6 +57,7 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Paperdoll / mochila | **P** / **B**, pelo menu do botão direito ou duplo clique (em você a pé / na mochila do paperdoll) |
 | Fechar janela | Botão direito na janela (como no UO); arraste para mover |
 | Lootar | **Duplo clique** (ou botão direito → Lootar) no corpo de quem morreu, a até 2 tiles · duplo clique no item da janela pega a pilha para a sua mochila · o corpo some quando a pessoa renasce |
+| Construir casa | **Duplo clique no deed** (pergaminho na mochila) → menu com as 38 casas e estruturas do `multi.mul` → clique no chão livre (verde = cabe, vermelho = não) · direito/Esc cancela · o deed é consumido |
 | Usar item | Duplo clique na mochila: poções; o spellbook abre o livro (clique numa magia para lançar) |
 | Status completo | Duplo clique na sua barra de vida (canto superior esquerdo) |
 | Guerra / paz | **Tab** · em guerra, duplo clique num alvo (ou "Atacar" no menu do botão direito) e chegue ao lado |
@@ -146,6 +147,12 @@ resistências 70, FC 2 e FCR 6.
   spellbook, reagentes e poções (dá para arrastar lá dentro). Renasce cheia.
 - **Montarias:** cavalos, ostards e lhama. Montado, anda em 200 ms e corre em 100 ms por passo. Ao morrer, você cai
   da montaria e ela fica ao lado.
+
+## Casas (deed)
+
+O extrator lê `multi.mul` e grava `public/casas/casas.json` (ignorado pelo git, como os sprites). O deed da mochila abre o menu; a casa escolhida só pode ser construída em terreno livre (sem objetos, água, bots ou o ponto de nascimento) e fica salva com a arena. Telhados e andares de cima somem quando você entra na casa e não bloqueiam o chão.
+
+Limitações: sem portas (os marcadores de porta do multi não têm sprite), sem demolir/dono/trancas, o 2º andar não é acessível e o deed volta a cada renascimento.
 
 ## Editor de arena
 

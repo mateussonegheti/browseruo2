@@ -23,7 +23,11 @@ import { carregarRecursosInterface, cssCursor, cursorDirecional } from './interf
 import { Janelas, type PecaPaperdoll } from './interface/janelas';
 import { MenuContexto, type OpcaoMenu } from './interface/menu-contexto';
 import { Sons } from './interface/sons';
+import { MenuCasas } from './interface/menu-casas';
+import { carregarCasas, construirCasa, motivoNaoConstruir, pegadaDaCasa, tetosSobre, type CasaDef } from './mundo/casas';
+import type { ObjetoMapa } from './mundo/tipos';
 
+const ITEM_DEED = '0x14F0';
 const NOME_ARENA_PADRAO = 'arena-padrao';
 /** Distância (px) do cursor ao personagem acima da qual ele corre. */
 const DISTANCIA_CORRIDA_PX = 130;
@@ -79,6 +83,8 @@ async function iniciar(): Promise<void> {
     },
     ehEquipavel: (item) => Boolean(motor.regras.armas[item] || motor.regras.armaduras[item] || motor.regras.escudos[item]),
     itemBau: (regrasJson as Regras).itemBau,
+    itemDeed: ITEM_DEED,
+    usarDeed: () => abrirDeed(),
   });
   const menu = new MenuContexto(document.querySelector<HTMLElement>('#janelas')!, fonte);
   // Barras do cliente só se os gumps foram extraídos
@@ -167,7 +173,13 @@ async function iniciar(): Promise<void> {
   /** Criatura em que o jogador está montado (fica fora do mundo enquanto isso). */
   let montaria: { c: Combatente; anim: string } | null = null;
   /** Algo esperando um clique no chão para ser posicionado (bot ou criatura). */
-  let colocando: { texto: string; criar: (p: { x: number; y: number }) => void } | null = null;
+  let colocando: {
+    texto: string;
+    criar: (p: { x: number; y: number }) => void;
+    /** Motivo de não poder colocar naquele tile (substitui a checagem padrão). */
+    validar?: (p: { x: number; y: number }) => string | null;
+    casa?: CasaDef;
+  } | null = null;
   const sons = new Sons();
   let contadorBots = 0;
 
@@ -275,6 +287,33 @@ async function iniciar(): Promise<void> {
     c.bot?.modo === 'criatura' ? animacoes.montariaDe(aparencia.get(c.id)?.[0]?.nome ?? '') : undefined;
 
   /** Botões do painel: o cursor vira target e o clique no chão escolhe o lugar. */
+  const casas = await carregarCasas('/casas/casas.json');
+  const menuCasas = new MenuCasas(document.querySelector<HTMLElement>('#janelas')!, renderizador, casas);
+  const abrirDeed = (): void => {
+    if (!casas.length) {
+      hud.avisar('As casas não foram extraídas do cliente (rode o extrator).', performance.now());
+      return;
+    }
+    menuCasas.abrir((casa) => {
+      colocando = {
+        texto: casa.nome,
+        casa,
+        validar: (p) => motivoNaoConstruir(arena, catalogo, casa, p.x, p.y, (x, y) => ocupadoPorOutro(x, y, '')),
+        criar: (p) => {
+          if (!motor.gastarItem(ID_JOGADOR, ITEM_DEED)) {
+            hud.avisar('Você não tem mais o deed.', performance.now());
+            return;
+          }
+          construirCasa(arena, casa, p.x, p.y);
+          salvarLocal(arena.dados);
+          janelas.atualizarMochila();
+          hud.avisar(`${casa.nome} construída.`, performance.now());
+        },
+      };
+      hud.avisar(`Escolha onde construir: ${casa.nome}.`, performance.now());
+    });
+  };
+
   const pedirPosicao = (texto: string, criar: (p: { x: number; y: number }) => void): void => {
     colocando = { texto, criar };
     hud.avisar(`Escolha onde colocar: ${texto}.`, performance.now());
@@ -468,8 +507,12 @@ async function iniciar(): Promise<void> {
       }
       const t = e.button === 0 ? tileSobMouse(cameraAtual(agora)) : null;
       if (!t) return;
-      if (!arena.dentro(t.x, t.y) || tileBloqueado(arena, catalogo, t.x, t.y) || ocupadoPorOutro(t.x, t.y, '')) {
-        hud.avisar('Não dá para colocar aí.', agora);
+      const motivo = colocando.validar
+        ? colocando.validar(t)
+        : !arena.dentro(t.x, t.y) || tileBloqueado(arena, catalogo, t.x, t.y) || ocupadoPorOutro(t.x, t.y, '')
+          ? 'Não dá para colocar aí.' : null;
+      if (motivo) {
+        hud.avisar(motivo, agora);
         return;
       }
       colocando.criar(t);
@@ -666,6 +709,18 @@ async function iniciar(): Promise<void> {
       destaque: c.id === eu.ultimoAlvoId,
     }));
 
+  // Telhados somem quando o jogador está debaixo deles (recalcula só ao mudar de tile ou de objetos)
+  let cacheTetos: { x: number; y: number; n: number; arena: Arena; set: Set<ObjetoMapa> } | null = null;
+  const tetosDoJogador = (): Set<ObjetoMapa> => {
+    const x = jogador.x;
+    const y = jogador.y;
+    const n = arena.dados.objetos.length;
+    if (!cacheTetos || cacheTetos.x !== x || cacheTetos.y !== y || cacheTetos.n !== n || cacheTetos.arena !== arena) {
+      cacheTetos = { x, y, n, arena, set: tetosSobre(arena, catalogo, x, y) };
+    }
+    return cacheTetos.set;
+  };
+
   const posicaoNoMundo = (agora: number) => (id: string): Ponto | null => {
     const c = motor.obter(id);
     if (!c) return null;
@@ -722,11 +777,20 @@ async function iniciar(): Promise<void> {
 
     const camera = cameraAtual(agora);
     const hover = editor.ativo ? tileSobMouse(camera) : null;
+    const alvoCasa = !editor.ativo && colocando?.casa ? tileSobMouse(camera) : null;
     renderizador.desenhar({
       arena, personagens: personagens(agora), agora, camera, hover,
+      ocultos: editor.ativo ? undefined : tetosDoJogador(),
       fantasma: editor.fantasma,
       grade: editor.ativo && editor.grade,
-      sobreposicao: editor.ativo ? undefined : (ctx) => efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y)),
+      sobreposicao: editor.ativo ? undefined : (ctx) => {
+        if (colocando?.casa && alvoCasa) {
+          const livre = colocando.validar?.(alvoCasa) === null;
+          renderizador.desenharPegada(ctx, pegadaDaCasa(colocando.casa, alvoCasa.x, alvoCasa.y), livre);
+          renderizador.desenharEstrutura(ctx, colocando.casa.tiles, alvoCasa.x, alvoCasa.y, 0.55);
+        }
+        efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y));
+      },
     });
     canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando));
     atualizarCursor();

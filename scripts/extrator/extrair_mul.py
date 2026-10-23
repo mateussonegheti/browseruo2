@@ -31,6 +31,7 @@ ID_BASE_OBJETO = es.BASE_ID_OBJETO  # art.mul guarda os estáticos depois dos 0x
 
 TAM_TERRENO = 26
 TAM_ITEM = 37
+FLAG_TETO = 0x10000000  # flag "Roof" do tiledata
 
 
 def localizar_cliente(raiz: Path) -> Path | None:
@@ -170,7 +171,7 @@ class Gumps(ArquivoIndexado):
 # ---------------------------------------------------------------- catálogo
 
 def extrair_tipo(tipo: str, pasta_saida: str, obter, infos: list[es.InfoTile],
-                 escolhidos: list[tuple[str, int]], pasta_sprites: Path) -> list[dict]:
+                 escolhidos: list[tuple[str, int]], pasta_sprites: Path, deduplicar: bool = True) -> list[dict]:
     import hashlib
     tiles = []
     vistos: set[tuple[str, bytes]] = set()
@@ -179,12 +180,13 @@ def extrair_tipo(tipo: str, pasta_saida: str, obter, infos: list[es.InfoTile],
         if img is None or not any(img.rgba[3::4]):
             continue
         assinatura = (grupo, hashlib.sha1(img.rgba + struct.pack("<HH", img.largura, img.altura)).digest())
-        if assinatura in vistos:
+        if deduplicar and assinatura in vistos:
             continue
         vistos.add(assinatura)
         arquivo = f"{pasta_saida}/0x{gid:04X}.png"
         es.gravar_png(pasta_sprites / arquivo, img)
         info = infos[gid]
+        teto = {"teto": True} if tipo == "objeto" and info.flags & FLAG_TETO else {}
         tiles.append({
             "id": gid if tipo == "terreno" else ID_BASE_OBJETO + gid,
             "nome": info.nome or f"{tipo} 0x{gid:04X}",
@@ -195,8 +197,57 @@ def extrair_tipo(tipo: str, pasta_saida: str, obter, infos: list[es.InfoTile],
             "grupo": grupo,
             "grafico": gid,
             "sprite": {"arquivo": arquivo, "largura": img.largura, "altura": img.altura},
+            **teto,
         })
     return tiles
+
+
+def ler_multis(cliente: Path) -> dict[int, list[tuple[int, int, int, int]]]:
+    """multi.mul: por estrutura, os tiles visíveis (gráfico, x, y, z) relativos à origem."""
+    idx = (cliente / "multi.idx").read_bytes()
+    mul = (cliente / "multi.mul").read_bytes()
+    multis = {}
+    for i in range(len(idx) // 12):
+        pos, tam, _ = struct.unpack_from("<iii", idx, i * 12)
+        if pos < 0 or tam <= 0:
+            continue
+        tiles = []
+        for k in range(tam // 12):
+            gid, x, y, z, flags = struct.unpack_from("<HhhhI", mul, pos + k * 12)
+            if flags & 1:  # sem a flag são só marcadores (portas, placas)
+                tiles.append((gid, x, y, z))
+        multis[i] = tiles
+    return multis
+
+
+def extrair_casas(cliente: Path, arte: Arte, infos: list[es.InfoTile], tiles: list[dict],
+                  selecao: dict, pasta_sprites: Path, destino: Path) -> int:
+    """Grava casas.json (deed) e acrescenta ao catálogo os sprites das estruturas que ainda faltam."""
+    escolhidas = selecao.get("casas", [])
+    if not escolhidas:
+        return 0
+    multis = ler_multis(cliente)
+    presentes = {t["id"] for t in tiles}
+    faltam = sorted({gid for c in escolhidas for gid, *_ in multis.get(int(c["id"], 0), [])
+                     if ID_BASE_OBJETO + gid not in presentes})
+    tiles += extrair_tipo("objeto", "objetos", arte.estatico, infos, [("Casas", g) for g in faltam],
+                          pasta_sprites, deduplicar=False)
+    presentes = {t["id"] for t in tiles}
+    casas = []
+    for c in escolhidas:
+        itens = [[ID_BASE_OBJETO + g, x, y, z] for g, x, y, z in multis.get(int(c["id"], 0), [])
+                 if ID_BASE_OBJETO + g in presentes]
+        if not itens:
+            print(f"  aviso: estrutura {c['id']} sem tiles", file=sys.stderr)
+            continue
+        xs = [t[1] for t in itens]
+        ys = [t[2] for t in itens]
+        casas.append({"id": c["id"], "nome": c["nome"], "largura": max(xs) - min(xs) + 1,
+                      "profundidade": max(ys) - min(ys) + 1, "tiles": itens})
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    linhas = ",\n  ".join(json.dumps(c, ensure_ascii=False, separators=(",", ":")) for c in casas)
+    destino.write_text('{"versao":1,"casas":[\n  ' + linhas + "\n]}\n", encoding="utf-8")
+    return len(casas)
 
 
 def extrair_gumps(gumps: Gumps, ids: list[int], pasta: Path) -> int:
@@ -412,7 +463,8 @@ def extrair_interface(cliente: Path, arte: Arte, gumps: Gumps, infos: list[es.In
         if img:
             img = es.aparar(img)
             es.gravar_png(pasta / "itens" / f"0x{gid:04X}.png", img)
-            itens[f"0x{gid:04X}"] = {"nome": infos[gid].nome.replace("%s%", "").replace("%s", ""),
+            nome = conf.get("nomes", {}).get(f"0x{gid:04X}") or infos[gid].nome.replace("%s%", "").replace("%s", "")
+            itens[f"0x{gid:04X}"] = {"nome": nome,
                                      "largura": img.largura, "altura": img.altura}
     meta["itens"] = itens
     meta["equipaveis"] = selecao.get("_equipaveis", {})
@@ -469,6 +521,8 @@ def main() -> int:
     tiles += extrair_tipo("objeto", "objetos", arte.estatico, infos_objeto,
                           es.selecionar(infos_objeto, selecao["objetos"], faixa_padrao, existe_objeto), pasta_sprites)
 
+    n_casas = extrair_casas(cliente, arte, infos_objeto, tiles, selecao, pasta_sprites, args.saida / "casas" / "casas.json")
+
     destino = args.saida / "catalogo" / "catalogo.json"
     destino.parent.mkdir(parents=True, exist_ok=True)
     linhas = ",\n    ".join(json.dumps(t, ensure_ascii=False) for t in tiles)
@@ -488,6 +542,7 @@ def main() -> int:
 
     n_terreno = sum(1 for t in tiles if t["tipo"] == "terreno")
     print(f"Pronto: {n_terreno} terrenos e {len(tiles) - n_terreno} objetos em {destino}")
+    print(f"        {n_casas} estruturas de casa em casas/casas.json")
     print(f"        {n_gumps} gumps, {n_sons} sons, {n_efeitos} efeitos, {n_anim} animacoes, {n_interface} itens de interface")
     return 0
 

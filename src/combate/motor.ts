@@ -293,6 +293,16 @@ export class MotorCombate {
     return null;
   }
 
+  /** Consome itens da mochila (deed ao construir). Retorna false se não houver. */
+  gastarItem(id: string, item: string, qtd = 1): boolean {
+    const c = this.combatentes.get(id);
+    const tem = c?.itens[item] ?? 0;
+    if (!c || tem < qtd) return false;
+    if (tem - qtd <= 0) delete c.itens[item];
+    else c.itens[item] = tem - qtd;
+    return true;
+  }
+
   /** Usa (bebe) um item da mochila. Retorna a mensagem de erro, ou null se usou. */
   usarItem(id: string, item: string, agora: number): string | null {
     const c = this.combatentes.get(id);

@@ -1,5 +1,8 @@
 import type { Catalogo, DefinicaoTile, TipoTile } from './tipos';
 
+/** Z a partir do qual um objeto é de um andar de cima: não bloqueia o chão e some quando você está embaixo. */
+export const Z_ANDAR_SUPERIOR = 20;
+
 /** Índice do catálogo de tiles (placeholder agora; gerado pelo extrator depois). */
 export class CatalogoTiles {
   private readonly porId = new Map<number, DefinicaoTile>();
@@ -14,6 +17,11 @@ export class CatalogoTiles {
 
   listar(tipo: TipoTile): DefinicaoTile[] {
     return this.dados.tiles.filter((t) => t.tipo === tipo);
+  }
+
+  /** Objetos de andar de cima (z >= Z_ANDAR_SUPERIOR) e telhados escondem-se quando o jogador está debaixo deles. */
+  ehTeto(o: { id: number; z: number }): boolean {
+    return o.z >= Z_ANDAR_SUPERIOR || Boolean(this.porId.get(o.id)?.teto);
   }
 
   /** Id desconhecido não bloqueia (o renderizador o desenha em magenta). */

@@ -1,5 +1,5 @@
 import type { Arena } from './mapa';
-import type { CatalogoTiles } from './catalogo';
+import { Z_ANDAR_SUPERIOR, type CatalogoTiles } from './catalogo';
 
 /**
  * Um tile é bloqueado se estiver fora do mapa, se o terreno bloquear
@@ -10,7 +10,7 @@ export function tileBloqueado(arena: Arena, cat: CatalogoTiles, x: number, y: nu
   if (!arena.dentro(x, y)) return true;
   const terreno = arena.terrenoEm(x, y);
   if (terreno !== undefined && cat.bloqueia(terreno)) return true;
-  return arena.objetosEm(x, y).some((o) => cat.bloqueia(o.id));
+  return arena.objetosEm(x, y).some((o) => o.z < Z_ANDAR_SUPERIOR && cat.bloqueia(o.id));
 }
 
 /**
@@ -44,7 +44,7 @@ export function temLinhaDeVisao(
     if (e2 >= dy) { erro += dy; x += sx; }
     if (e2 <= dx) { erro += dx; y += sy; }
     if (x === b.x && y === b.y) break;
-    if (arena.objetosEm(x, y).some((o) => cat.bloqueia(o.id))) return false;
+    if (arena.objetosEm(x, y).some((o) => o.z < Z_ANDAR_SUPERIOR && cat.bloqueia(o.id))) return false;
   }
   return true;
 }

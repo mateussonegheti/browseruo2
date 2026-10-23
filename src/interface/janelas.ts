@@ -44,6 +44,9 @@ export interface AcoesJanelas {
   desequipar(item: string): void;
   /** Armas, armaduras e escudos ficam no baú, não na mochila. */
   ehEquipavel(item: string): boolean;
+  /** Item da mochila que abre o menu de casas. */
+  itemDeed: string;
+  usarDeed(): void;
   /** Item da mochila que abre o baú. */
   itemBau: string;
   /** Itens do corpo aberto; null se ele sumiu (renasceu) ou está longe demais. */
@@ -243,6 +246,7 @@ export class Janelas {
   private usarNoConteiner(id: string): void {
     if (id === ITEM_SPELLBOOK) void this.alternarLivro();
     else if (id === this.acoes.itemBau) void this.alternarBau();
+    else if (id === this.acoes.itemDeed) this.acoes.usarDeed();
     else if (this.acoes.ehEquipavel(id)) {
       this.acoes.equipar(id);
       void this.redesenharPaperdoll();

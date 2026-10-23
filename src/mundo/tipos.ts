@@ -27,6 +27,8 @@ export interface DefinicaoTile {
   cor: string;
   sprite?: SpriteTile | null;
   /** Grupo da paleta do editor (ex.: "Muro de pedra"). */
+  /** Telhado (flag Roof do tiledata): some quando o jogador está debaixo dele. */
+  teto?: boolean;
   grupo?: string;
   /** Id do gráfico no cliente do UO (terreno: landtiles; objeto: art). */
   grafico?: number;
