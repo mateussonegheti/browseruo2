@@ -153,7 +153,7 @@ resistências 70, FC 2 e FCR 6.
 
 O extrator lê `multi.mul` e grava `public/casas/casas.json` (ignorado pelo git, como os sprites). O deed da mochila abre o menu; a casa escolhida só pode ser construída em terreno livre (sem objetos, água, bots ou o ponto de nascimento) e fica salva com a arena. Telhados e andares de cima somem quando você entra na casa e não bloqueiam o chão.
 
-A casa vem completa: os vãos de parede com piso recebem portas automaticamente (dono: lado A) e uma placa é colocada se o modelo não tiver (tendas). Dê duplo clique na placa, a até 2 tiles, para demolir: a construção inteira some e o deed volta para a mochila (não funciona durante a batalha).
+A casa vem completa: os vãos de parede com piso recebem portas automaticamente (dono: lado A) e uma placa é colocada se o modelo não tiver (tendas). Dê duplo clique na placa (um suporte alto e fino) ou em qualquer parte da casa, a até 2 tiles, para demolir: a construção inteira some e o deed volta para a mochila (não funciona durante a batalha).
 
 Limitações: casas construídas antes dessa versão não têm identificador e só saem pelo editor; a detecção de portas é heurística (modelos grandes como castelo/fortaleza podem ganhar portas extras); o 2º andar não é acessível e o deed volta a cada renascimento.
 

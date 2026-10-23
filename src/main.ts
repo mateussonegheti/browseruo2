@@ -326,6 +326,9 @@ async function iniciar(): Promise<void> {
       const placa = placaEm(arena, catalogo, x, y);
       if (totem || totemBatalha || porta || placa) return { totem, totemBatalha, porta, placa, x, y };
     }
+    // A placa do multi é só um suporte alto e fino: qualquer parte da casa também serve para demolir
+    const parte = arena.objetosEm(t.x, t.y).find((o) => o.casa !== undefined);
+    if (parte) return { totem: undefined, totemBatalha: undefined, porta: undefined, placa: parte, x: t.x, y: t.y };
     return null;
   };
 
