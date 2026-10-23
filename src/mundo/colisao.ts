@@ -49,11 +49,10 @@ export function temLinhaDeVisao(
   return true;
 }
 
-/** Pisos (planos) nunca escondem nada: vão todos antes de paredes, objetos e personagens. */
+/** Ordem de desenho: por tile e altura; no mesmo tile e z, o piso (plano) vem antes de paredes e objetos. */
 export function chaveOrdem(x: number, y: number, z: number, def: { altura: number; bloqueia: boolean } | undefined): number {
   const plano = def !== undefined && def.altura === 0 && !def.bloqueia;
-  const base = (x + y) * 10000 + Math.max(0, z);
-  return plano ? base - 1e9 : base;
+  return (x + y) * 10000 + Math.max(0, z) * 10 + (plano ? 0 : 1);
 }
 
 const GRUPOS_SUPERFICIE = new Set(['Casas', 'Escadas']);

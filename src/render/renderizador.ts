@@ -270,8 +270,10 @@ export class Renderizador {
     const m = p.mov.movimento;
     // Tile de referência para ordenação: passa para o destino na metade do passo.
     const meio = m && (agora - m.inicio) / m.duracao >= 0.5;
-    const refX = m ? (meio ? m.paraX : m.deX) : p.mov.x;
-    const refY = m ? (meio ? m.paraY : m.deY) : p.mov.y;
+    // Ao descer na tela, o destino já vale desde o início: o piso dele (elevado) não pode cobrir quem chega
+    const destino = m && (meio || m.paraX + m.paraY > m.deX + m.deY);
+    const refX = m ? (destino ? m.paraX : m.deX) : p.mov.x;
+    const refY = m ? (destino ? m.paraY : m.deY) : p.mov.y;
     saida.push({
       chave: (refX + refY) * 10000 + 9000,
       desenhar: () => this.desenharPersonagem(tileParaMundo(pos.x, pos.y, z), p),
