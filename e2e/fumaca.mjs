@@ -202,11 +202,19 @@ await pagina.keyboard.press('p');
 await pagina.keyboard.press('b');
 await espera(500);
 ok(await pagina.evaluate(() => document.querySelectorAll('#janelas .gump').length === 2), 'P abre o paperdoll e B a mochila');
+// Mochila: beber a poção de cura e abrir o livro de magias
+await pagina.evaluate(() => { const eu = window.__jogo.motor.obter('jogador'); eu.vida = 50; eu.veneno = null; });
+await pagina.dblclick('img[data-item="0x0F0C"]');
+ok(await pagina.evaluate(() => window.__jogo.motor.obter('jogador').vida > 50), 'duplo clique na poção amarela cura');
+await pagina.dblclick('img[data-item="0x0EFA"]');
+await espera(300);
+ok(await pagina.isVisible('.livro [data-magia="energy-bolt"]'), 'duplo clique no spellbook abre o livro de magias');
+await pagina.click('.livro [data-magia="energy-bolt"]', { button: 'right' });
 await pagina.mouse.click(640, 360 - 25, { button: 'right' });
 await espera(100);
 ok(await pagina.isVisible('.menu-contexto'), 'botão direito em si mesmo abre o menu');
 await pagina.click('.menu-contexto [data-opcao="Paperdoll"]');
-ok(await pagina.evaluate(() => document.querySelectorAll('#janelas .gump').length === 1 && !document.querySelector('.menu-contexto')),
+ok(await pagina.evaluate(() => !document.querySelector('[data-janela="paperdoll"]') && !document.querySelector('.menu-contexto')),
   'opção Paperdoll do menu alterna o paperdoll e fecha o menu');
 await pagina.mouse.click(640, 360 - 25, { button: 'right' });
 await espera(100);

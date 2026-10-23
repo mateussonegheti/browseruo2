@@ -3,6 +3,7 @@ import { Arena, criarMapaVazio, validarMapa } from '../src/mundo/mapa';
 import { CatalogoTiles, validarCatalogo } from '../src/mundo/catalogo';
 import { podeAndar, tileBloqueado } from '../src/mundo/colisao';
 import { Editor } from '../src/editor/editor';
+import { escolherPeca } from '../src/editor/muros';
 import { atualizarJogador, criarJogador, posicaoVisual, tentarAndar, PASSO_ANDAR_MS, PASSO_CORRER_MS } from '../src/jogo/jogador';
 import catalogoJson from './fixtures/catalogo-placeholder.json';
 import catalogoReal from '../public/catalogo/catalogo.json';
@@ -223,5 +224,33 @@ describe('editor', () => {
     e.aplicar(3, 4);
     expect(a.spawn).toEqual({ x: 3, y: 4 });
     expect(e.aplicar(99, 99)).toBe(false);
+  });
+});
+
+describe('ferramenta Muro', () => {
+  const conjunto = { nome: 'Pedra', quina: 1, y: 2, x: 3, poste: 4 };
+  it('escolhe reta, quina dupla, poste e isolado pelos vizinhos', () => {
+    const v = (o: Partial<Record<'oeste' | 'leste' | 'norte' | 'sul', boolean>>) => ({ oeste: false, leste: false, norte: false, sul: false, ...o });
+    expect(escolherPeca(v({ oeste: true, leste: true }), conjunto)).toBe(3);
+    expect(escolherPeca(v({ norte: true, sul: true }), conjunto)).toBe(2);
+    expect(escolherPeca(v({ oeste: true, norte: true }), conjunto)).toBe(1);
+    expect(escolherPeca(v({ leste: true, sul: true }), conjunto)).toBe(4);
+    expect(escolherPeca(v({}), conjunto)).toBe(4);
+  });
+  it('arrastar uma linha e uma coluna monta o canto com as peças do catálogo; Ctrl+Z desfaz', () => {
+    const real = new CatalogoTiles(catalogoReal as never);
+    const a = new Arena(criarMapaVazio('t', 16, 16, 3));
+    const e = new Editor(() => a, real, () => {});
+    e.ativo = true;
+    e.ferramenta = 'muro';
+    const c = e.conjunto!;
+    e.iniciarGesto();
+    for (let x = 2; x <= 6; x++) e.aplicar(x, 6);
+    for (let y = 2; y <= 5; y++) e.aplicar(6, y);
+    expect(a.objetosEm(3, 6)[0]?.id).toBe(c.x);
+    expect(a.objetosEm(6, 3)[0]?.id).toBe(c.y);
+    expect(a.objetosEm(6, 6)[0]?.id).toBe(c.quina); // vem de oeste e de norte
+    const antes = e.desfazer();
+    expect(antes?.objetos).toHaveLength(0);
   });
 });

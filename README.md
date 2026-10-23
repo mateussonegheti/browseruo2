@@ -56,6 +56,8 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Montar / desmontar | Duplo clique no cavalo, ostard ou lhama ao lado · duplo clique em si mesmo desmonta |
 | Paperdoll / mochila | **P** / **B**, pelo menu do botão direito ou duplo clique (em você a pé / na mochila do paperdoll) |
 | Fechar janela | Botão direito na janela (como no UO); arraste para mover |
+| Usar item | Duplo clique na mochila: poções; o spellbook abre o livro (clique numa magia para lançar) |
+| Status completo | Duplo clique na sua barra de vida (canto superior esquerdo) |
 
 Tempos por passo (como no UO a pé): andar 400 ms, correr 200 ms.
 
@@ -95,13 +97,25 @@ resistências 70, FC 2 e FCR 6.
 - Para incluir outras criaturas, acrescente o id do corpo (veja `mobtypes.txt` no cliente) em `selecao.json` e rode
   o extrator de novo.
 
+## Itens
+
+- **Poções** (regras do ServUO, versões Greater/Total, com o bônus de Alchemy 100):
+  amarela cura 26–32 (trava de 10 s, não funciona envenenado) · laranja cura veneno (100/100/75/45/25% por nível) ·
+  vermelha enche a estamina · branca +20 Str e azul +20 Dex por 2 min · verde envenena quem bebe.
+  0,5 s entre poções do mesmo tipo.
+- **Reagentes:** cada magia gasta os reagentes dela (ex.: Energy Bolt = Black Pearl + Nightshade). Sem reagente,
+  não lança.
+- **Spellbook:** o livro original (gump 0x08AC) com as magias por círculo; clique numa magia para lançar.
+
 ## Interface do cliente
 
+- **Barras de status** do cliente: a sua (0x0803: vida, mana e estamina) e a do alvo (0x0804, com o nome);
+  verde quando envenenado, amarelo paralisado. Duplo clique na sua abre o **Character Status** (0x0802).
 - **Cursores** originais (luva): aponta para onde o personagem andaria, vira o target na mira e ao posicionar.
 - **Fonte** com curvas do cliente (`unifont.mul`) nos nomes, no dano, nas palavras de poder, no menu e no paperdoll.
   A fonte simples (`unifont1.mul`) também é extraída e fica de reserva.
 - **Paperdoll** (gump 0x07D0) com o corpo e as roupas nas mesmas cores do personagem, e **mochila** (0x003C) com
-  spellbook, reagentes e poções que dá para arrastar lá dentro (por enquanto são decorativos).
+  spellbook, reagentes e poções (dá para arrastar lá dentro). Renasce cheia.
 - **Montarias:** cavalos, ostards e lhama. Montado, anda em 200 ms e corre em 100 ms por passo. Ao morrer, você cai
   da montaria e ela fica ao lado.
 
@@ -109,6 +123,8 @@ resistências 70, FC 2 e FCR 6.
 
 - A paleta tem **grupos** (Muro de pedra, Colunas, Grama…) e **busca** por nome do tiledata ou id do gráfico
   (ex.: `wall`, `0x001C`). O ponto vermelho na miniatura indica que o tile bloqueia a passagem.
+- **Muro:** escolha o material (pedra, mármore ou madeira) e arraste; as peças retas, quinas e postes saem
+  sozinhas. **Ctrl+Z** desfaz o último clique ou arraste.
 - **Terreno** (grama, areia, água…) substitui o piso do tile. **Objetos** (muros, pilares…) são empilhados no tile na altura Z escolhida.
 - **Spawn** define onde o personagem nasce.
 - **Salvar** grava `public/arenas/<nome>.json` (só funciona com `npm run dev`) e mantém uma cópia no navegador.
@@ -194,12 +210,11 @@ Os tiles escolhidos vêm de `scripts/extrator/selecao.json` (grupos por nome do 
 - Personagem é um boneco simples (as animações do cliente, em `anim.uoo`, entram numa etapa posterior).
 - A cópia da arena no navegador mudou de chave (`browseruo.arena.v2`): arenas antigas usavam ids de placeholder.
 - Cliente apenas local: ainda não há servidor autoritativo nem outros jogadores (os bots rodam no navegador).
-- Só o jogador monta (bots não); criaturas não atacam; os itens da mochila ainda não são usáveis.
-- A animação de "apanhar" (get hit) ainda não é usada.
+- Só o jogador monta (bots não); criaturas não atacam; bots não bebem poções.
 
 ## Próximos marcos
 
-1. Criaturas agressivas e usar os itens da mochila (poções, spellbook).
+1. Criaturas agressivas.
 2. Servidor autoritativo (Node + WebSocket, tick fixo) reaproveitando `mundo/` e `jogo/`.
 3. Combate corpo a corpo e itens (swing timer, armas), com regras do ServUO como referência.
 4. Mais magias (Magic Arrow, Harm, Fireball, Mind Blast…).

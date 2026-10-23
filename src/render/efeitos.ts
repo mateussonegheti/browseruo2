@@ -153,10 +153,12 @@ export class Efeitos {
         return;
       }
       const quadro = Math.min(f.quadros - 1, Math.max(0, Math.floor(t * f.quadros)));
-      // item: base no vértice inferior do losango (como os objetos); gump: base nos pés do alvo
-      const baseY = f.ancora === 'item' ? para.y + 22 : para.y + 6;
+      // item: base no vértice inferior do losango (como os objetos); gump (raio): ponta no peito do alvo
+      const baseY = f.ancora === 'item' ? para.y + 22 : para.y - 24;
+      // A ponta do raio fica à direita do centro do quadro: puxa para cima do alvo
+      const ajusteX = f.ancora === 'gump' ? -18 : 0;
       ctx.drawImage(f.img, quadro * f.largura, 0, f.largura, f.altura,
-        para.x - f.largura / 2, baseY - f.altura, f.largura, f.altura);
+        para.x - f.largura / 2 + ajusteX, baseY - f.altura, f.largura, f.altura);
       return;
     }
     switch (v.visual) {

@@ -504,6 +504,20 @@ def extrair_fonte(caminho: Path, pasta: Path, nome: str) -> dict:
     return {"arquivo": f"{nome}.png", "altura": alt_total, "glifos": meta}
 
 
+def aparar(img: Imagem) -> Imagem:
+    """Corta as margens transparentes (a arte dos itens tem 44 px de largura com muita sobra)."""
+    opacos = [(i % img.largura, i // img.largura) for i in range(img.largura * img.altura) if img.rgba[i * 4 + 3]]
+    if not opacos:
+        return img
+    x0 = min(x for x, _ in opacos)
+    x1 = max(x for x, _ in opacos)
+    y0 = min(y for _, y in opacos)
+    y1 = max(y for _, y in opacos)
+    larg, alt = x1 - x0 + 1, y1 - y0 + 1
+    rgba = b"".join(img.rgba[((y0 + y) * img.largura + x0) * 4:((y0 + y) * img.largura + x1 + 1) * 4] for y in range(alt))
+    return Imagem(larg, alt, rgba)
+
+
 def extrair_interface(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
     conf = selecao.get("interface")
     if not conf:
@@ -519,7 +533,7 @@ def extrair_interface(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
     for texto in conf.get("itens", []):
         gid = int(texto, 0)
         if gid in indice:
-            img = decodificar_imagem(arte, indice[gid])
+            img = aparar(decodificar_imagem(arte, indice[gid]))
             gravar_png(pasta / "itens" / f"0x{gid:04X}.png", img)
             itens[f"0x{gid:04X}"] = {"nome": infos[gid].nome.replace("%s%", "").replace("%s", ""),
                                      "largura": img.largura, "altura": img.altura}

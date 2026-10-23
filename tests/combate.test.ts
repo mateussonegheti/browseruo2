@@ -235,3 +235,41 @@ describe('criaturas e animações', () => {
     expect(direcaoArmazenada(7)).toEqual({ dir: 4, espelhar: false });
   });
 });
+
+describe('mochila: poções e reagentes', () => {
+  it('Greater Heal cura 26–32 (Alchemy 100), trava 10 s e não funciona envenenado', () => {
+    const { motor, a } = montar({ rng: minimo });
+    a.vida = 50;
+    expect(motor.usarItem('a', '0x0F0C', 0)).toBeNull();
+    expect(a.vida).toBe(76);
+    expect(a.itens['0x0F0C']).toBe(9);
+    expect(motor.usarItem('a', '0x0F0C', 5000)).toMatch(/10 segundos/);
+    a.veneno = { nivel: 0, proximoTickMs: 99999, ticksFeitos: 0 };
+    expect(motor.usarItem('a', '0x0F0C', 11000)).toMatch(/estado/);
+  });
+  it('Greater Strength dá +20 Str (vida máxima 110) por 2 minutos', () => {
+    const { motor, a } = montar();
+    motor.usarItem('a', '0x0F09', 0);
+    expect(a.vidaMax).toBe(110);
+    expect(motor.usarItem('a', '0x0F09', 1000)).toMatch(/parecido/);
+    motor.atualizar(120000);
+    expect(a.vidaMax).toBe(100);
+  });
+  it('Total Refresh enche a estamina; Greater Cure tira veneno pela chance', () => {
+    const { motor, a } = montar({ rng: minimo });
+    a.stam = 3;
+    motor.usarItem('a', '0x0F0B', 0);
+    expect(a.stam).toBe(a.stamMax);
+    a.veneno = { nivel: 3, proximoTickMs: 99999, ticksFeitos: 0 };
+    motor.usarItem('a', '0x0F07', 0);
+    expect(a.veneno).toBeNull();
+  });
+  it('magias gastam reagentes; sem reagente não dá para lançar', () => {
+    const { motor, a } = montar();
+    lancar(motor, 'a', 'b', 'energy-bolt', 0);
+    expect(a.itens['0x0F7A']).toBe(99);
+    expect(a.itens['0x0F88']).toBe(99);
+    a.itens['0x0F7A'] = 0;
+    expect(motor.iniciarCast('a', 'energy-bolt', 5000)).toMatch(/reagentes/);
+  });
+});

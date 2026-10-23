@@ -16,8 +16,23 @@ export function dado(rng: Aleatorio, dados: number, lados: number, bonus: number
 }
 
 /** Vida máxima de jogador em AoS+: 50 + Str/2. */
-export function vidaMaxima(f: Ficha): number {
-  return 50 + Math.floor(f.atributos.str / 2);
+export function vidaMaxima(f: Ficha, bonusStr = 0): number {
+  return 50 + Math.floor((f.atributos.str + bonusStr) / 2);
+}
+
+export function estaminaMaxima(f: Ficha, bonusDex = 0): number {
+  return f.atributos.dex + bonusDex;
+}
+
+/** BasePotion.Scale: Alchemy dá +10% a cada 33 pontos (30% com 100). */
+export function escalaPocao(f: Ficha, valor: number): number {
+  const bonus = Math.floor(Math.floor(f.skills.alchemy * 10) / 330) * 10;
+  return Math.floor((valor * (100 + bonus)) / 100);
+}
+
+/** RegenRates (sem SA): estamina com Focus. */
+export function intervaloRegenStamMs(f: Ficha): number {
+  return 1000 / (0.1 * (2 + f.skills.focus * 0.1));
 }
 
 export function manaMaxima(f: Ficha): number {

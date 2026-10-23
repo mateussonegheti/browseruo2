@@ -1,8 +1,9 @@
 import type { EstadoJogador } from '../jogo/jogador';
 import {
   chanceCure, chanceResistir, curaGreaterHeal, curaHeal, custoMana, danoMagia, danoVeneno, distanciaTiles,
-  duracaoParalisiaMs, intervaloRegenManaMs, intervaloRegenVidaMs, manaMaxima, nivelVeneno, pontosReflexo,
-  recuperacaoMs, tempoCastMs, vidaMaxima, type Aleatorio,
+  duracaoParalisiaMs, escalaPocao, estaminaMaxima, inteiro, intervaloRegenManaMs, intervaloRegenStamMs,
+  intervaloRegenVidaMs, manaMaxima, nivelVeneno, pontosReflexo, recuperacaoMs, tempoCastMs, vidaMaxima,
+  type Aleatorio,
 } from './formulas';
 import type { Combatente, DefMagia, EventoCombate, Ficha, ModoBot, Regras } from './tipos';
 
@@ -48,6 +49,9 @@ export class MotorCombate {
       id, nome, mov, ficha,
       vida: vidaMaxima(ficha), vidaMax: vidaMaxima(ficha),
       mana: manaMaxima(ficha), manaMax: manaMaxima(ficha),
+      stam: estaminaMaxima(ficha), stamMax: estaminaMaxima(ficha),
+      itens: { ...this.regras.mochilaInicial }, travas: {}, modificadores: [],
+      proximaRegenStamMs: agora + intervaloRegenStamMs(ficha),
       cast: null, mira: null, proximaMagiaMs: 0, veneno: null, paralisadoAteMs: 0, reflexo: 0,
       morto: false, respawnEmMs: 0,
       proximaRegenVidaMs: agora + intervaloRegenVidaMs(),
@@ -146,6 +150,51 @@ export class MotorCombate {
     return null;
   }
 
+  /** Usa (bebe) um item da mochila. Retorna a mensagem de erro, ou null se usou. */
+  usarItem(id: string, item: string, agora: number): string | null {
+    const c = this.combatentes.get(id);
+    const p = this.regras.pocoes[item];
+    if (!c || !p) return 'Isso não pode ser usado.';
+    const erro = this.erroPocao(c, item, p, agora);
+    if (erro) {
+      this.avisar(c, erro);
+      return erro;
+    }
+    c.travas[item] = agora + 500; // BasePotion: 0,5 s entre usos do mesmo tipo
+    c.itens[item] = (c.itens[item] ?? 0) - 1;
+    this.eventos.push({ tipo: 'som', som: this.regras.somBeber, alvoId: c.id });
+    switch (p.tipo) {
+      case 'cura': {
+        c.travas['pocao-cura'] = agora + (p.travaMs ?? 10000);
+        const valor = inteiro(this.rng, escalaPocao(c.ficha, p.min ?? 0), escalaPocao(c.ficha, p.max ?? 0));
+        this.curar(c, valor);
+        break;
+      }
+      case 'cura-veneno': {
+        this.eventos.push({ tipo: 'visual', visual: 'cura-veneno', origemId: c.id, alvoId: c.id, duracaoMs: 600 });
+        if (this.rng() < (p.chances?.[c.veneno!.nivel] ?? 0)) {
+          c.veneno = null;
+          this.eventos.push({ tipo: 'texto', alvoId: c.id, texto: '*curado do veneno*', cor: COR_VENENO });
+        } else {
+          this.avisar(c, 'A poção não curou o veneno.');
+        }
+        break;
+      }
+      case 'refresh':
+        c.stam = c.stamMax;
+        break;
+      case 'forca':
+      case 'agilidade':
+        c.modificadores.push({ atributo: p.tipo === 'forca' ? 'str' : 'dex', valor: p.bonus ?? 0, ateMs: agora + (p.duracaoMs ?? 0) });
+        this.recalcularMaximos(c);
+        break;
+      case 'veneno':
+        this.envenenar(c, p.nivel ?? 2, agora);
+        break;
+    }
+    return null;
+  }
+
   cancelarMira(id: string): void {
     const c = this.combatentes.get(id);
     if (c?.mira) {
@@ -166,6 +215,10 @@ export class MotorCombate {
         if (agora >= c.respawnEmMs) this.renascer(c, agora);
         continue;
       }
+      if (c.modificadores.some((m) => agora >= m.ateMs)) {
+        c.modificadores = c.modificadores.filter((m) => agora < m.ateMs);
+        this.recalcularMaximos(c);
+      }
       this.concluirCast(c, agora);
       this.tickVeneno(c, agora);
       this.regenerar(c, agora);
@@ -181,7 +234,41 @@ export class MotorCombate {
     if (this.paralisado(c, agora)) return 'Você não pode fazer isso paralisado.';
     if (c.mana < this.custo(c, m)) return `Mana insuficiente (precisa de ${this.custo(c, m)}).`;
     if (m.efeito.tipo === 'reflexo' && c.reflexo > 0) return 'Esta magia já está em efeito.';
+    if (m.reagentes.some((r) => (c.itens[r] ?? 0) < 1)) return 'Você não tem reagentes suficientes.';
     return null;
+  }
+
+  private erroPocao(c: Combatente, item: string, p: { tipo: string; bonus?: number }, agora: number): string | null {
+    if (c.morto) return 'Você está morto.';
+    if ((c.itens[item] ?? 0) < 1) return 'Você não tem mais disso.';
+    if (agora < (c.travas[item] ?? 0)) return 'Você precisa esperar para fazer outra ação.';
+    switch (p.tipo) {
+      case 'cura':
+        if (c.vida >= c.vidaMax) return 'Você já está com a vida cheia.';
+        if (c.veneno) return 'Você não pode se curar no seu estado atual.';
+        if (agora < (c.travas['pocao-cura'] ?? 0)) return 'Você precisa esperar 10 segundos para outra poção de cura.';
+        return null;
+      case 'cura-veneno':
+        return c.veneno ? null : 'Você não está envenenado.';
+      case 'refresh':
+        return c.stam < c.stamMax ? null : 'Você já está com a estamina cheia.';
+      case 'forca':
+      case 'agilidade': {
+        const atributo = p.tipo === 'forca' ? 'str' : 'dex';
+        return c.modificadores.some((m) => m.atributo === atributo) ? 'Você já está sob um efeito parecido.' : null;
+      }
+      default:
+        return null;
+    }
+  }
+
+  /** Vida e estamina máximas com os bônus de poção (o atual não passa do novo máximo). */
+  private recalcularMaximos(c: Combatente): void {
+    const soma = (a: 'str' | 'dex') => c.modificadores.filter((m) => m.atributo === a).reduce((t, m) => t + m.valor, 0);
+    c.vidaMax = vidaMaxima(c.ficha, soma('str'));
+    c.stamMax = estaminaMaxima(c.ficha, soma('dex'));
+    c.vida = Math.min(c.vida, c.vidaMax);
+    c.stam = Math.min(c.stam, c.stamMax);
   }
 
   private erroAlvo(c: Combatente, alvo: Combatente | undefined, m: DefMagia, agora: number): string | null {
@@ -220,6 +307,7 @@ export class MotorCombate {
   /** Gasta a mana e aplica o efeito (equivalente a CheckSequence + Target no ServUO). */
   private lancar(c: Combatente, alvoOriginal: Combatente, m: DefMagia, agora: number): void {
     c.mana -= this.custo(c, m);
+    for (const r of m.reagentes) c.itens[r] = (c.itens[r] ?? 0) - 1;
     const ef = m.efeito;
     switch (ef.tipo) {
       case 'dano': {
@@ -368,6 +456,11 @@ export class MotorCombate {
       if (c.mana < c.manaMax) c.mana++;
       c.proximaRegenManaMs += iMana;
     }
+    const iStam = intervaloRegenStamMs(c.ficha);
+    while (agora >= c.proximaRegenStamMs) {
+      if (c.stam < c.stamMax) c.stam++;
+      c.proximaRegenStamMs += iStam;
+    }
   }
 
   private morrer(c: Combatente, agora: number): void {
@@ -377,6 +470,7 @@ export class MotorCombate {
     c.veneno = null;
     c.paralisadoAteMs = 0;
     c.reflexo = 0;
+    c.modificadores = [];
     c.mov.movimento = null;
     c.respawnEmMs = agora + this.regras.respawnMs;
     this.eventos.push({ tipo: 'morte', alvoId: c.id });
@@ -388,8 +482,13 @@ export class MotorCombate {
     c.mov.y = p.y;
     c.mov.movimento = null;
     c.morto = false;
+    this.recalcularMaximos(c);
     c.vida = c.vidaMax;
     c.mana = c.manaMax;
+    c.stam = c.stamMax;
+    // Arena: renasce com a mochila cheia de novo
+    c.itens = { ...this.regras.mochilaInicial };
+    c.travas = {};
     c.proximaMagiaMs = 0;
     c.proximaRegenVidaMs = agora + intervaloRegenVidaMs();
     c.proximaRegenManaMs = agora + intervaloRegenManaMs(c.ficha);

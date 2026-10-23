@@ -69,8 +69,20 @@ async function iniciar(): Promise<void> {
   renderizador.fonte = fonte;
   document.documentElement.style.setProperty('--cursor-ui', cssCursor(recursos, CURSOR_PADRAO));
   document.documentElement.style.setProperty('--cursor-pegar', cssCursor(recursos, '0x2075', 'grabbing'));
-  const janelas = new Janelas(document.querySelector<HTMLElement>('#janelas')!, recursos, animacoes);
+  const janelas = new Janelas(document.querySelector<HTMLElement>('#janelas')!, recursos, animacoes, {
+    estoque: () => motor.obter(ID_JOGADOR)?.itens ?? {},
+    usar: (item) => motor.usarItem(ID_JOGADOR, item, performance.now()),
+    magias: () => motor.regras.magias,
+    lancar: (magia) => motor.iniciarCast(ID_JOGADOR, magia, performance.now()),
+  });
   const menu = new MenuContexto(document.querySelector<HTMLElement>('#janelas')!, fonte);
+  // Barras do cliente só se os gumps foram extraídos
+  const temGumpsStatus = await new Promise<boolean>((ok) => {
+    const img = new Image();
+    img.onload = () => ok(true);
+    img.onerror = () => ok(false);
+    img.src = '/interface/gumps/0x0803.png';
+  });
   /** O botão direito que cancelou um posicionamento não abre o menu. */
   let ignorarMenu = false;
   const terrenoPadrao = catalogo.listar('terreno')[0]?.id ?? 1;
@@ -189,6 +201,17 @@ async function iniciar(): Promise<void> {
     jogador.montado = false;
   };
 
+  /** Valores do status completo do jogador. */
+  const dadosStatus = () => {
+    const bonus = (a: 'str' | 'dex') => eu.modificadores.filter((m) => m.atributo === a).reduce((t, m) => t + m.valor, 0);
+    const pesoItens = Object.values(eu.itens).reduce((t, q) => t + q, 0);
+    return {
+      nome: eu.nome, str: eu.ficha.atributos.str + bonus('str'), dex: eu.ficha.atributos.dex + bonus('dex'),
+      int: eu.ficha.atributos.int, vida: eu.vida, vidaMax: eu.vidaMax, mana: eu.mana, manaMax: eu.manaMax,
+      stam: eu.stam, stamMax: eu.stamMax, ar: eu.ficha.resistencias.fisica, ouro: 0, peso: Math.round(pesoItens / 10),
+    };
+  };
+
   /** Monta se a criatura estiver ao lado e o jogador puder. */
   const tentarMontar = (c: Combatente, anim: string): void => {
     const agora = performance.now();
@@ -220,7 +243,11 @@ async function iniciar(): Promise<void> {
     },
     removerCriaturas,
     alternarSom: () => (sons.ativo = !sons.ativo),
-  }, animacoes.criaturas());
+  }, animacoes.criaturas(), {
+    gumps: temGumpsStatus,
+    fonte,
+    abrirStatus: () => void janelas.alternarStatus(dadosStatus),
+  });
 
   // ---------- editor ----------
   let temporizadorAutosave: number | undefined;
@@ -357,6 +384,7 @@ async function iniciar(): Promise<void> {
     if (menu.aberto) return; // o clique fora só fecha o menu
     if (editor.ativo) {
       if (e.button !== 0 && e.button !== 2) return;
+      editor.iniciarGesto();
       entrada.pintando = { apagar: e.button === 2 };
       const t = tileSobMouse(cameraEditor);
       if (t) {
@@ -442,7 +470,15 @@ async function iniciar(): Promise<void> {
       return;
     }
     if (editor.ativo) {
-      if (k === 'g') editor.grade = !editor.grade;
+      if (k === 'z' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        const anterior = editor.desfazer();
+        if (anterior) {
+          arena = new Arena(anterior);
+          salvarLocal(arena.dados);
+          painel.mostrarStatus('Desfeito.');
+        } else painel.mostrarStatus('Nada para desfazer.');
+      } else if (k === 'g') editor.grade = !editor.grade;
       else entrada.teclas.add(k);
       return;
     }
@@ -483,6 +519,7 @@ async function iniciar(): Promise<void> {
     }
     for (const ev of motor.coletarEventos()) {
       efeitos.adicionar(ev, agora);
+      if (ev.tipo === 'dano') apanharAte.set(ev.alvoId, agora + DURACAO_APANHAR_MS);
       if (ev.tipo === 'som') sons.tocar(ev.som);
       else if (ev.tipo === 'aviso' && ev.paraId === ID_JOGADOR) hud.avisar(ev.texto, agora);
       else if (ev.tipo === 'morte') {
@@ -500,6 +537,10 @@ async function iniciar(): Promise<void> {
     }
     if (c.cast) return { acao: 'castar', progresso: Math.min(0.999, (agora - c.cast.inicioMs) / (c.cast.fimMs - c.cast.inicioMs)) };
     const m = c.mov.movimento;
+    const fimApanhar = apanharAte.get(c.id) ?? 0;
+    if (!m && !c.mov.montado && agora < fimApanhar) {
+      return { acao: 'apanhar', progresso: 1 - (fimApanhar - agora) / DURACAO_APANHAR_MS };
+    }
     if (m || agora - c.mov.ultimoFim < 120) {
       const passo = m?.duracao ?? (c.mov.montado ? 200 : 400);
       const correndo = c.mov.montado ? passo <= 100 : passo <= 200;
@@ -534,6 +575,10 @@ async function iniciar(): Promise<void> {
 
   /** Cursor do cliente: target na mira, luva apontando para onde o personagem andaria no jogo. */
   let cursorAtual = '';
+  /** Fim da animação de "apanhar" de cada personagem (dispara a cada dano recebido). */
+  const apanharAte = new Map<string, number>();
+  const DURACAO_APANHAR_MS = 450;
+  let ultimaMochila = 0;
   const atualizarCursor = (): void => {
     let id = CURSOR_PADRAO;
     if (!editor.ativo) {
@@ -585,6 +630,11 @@ async function iniciar(): Promise<void> {
     });
     canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando));
     atualizarCursor();
+    if (agora - ultimaMochila > 300) {
+      janelas.atualizarMochila();
+      janelas.atualizarStatus();
+      ultimaMochila = agora;
+    }
     hud.dicaExtra = colocando ? `Clique no chão para colocar: ${colocando.texto} · Esc ou botão direito cancela` : null;
     if (!editor.ativo) hud.atualizar(eu, eu.ultimoAlvoId ? motor.obter(eu.ultimoAlvoId) : undefined, agora);
 

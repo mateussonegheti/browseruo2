@@ -23,6 +23,28 @@ export interface DefMagia {
   som: string;
   alvo: TipoAlvo;
   efeito: EfeitoMagia;
+  /** Itens (arte, ex.: "0x0F7A") gastos quando a magia sai. */
+  reagentes: string[];
+}
+
+export type TipoPocao = 'cura' | 'cura-veneno' | 'refresh' | 'forca' | 'agilidade' | 'veneno';
+
+/** Poção (ServUO, versões "Greater"/"Total"). */
+export interface DefPocao {
+  nome: string;
+  tipo: TipoPocao;
+  /** Cura: faixa de vida antes do bônus de Alchemy. */
+  min?: number;
+  max?: number;
+  /** Trava entre poções do mesmo grupo (ex.: 10 s nas de cura). */
+  travaMs?: number;
+  /** Cure: chance (0 a 1) por nível de veneno. */
+  chances?: number[];
+  /** Força/agilidade: bônus e duração. */
+  bonus?: number;
+  duracaoMs?: number;
+  /** Veneno: nível aplicado em quem bebe. */
+  nivel?: number;
 }
 
 export interface DefVeneno {
@@ -39,7 +61,7 @@ export interface Ficha {
   atributos: { str: number; dex: number; int: number };
   skills: {
     magery: number; evalInt: number; resist: number; inscription: number;
-    poisoning: number; meditation: number; focus: number;
+    poisoning: number; meditation: number; focus: number; alchemy: number;
   };
   resistencias: Record<Elemento, number>;
   fasterCasting: number;
@@ -54,6 +76,10 @@ export interface Regras {
   manaPorCirculo: number[];
   venenos: DefVeneno[];
   magias: DefMagia[];
+  pocoes: Record<string, DefPocao>;
+  /** Conteúdo da mochila ao nascer e ao renascer: arte do item -> quantidade. */
+  mochilaInicial: Record<string, number>;
+  somBeber: string;
 }
 
 /** parado: boneco de treino · ativo: mago que luta · criatura: animal/monstro que só passeia. */
@@ -69,6 +95,15 @@ export interface Combatente {
   vidaMax: number;
   mana: number;
   manaMax: number;
+  stam: number;
+  stamMax: number;
+  /** Mochila: arte do item -> quantidade. */
+  itens: Record<string, number>;
+  /** Travas de uso (ex.: "cura" das poções, ou o próprio item) -> liberada em (ms). */
+  travas: Record<string, number>;
+  /** Bônus temporários de atributo (poções de força e agilidade). */
+  modificadores: Array<{ atributo: 'str' | 'dex'; valor: number; ateMs: number }>;
+  proximaRegenStamMs: number;
   /** Magia sendo lançada no alvo já escolhido; o efeito sai no fim (o personagem não anda até lá). */
   cast: { magia: DefMagia; alvoId: string; inicioMs: number; fimMs: number } | null;
   /** Magia escolhida, esperando o alvo (cursor de mira). */

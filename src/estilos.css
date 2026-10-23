@@ -63,6 +63,13 @@ html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--tex
 .barra.mana .valor { background: #3c86c9; filter: hue-rotate(40deg); }
 .barra .texto { position: relative; font-size: 10px; line-height: 14px; text-align: center; color: #fff; text-shadow: 0 1px 2px #000; }
 .barras .estado { min-height: 14px; font-size: 11px; color: var(--destaque); }
+.bloco-barra { pointer-events: auto; }
+.bloco-barra[hidden] { display: none; }
+.barras-gump { position: relative; width: 154px; height: 60px; background-repeat: no-repeat; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+.barras-gump .trilho { position: absolute; left: 34px; width: 109px; height: 11px; background-repeat: no-repeat; }
+.barras-gump .valor { height: 11px; background-repeat: no-repeat; transition: width .12s linear; }
+.barras-gump .nome-gump { position: absolute; left: 16px; right: 16px; top: 15px; display: flex; justify-content: center; }
+.bloco-barra .estado { min-height: 14px; margin-top: 2px; font-size: 11px; color: var(--destaque); text-shadow: 0 1px 2px #000; }
 .bots { position: fixed; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
   background: rgba(13,15,18,.82); border: 1px solid var(--borda); border-radius: 8px; }
 .bots strong { font-size: 12px; color: var(--suave); }
@@ -102,5 +109,9 @@ body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui,
   color: #fff; font: inherit; font-size: 13px; text-align: left; cursor: var(--cursor-ui, pointer); }
 .menu-contexto button:hover { background: #4a3f2c; }
 .mochila img { position: absolute; image-rendering: pixelated; }
+.livro { position: relative; background-repeat: no-repeat; }
+.livro > canvas, .livro > span { position: absolute; }
+.livro .magia { cursor: var(--cursor-ui, pointer); }
+.livro .magia:hover { filter: drop-shadow(0 0 2px #fff6c0); }
 .mochila img:hover { filter: brightness(1.25); }
 .mochila img.arrastando { cursor: var(--cursor-pegar, grabbing); filter: brightness(1.25) drop-shadow(0 0 2px #fff); }

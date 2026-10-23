@@ -46,13 +46,25 @@ export class PainelEditor {
     // Ferramentas
     const barra = document.createElement('div');
     barra.className = 'linha';
-    const defs: Array<[Ferramenta, string]> = [['colocar', 'Colocar'], ['apagar', 'Apagar'], ['spawn', 'Spawn']];
+    const defs: Array<[Ferramenta, string]> = [['colocar', 'Colocar'], ['muro', 'Muro'], ['apagar', 'Apagar'], ['spawn', 'Spawn']];
     for (const [f, rotulo] of defs) {
       const b = this.botao(rotulo, () => { editor.ferramenta = f; this.atualizar(); });
       this.botoesFerramenta.set(f, b);
       barra.append(b);
     }
     raiz.append(barra);
+
+    // Ferramenta Muro: escolhe o material; as peças (reta, quina, poste) saem sozinhas
+    if (editor.conjuntos.length) {
+      const material = document.createElement('select');
+      for (const c of editor.conjuntos) material.append(new Option(c.nome, c.nome));
+      material.addEventListener('change', () => {
+        editor.conjunto = editor.conjuntos.find((c) => c.nome === material.value);
+        editor.ferramenta = 'muro';
+        this.atualizar();
+      });
+      raiz.append(this.rotulo('Material do muro (ferramenta Muro)', material));
+    }
 
     // Z
     const z = document.createElement('input');
@@ -98,7 +110,7 @@ export class PainelEditor {
     const dica = document.createElement('p');
     dica.className = 'dica';
     dica.textContent =
-      'Esquerdo: usar ferramenta · Direito: apagar · W/A/S/D ou setas: mover a câmera · G: grade · E: fechar editor';
+      'Esquerdo: usar ferramenta (arraste para pintar) · Direito: apagar · Ctrl+Z: desfazer · W/A/S/D ou setas: câmera · G: grade · E: fechar editor';
     raiz.append(dica);
 
     this.atualizar();
