@@ -49,10 +49,11 @@ export function temLinhaDeVisao(
   return true;
 }
 
-/** Ordem de desenho dentro do mesmo tile: pisos (planos) antes de paredes e outros objetos, como no cliente do UO. */
+/** Pisos (planos) nunca escondem nada: vão todos antes de paredes, objetos e personagens. */
 export function chaveOrdem(x: number, y: number, z: number, def: { altura: number; bloqueia: boolean } | undefined): number {
   const plano = def !== undefined && def.altura === 0 && !def.bloqueia;
-  return (x + y) * 10000 + Math.max(0, z) * 10 + (plano ? 0 : 1);
+  const base = (x + y) * 10000 + Math.max(0, z);
+  return plano ? base - 1e9 : base;
 }
 
 const GRUPOS_SUPERFICIE = new Set(['Casas', 'Escadas']);
