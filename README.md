@@ -172,7 +172,7 @@ Limitações: casas construídas antes dessa versão não têm identificador e s
 
 ## Editor de arena
 
-- A paleta tem **grupos** (Muro de pedra, Colunas, Grama…) e **busca** por nome do tiledata ou id do gráfico
+- A paleta tem **grupos recolhíveis** (setinha em cada um; "Abrir tudo" e "Fechar tudo") (Muro de pedra, Colunas, Grama…) e **busca** por nome do tiledata ou id do gráfico
   (ex.: `wall`, `0x001C`). O ponto vermelho na miniatura indica que o tile bloqueia a passagem.
 - **Muro:** escolha o material (pedra, mármore ou madeira) e arraste; as peças retas, quinas e postes saem
   sozinhas. **Ctrl+Z** desfaz o último clique ou arraste.

@@ -178,52 +178,86 @@ export class PainelEditor {
     return b;
   }
 
-  /** Paleta de uma seção: filtro por grupo, busca por nome/id e grade de miniaturas. */
+  /** Paleta de uma seção: um bloco recolhível (setinha) por grupo, com busca por nome/id. */
   private paleta(titulo: string, tiles: DefinicaoTile[]): HTMLElement {
-    const secao = document.createElement('section');
-    secao.append(this.titulo(titulo, 'h3'));
+    const secao = document.createElement('details');
+    secao.className = 'secao-paleta';
+    secao.open = true;
+    const resumo = document.createElement('summary');
+    resumo.textContent = titulo;
+    secao.append(resumo);
 
-    const grupos = [...new Set(tiles.map((t) => t.grupo).filter((g): g is string => Boolean(g)))];
-    const filtro = document.createElement('select');
-    filtro.append(new Option('Todos os grupos', ''));
-    for (const g of grupos) filtro.append(new Option(g, g));
-    filtro.value = grupos[0] ?? '';
+    const porGrupo = new Map<string, DefinicaoTile[]>();
+    for (const t of tiles) {
+      const g = t.grupo ?? 'Sem grupo';
+      const lista = porGrupo.get(g);
+      if (lista) lista.push(t);
+      else porGrupo.set(g, [t]);
+    }
 
     const busca = document.createElement('input');
     busca.type = 'search';
     busca.placeholder = 'Buscar por nome ou id (ex.: wall, 0x1B)';
 
-    const contador = document.createElement('p');
-    contador.className = 'dica';
-    const grade = document.createElement('div');
-    grade.className = 'paleta';
-    const daSecao = new Set<number>();
+    const acoes = document.createElement('div');
+    acoes.className = 'linha';
+    const lista = document.createElement('div');
+    secao.append(busca, acoes, lista);
 
-    const desenhar = (): void => {
-      for (const id of daSecao) this.botoesPaleta.delete(id);
-      daSecao.clear();
-      grade.replaceChildren();
-      const termo = busca.value.trim().toLowerCase();
-      const filtrados = tiles.filter((t) =>
-        (!filtro.value || t.grupo === filtro.value) &&
-        (!termo || t.nome.toLowerCase().includes(termo) || descreverId(t).toLowerCase().includes(termo)));
-      for (const t of filtrados.slice(0, LIMITE_PALETA)) {
-        const b = this.botaoTile(t);
-        this.botoesPaleta.set(t.id, b);
-        daSecao.add(t.id);
-        grade.append(b);
-      }
-      contador.textContent = filtrados.length > LIMITE_PALETA
-        ? `Mostrando ${LIMITE_PALETA} de ${filtrados.length}. Refine a busca.`
-        : `${filtrados.length} tile(s)`;
-      this.atualizar();
+    const blocos: Array<{ el: HTMLDetailsElement; desenhar: () => void }> = [];
+    for (const [grupo, doGrupo] of porGrupo) {
+      const el = document.createElement('details');
+      el.className = 'grupo-paleta';
+      const nome = document.createElement('summary');
+      const grade = document.createElement('div');
+      grade.className = 'paleta';
+      el.append(nome, grade);
+      const ids = new Set<number>();
+
+      // Só cria as miniaturas quando o grupo está aberto: a paleta inteira passa de 3 mil itens
+      const desenhar = (): void => {
+        for (const id of ids) this.botoesPaleta.delete(id);
+        ids.clear();
+        grade.replaceChildren();
+        const termo = busca.value.trim().toLowerCase();
+        const achados = doGrupo.filter((t) =>
+          !termo || t.nome.toLowerCase().includes(termo) || descreverId(t).toLowerCase().includes(termo));
+        nome.textContent = `${grupo} (${achados.length})`;
+        el.hidden = achados.length === 0;
+        if (!el.open) return;
+        for (const t of achados.slice(0, LIMITE_PALETA)) {
+          const b = this.botaoTile(t);
+          this.botoesPaleta.set(t.id, b);
+          ids.add(t.id);
+          grade.append(b);
+        }
+        if (achados.length > LIMITE_PALETA) {
+          const aviso = document.createElement('p');
+          aviso.className = 'dica';
+          aviso.textContent = `Mostrando ${LIMITE_PALETA} de ${achados.length}. Refine a busca.`;
+          grade.append(aviso);
+        }
+        this.atualizar();
+      };
+      el.addEventListener('toggle', desenhar);
+      blocos.push({ el, desenhar });
+      lista.append(el);
+      nome.textContent = `${grupo} (${doGrupo.length})`;
+    }
+
+    const alternarTodos = (abrir: boolean): void => {
+      for (const b of blocos) b.el.open = abrir;
+      for (const b of blocos) b.desenhar();
     };
-    filtro.addEventListener('change', desenhar);
-    busca.addEventListener('input', desenhar);
+    acoes.append(this.botao('Abrir tudo', () => alternarTodos(true)), this.botao('Fechar tudo', () => alternarTodos(false)));
 
-    if (grupos.length) secao.append(filtro);
-    secao.append(busca, grade, contador);
-    desenhar();
+    busca.addEventListener('input', () => {
+      const procurando = busca.value.trim() !== '';
+      for (const b of blocos) {
+        if (procurando) b.el.open = true;
+        b.desenhar();
+      }
+    });
     return secao;
   }
 
