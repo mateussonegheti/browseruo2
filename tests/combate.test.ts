@@ -88,7 +88,7 @@ describe('motor de combate (mira primeiro, efeito no fim do cast)', () => {
     expect(a.cast).toBeNull();
     expect(motor.escolherAlvo('a', 'b', 100)).toBeNull();
     expect(a.cast?.alvoId).toBe('b');
-    expect(motor.podeMover('a', 200)).toBe(false);
+    expect(motor.podeMover('a', 200)).toBe(true);
     motor.atualizar(1849); // EB: 6º círculo = 1,75 s
     expect(a.mana).toBe(100);
     expect(b.vida).toBe(100);
@@ -183,6 +183,35 @@ describe('motor de combate (mira primeiro, efeito no fim do cast)', () => {
     expect(b.morto).toBe(false);
     expect(b.vida).toBe(b.vidaMax);
     expect(b.mov.x).toBe(0);
+  });
+  it('loot: só do corpo, a até 2 tiles; pega a pilha toda; o renascido some do alcance', () => {
+    const { motor, a, b } = montar();
+    const item = Object.keys(b.itens).find((i) => b.itens[i]! > 0)!;
+    const qtd = b.itens[item]!;
+    expect(motor.itensDoCorpo('a', 'b')).toBeNull(); // vivo não é corpo
+    b.vida = 5;
+    const t = lancar(motor, 'a', 'b', 'lightning', 0);
+    expect(motor.lootar('a', 'b', item)).toMatch(/longe/); // 3 tiles
+    a.mov.x = 7;
+    const antes = a.itens[item] ?? 0;
+    expect(motor.lootar('a', 'b', item)).toBeNull();
+    expect(a.itens[item]).toBe(antes + qtd);
+    expect(motor.lootar('a', 'b', item)).toMatch(/não está/);
+    motor.atualizar(t + regras.respawnMs);
+    expect(motor.itensDoCorpo('a', 'b')).toBeNull();
+  });
+  it('loot inclui o que o morto vestia', () => {
+    const { motor, a, b } = montar();
+    const vestido = motor.equipados(b);
+    expect(vestido.length).toBeGreaterThan(0);
+    b.vida = 5;
+    lancar(motor, 'a', 'b', 'lightning', 0);
+    a.mov.x = 7;
+    for (const it of vestido) {
+      expect(b.espolio[it]).toBeGreaterThan(0);
+      expect(motor.lootar('a', 'b', it)).toBeNull();
+      expect(a.itens[it]).toBeGreaterThan(0);
+    }
   });
 });
 

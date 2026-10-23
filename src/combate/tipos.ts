@@ -152,6 +152,8 @@ export interface Combatente {
   stamMax: number;
   /** Mochila: arte do item -> quantidade. */
   itens: Record<string, number>;
+  /** Corpo (só quando morto): mochila e tudo o que estava vestido, para o loot. */
+  espolio: Record<string, number>;
   /** Travas de uso (ex.: "cura" das poções, ou o próprio item) -> liberada em (ms). */
   travas: Record<string, number>;
   /** Bônus e penalidades temporários (poções de força/agilidade, Curse). */

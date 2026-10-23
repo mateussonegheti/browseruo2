@@ -31,7 +31,10 @@ interface Agendado {
   executar: (agora: number) => void;
 }
 
+/** Distância máxima (em tiles) para abrir um corpo, como no UO. */
+const ALCANCE_LOOT_TILES = 2;
 const COR_MAGIA = '#7fb7ff';
+const COR_FALA_CAST = '#9a9a9a';
 const COR_SISTEMA = '#e6e8ec';
 const COR_VENENO = '#7be27b';
 const COR_ALERTA = '#ffb36b';
@@ -66,7 +69,7 @@ export class MotorCombate {
       equipamento: structuredClone(this.regras.equipamentoInicial),
       resistencias: { ...ficha.resistencias },
       guerra: false, alvoAtaqueId: null, proximoGolpeMs: 0, golpe: null,
-      cast: null, mira: null, proximaMagiaMs: 0, veneno: null, paralisadoAteMs: 0, reflexo: 0,
+      espolio: {}, cast: null, mira: null, proximaMagiaMs: 0, veneno: null, paralisadoAteMs: 0, reflexo: 0,
       morto: false, respawnEmMs: 0,
       proximaRegenVidaMs: agora + intervaloRegenVidaMs(),
       proximaRegenManaMs: agora + intervaloRegenManaMs(ficha),
@@ -190,11 +193,11 @@ export class MotorCombate {
     return custoMana(this.regras.manaPorCirculo, m.circulo, c.ficha);
   }
 
-  /** O personagem pode andar? (não durante o cast, paralisado nem morto) */
+  /** O personagem pode andar? (não paralisado nem morto; pode andar durante o cast) */
   podeMover(id: string, agora: number): boolean {
     const c = this.combatentes.get(id);
     if (!c) return true;
-    return !c.morto && !c.cast && agora >= c.paralisadoAteMs;
+    return !c.morto && agora >= c.paralisadoAteMs;
   }
 
   paralisado(c: Combatente, agora: number): boolean {
@@ -265,6 +268,28 @@ export class MotorCombate {
     c.mira = null;
     c.ultimoAlvoId = alvo!.id === c.id ? c.ultimoAlvoId : alvo!.id;
     this.comecarCast(c, m, alvo!.id, agora);
+    return null;
+  }
+
+  /** Itens do corpo de quem morreu que `id` consegue ver; null se não houver corpo ao alcance. */
+  itensDoCorpo(id: string, corpoId: string): Record<string, number> | null {
+    const c = this.combatentes.get(id);
+    const corpo = this.combatentes.get(corpoId);
+    if (!c || c.morto || !corpo || !corpo.morto || corpo === c) return null;
+    if (distanciaTiles(c.mov, corpo.mov) > ALCANCE_LOOT_TILES) return null;
+    return corpo.espolio;
+  }
+
+  /** Pega o item (a pilha toda) do corpo e guarda na mochila. Retorna o erro, ou null se pegou. */
+  lootar(id: string, corpoId: string, item: string): string | null {
+    const c = this.combatentes.get(id);
+    const itens = this.itensDoCorpo(id, corpoId);
+    if (!c) return 'Personagem inexistente.';
+    if (!itens) return 'O corpo está longe demais.';
+    const qtd = itens[item] ?? 0;
+    if (qtd < 1) return 'Esse item não está mais no corpo.';
+    delete itens[item];
+    c.itens[item] = (c.itens[item] ?? 0) + qtd;
     return null;
   }
 
@@ -507,7 +532,7 @@ export class MotorCombate {
     c.proximoGolpeMs = Math.max(c.proximoGolpeMs, c.cast.fimMs + atrasoGolpeMs(this.armaDe(c).velocidade, c.stam));
     c.golpe = null;
     c.mov.movimento = null;
-    this.eventos.push({ tipo: 'texto', alvoId: c.id, texto: m.palavras, cor: COR_MAGIA });
+    this.eventos.push({ tipo: 'texto', alvoId: c.id, texto: m.palavras, cor: COR_FALA_CAST });
   }
 
   /** Fim do tempo de cast: confere o alvo de novo e só então gasta a mana e aplica o efeito. */
@@ -758,6 +783,8 @@ export class MotorCombate {
 
   private morrer(c: Combatente, agora: number): void {
     c.morto = true;
+    c.espolio = { ...c.itens };
+    for (const it of this.equipados(c)) c.espolio[it] = (c.espolio[it] ?? 0) + 1;
     c.cast = null;
     c.mira = null;
     c.veneno = null;
@@ -777,6 +804,7 @@ export class MotorCombate {
     c.mov.y = p.y;
     c.mov.movimento = null;
     c.morto = false;
+    c.espolio = {};
     this.recalcularMaximos(c);
     c.vida = c.vidaMax;
     c.mana = c.manaMax;

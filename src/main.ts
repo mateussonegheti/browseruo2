@@ -72,6 +72,11 @@ async function iniciar(): Promise<void> {
       if (erro) hud.avisar(erro, performance.now());
     },
     desequipar: (item) => void motor.desequipar(ID_JOGADOR, item),
+    estoqueCorpo: (corpoId) => motor.itensDoCorpo(ID_JOGADOR, corpoId),
+    lootar: (corpoId, item) => {
+      const erro = motor.lootar(ID_JOGADOR, corpoId, item);
+      if (erro) hud.avisar(erro, performance.now());
+    },
     ehEquipavel: (item) => Boolean(motor.regras.armas[item] || motor.regras.armaduras[item] || motor.regras.escudos[item]),
     itemBau: (regrasJson as Regras).itemBau,
   });
@@ -373,13 +378,13 @@ async function iniciar(): Promise<void> {
   const tileSobMouse = (camera: Ponto): { x: number; y: number } | null =>
     entrada.mouse ? renderizador.canvasParaTile(entrada.mouse.x, entrada.mouse.y, camera) : null;
 
-  /** Personagem vivo sob o cursor (o da frente, se houver mais de um). */
-  const combatenteSobMouse = (agora: number): Combatente | undefined => {
+  /** Personagem sob o cursor (o da frente, se houver mais de um); `mortos` escolhe entre vivos e corpos. */
+  const combatenteSobMouse = (agora: number, mortos = false): Combatente | undefined => {
     if (!entrada.mouse) return undefined;
     const camera = cameraAtual(agora);
     let escolhido: { c: Combatente; y: number } | undefined;
     for (const c of motor.listar()) {
-      if (c.morto) continue;
+      if (c.morto !== mortos) continue;
       const v = posicaoVisual(c.mov, agora);
       const p = renderizador.tileParaCanvas(v.x, v.y, camera);
       const dentro = Math.abs(entrada.mouse.x - p.x) <= 16 && entrada.mouse.y >= p.y - 60 && entrada.mouse.y <= p.y + 12;
@@ -402,6 +407,15 @@ async function iniciar(): Promise<void> {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
 
+  /** Abre o corpo de quem morreu; o loot só vale perto dele. */
+  const abrirCorpo = (c: Combatente): void => {
+    if (!motor.itensDoCorpo(ID_JOGADOR, c.id)) {
+      hud.avisar('O corpo está longe demais.', performance.now());
+      return;
+    }
+    void janelas.abrirCorpo(c.id, c.nome);
+  };
+
   // ---------- eventos ----------
   // Botão direito num personagem: menu com paperdoll, mochila, montar e desmontar
   canvas.addEventListener('contextmenu', (e) => {
@@ -410,8 +424,13 @@ async function iniciar(): Promise<void> {
       ignorarMenu = false;
       return;
     }
-    const c = combatenteSobMouse(performance.now());
-    if (!c) return;
+    const agoraMenu = performance.now();
+    const c = combatenteSobMouse(agoraMenu);
+    if (!c) {
+      const corpo = combatenteSobMouse(agoraMenu, true);
+      if (corpo && corpo.id !== ID_JOGADOR) menu.abrir(e.clientX, e.clientY, `Corpo de ${corpo.nome}`, [{ rotulo: 'Lootar', acao: () => abrirCorpo(corpo) }]);
+      return;
+    }
     if (c.id === ID_JOGADOR) {
       const opcoes: OpcaoMenu[] = [
         { rotulo: 'Paperdoll', acao: abrirPaperdoll },
@@ -489,7 +508,11 @@ async function iniciar(): Promise<void> {
     if (editor.ativo || colocando || eu.mira) return;
     const agora = performance.now();
     const c = combatenteSobMouse(agora);
-    if (!c) return;
+    if (!c) {
+      const corpo = combatenteSobMouse(agora, true);
+      if (corpo && corpo.id !== ID_JOGADOR) abrirCorpo(corpo);
+      return;
+    }
     if (c.id === ID_JOGADOR) {
       // Como no UO: duplo clique em si mesmo desmonta; a pé, abre o paperdoll
       if (montaria) desmontar();
@@ -605,7 +628,7 @@ async function iniciar(): Promise<void> {
       const morte = c.respawnEmMs - motor.regras.respawnMs;
       return { acao: 'morrer', progresso: Math.min(0.999, (agora - morte) / 1000) };
     }
-    if (c.cast) return { acao: 'castar', progresso: Math.min(0.999, (agora - c.cast.inicioMs) / (c.cast.fimMs - c.cast.inicioMs)) };
+    if (c.cast && !c.mov.movimento) return { acao: 'castar', progresso: Math.min(0.999, (agora - c.cast.inicioMs) / (c.cast.fimMs - c.cast.inicioMs)) };
     if (c.golpe) {
       const progresso = (agora - c.golpe.inicioMs) / (c.golpe.fimMs - c.golpe.inicioMs);
       return { acao: c.mov.montado ? 'montado-castar' : c.golpe.animacao, progresso };

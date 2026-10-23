@@ -56,6 +56,7 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Montar / desmontar | Duplo clique no cavalo, ostard ou lhama ao lado · duplo clique em si mesmo desmonta |
 | Paperdoll / mochila | **P** / **B**, pelo menu do botão direito ou duplo clique (em você a pé / na mochila do paperdoll) |
 | Fechar janela | Botão direito na janela (como no UO); arraste para mover |
+| Lootar | **Duplo clique** (ou botão direito → Lootar) no corpo de quem morreu, a até 2 tiles · duplo clique no item da janela pega a pilha para a sua mochila · o corpo some quando a pessoa renasce |
 | Usar item | Duplo clique na mochila: poções; o spellbook abre o livro (clique numa magia para lançar) |
 | Status completo | Duplo clique na sua barra de vida (canto superior esquerdo) |
 | Guerra / paz | **Tab** · em guerra, duplo clique num alvo (ou "Atacar" no menu do botão direito) e chegue ao lado |

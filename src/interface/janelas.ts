@@ -21,10 +21,12 @@ const CORPO_Y = 19;
 const GUMP_BAU = '0x004C';
 /** Área útil de cada contêiner (onde os itens podem ficar) e a grade inicial. */
 const AREA_MOCHILA = { x: 44, y: 65, w: 142, h: 94, colunas: 5, celulaX: 29, celulaY: 31 };
+const AREA_CORPO = { x: 18, y: 84, w: 108, h: 112, colunas: 4, celulaX: 27, celulaY: 30 };
+const GUMP_CORPO = '0x0009';
 const AREA_BAU = { x: 46, y: 62, w: 166, h: 120, colunas: 7, celulaX: 24, celulaY: 40 };
 
 type Area = typeof AREA_MOCHILA;
-type ChaveConteiner = 'mochila' | 'bau';
+type ChaveConteiner = 'mochila' | 'bau' | 'corpo';
 
 /** O que as janelas precisam do jogo: mochila do jogador e as magias. */
 /** Valores mostrados no status completo (gump 0x0802). */
@@ -44,6 +46,9 @@ export interface AcoesJanelas {
   ehEquipavel(item: string): boolean;
   /** Item da mochila que abre o baú. */
   itemBau: string;
+  /** Itens do corpo aberto; null se ele sumiu (renasceu) ou está longe demais. */
+  estoqueCorpo(corpoId: string): Record<string, number> | null;
+  lootar(corpoId: string, item: string): void;
   magias(): Array<{ id: string; nome: string; circulo: number }>;
   lancar(magia: string): void;
 }
@@ -59,7 +64,8 @@ function carregar(src: string): Promise<HTMLImageElement | null> {
 
 export class Janelas {
   private paperdoll: { el: HTMLElement; canvas: HTMLCanvasElement; nome: string; pecas: () => PecaPaperdoll[] } | null = null;
-  private conteineres: Record<ChaveConteiner, { el: HTMLElement; caixa: HTMLElement } | null> = { mochila: null, bau: null };
+  private conteineres: Record<ChaveConteiner, { el: HTMLElement; caixa: HTMLElement } | null> = { mochila: null, bau: null, corpo: null };
+  private corpoAberto: string | null = null;
   private livro: HTMLElement | null = null;
   private status: { el: HTMLElement; canvas: HTMLCanvasElement; fundo: HTMLImageElement; obter: () => DadosStatus } | null = null;
   private posicoes = new Map<string, { x: number; y: number }>();
@@ -72,7 +78,7 @@ export class Janelas {
   ) {}
 
   get abertas(): boolean {
-    return Boolean(this.paperdoll || this.conteineres.mochila || this.conteineres.bau || this.livro);
+    return Boolean(this.paperdoll || this.conteineres.mochila || this.conteineres.bau || this.conteineres.corpo || this.livro);
   }
 
   /** Paperdoll: `pecas` é chamado de novo a cada redesenho (ao equipar ou desequipar). */
@@ -145,6 +151,15 @@ export class Janelas {
     return this.alternarConteiner('bau', GUMP_BAU, AREA_BAU, { x: 640, y: 200 });
   }
 
+  /** Abre o corpo de quem morreu (gump do caixão com a caveira); duplo clique num item pega para a sua mochila. */
+  async abrirCorpo(corpoId: string, nome: string): Promise<void> {
+    if (this.conteineres.corpo) this.fechar('corpo');
+    this.corpoAberto = corpoId;
+    await this.alternarConteiner('corpo', GUMP_CORPO, AREA_CORPO, { x: 160, y: 260 });
+    const caixa = this.conteineres.corpo?.caixa;
+    if (caixa) caixa.title = `Corpo de ${nome}`;
+  }
+
   private async alternarConteiner(chave: ChaveConteiner, gump: string, area: Area, pos: { x: number; y: number }): Promise<void> {
     if (this.conteineres[chave]) {
       this.fechar(chave);
@@ -164,6 +179,7 @@ export class Janelas {
 
   /** O que cada contêiner mostra: o baú guarda os equipáveis; a mochila, o resto e o próprio baú. */
   private mostra(chave: ChaveConteiner, item: string): boolean {
+    if (chave === 'corpo') return true;
     return chave === 'bau' ? this.acoes.ehEquipavel(item) : !this.acoes.ehEquipavel(item);
   }
 
@@ -171,7 +187,8 @@ export class Janelas {
   private sincronizar(chave: ChaveConteiner, area: Area): void {
     const aberto = this.conteineres[chave];
     if (!aberto) return;
-    const estoque = this.acoes.estoque();
+    const estoque = chave === 'corpo' ? this.estoqueDoCorpo() : this.acoes.estoque();
+    if (!estoque) return;
     const presentes = new Map([...aberto.caixa.querySelectorAll<HTMLImageElement>('img[data-item]')].map((i) => [i.dataset.item!, i]));
     let indice = 0;
     for (const [id, qtd] of Object.entries(estoque)) {
@@ -195,7 +212,7 @@ export class Janelas {
       img.dataset.item = id;
       img.title = titulo;
       img.draggable = false;
-      img.addEventListener('dblclick', () => this.usarNoConteiner(id));
+      img.addEventListener('dblclick', () => (chave === 'corpo' ? this.lootarItem(id) : this.usarNoConteiner(id)));
       const chavePos = `${chave}:${id}`;
       const pos = this.itensMochila.get(chavePos) ?? {
         x: Math.round(area.x + (indice % area.colunas) * area.celulaX + area.celulaX / 2 - meta.largura / 2),
@@ -209,6 +226,18 @@ export class Janelas {
       indice++;
     }
     for (const sobra of presentes.values()) sobra.remove();
+  }
+
+  /** Itens do corpo aberto; se ele sumiu ou ficou longe, a janela fecha. */
+  private estoqueDoCorpo(): Record<string, number> | null {
+    const estoque = this.corpoAberto ? this.acoes.estoqueCorpo(this.corpoAberto) : null;
+    if (!estoque) this.fechar('corpo');
+    return estoque;
+  }
+
+  private lootarItem(id: string): void {
+    if (this.corpoAberto) this.acoes.lootar(this.corpoAberto, id);
+    this.atualizarMochila();
   }
 
   private usarNoConteiner(id: string): void {
@@ -270,6 +299,7 @@ export class Janelas {
   atualizarMochila(): void {
     this.sincronizar('mochila', AREA_MOCHILA);
     this.sincronizar('bau', AREA_BAU);
+    this.sincronizar('corpo', AREA_CORPO);
   }
 
   /** Livro de magias (gump 0x08AC): círculos 1–4 na página da esquerda, 5–8 na da direita. */
@@ -360,6 +390,10 @@ export class Janelas {
     } else if (chave === 'mochila' || chave === 'bau') {
       this.conteineres[chave]?.el.remove();
       this.conteineres[chave] = null;
+    } else if (chave === 'corpo') {
+      this.conteineres.corpo?.el.remove();
+      this.conteineres.corpo = null;
+      this.corpoAberto = null;
     }
   }
 

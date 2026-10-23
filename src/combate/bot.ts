@@ -40,11 +40,13 @@ export function decidirBot(
     if (bot.mira.alvo !== 'outro') return { alvo: bot.id };
     return inimigo && !inimigo.morto ? { alvo: inimigo.id } : { cancelarMira: true };
   }
-  if (bot.cast || motor.paralisado(bot, agora) || agora < bot.bot.proximaDecisaoMs) return {};
+  if (motor.paralisado(bot, agora) || agora < bot.bot.proximaDecisaoMs) return {};
   const [min, max] = INTERVALO_DECISAO_MS;
   bot.bot.proximaDecisaoMs = agora + min + rng() * (max - min);
 
+  const lancando = Boolean(bot.cast);
   const podeLancar = (id: string): boolean => {
+    if (lancando) return false;
     const m = motor.magia(id);
     return Boolean(m) && agora >= bot.proximaMagiaMs && bot.mana >= motor.custo(bot, m!);
   };
