@@ -188,7 +188,7 @@ export interface Combatente {
   proximaRegenManaMs: number;
   ultimoAlvoId: string | null;
   /** Só para bots. */
-  bot: { modo: ModoBot; proximaDecisaoMs: number } | null;
+  bot: { modo: ModoBot; proximaDecisaoMs: number; /** Criatura: ms por passo e se fica parada. */ passoMs?: number; parado?: boolean } | null;
 }
 
 export type EventoCombate =

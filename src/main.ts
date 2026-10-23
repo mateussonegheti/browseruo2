@@ -17,6 +17,8 @@ import {
 import regrasJson from './combate/regras.json';
 import { MotorCombate } from './combate/motor';
 import { decidirBot } from './combate/bot';
+import { gravarPerfilSalvo, lerPerfisSalvos, normalizarPerfil, perfilPadrao, type PerfilCriatura } from './combate/criaturas';
+import { estaminaMaxima, manaMaxima } from './combate/formulas';
 import type { Combatente, ModoBot, Regras } from './combate/tipos';
 import { HudCombate } from './interface/hud-combate';
 import { carregarRecursosInterface, cssCursor, cursorDirecional } from './interface/recursos';
@@ -56,9 +58,6 @@ const ROBE_JOGADOR = 5, ROBE_BOT = 33;
 const ORDEM_ARMADURA = ['pernas', 'peito', 'bracos', 'luvas', 'gorjal', 'robe'];
 const CURSOR_PADRAO = '0x2071';
 const CURSOR_MIRA = '0x2076';
-/** Vida das criaturas por tipo, com exceções para as mais fortes. */
-const VIDA_CRIATURA: Record<string, number> = { animal: 40, monstro: 120 };
-const VIDA_ESPECIAL: Record<string, number> = { ogro: 160, ettin: 180, troll: 150, lich: 200, daemon: 300, dragao: 400 };
 
 async function iniciar(): Promise<void> {
   const canvas = document.querySelector<HTMLCanvasElement>('#jogo')!;
@@ -238,15 +237,33 @@ async function iniciar(): Promise<void> {
     for (const c of motor.listar()) if (c.bot && c.bot.modo !== 'criatura') motor.remover(c.id);
   };
 
-  const criarCriatura = (nome: string, pos?: { x: number; y: number }): void => {
+  /** Perfil de fábrica de uma criatura, sobreposto ao que o usuário salvou como padrão dela. */
+  const perfilDe = (nome: string): PerfilCriatura | null => {
     const info = animacoes.criaturas().find((c) => c.nome === nome);
-    if (!info) return;
+    if (!info) return null;
+    const base = perfilPadrao(nome, info.tipo, info.rotulo, motor.regras.modelo);
+    const salvo = lerPerfisSalvos()[nome];
+    return salvo ? normalizarPerfil(salvo, base) : base;
+  };
+
+  const criarCriatura = (nome: string, pos?: { x: number; y: number }, perfil?: PerfilCriatura): void => {
+    const base = perfilDe(nome);
+    if (!base) return;
+    const pf = perfil ? normalizarPerfil(perfil, base) : base;
     contadorBots++;
     const id = `criatura-${contadorBots}`;
     const p = pos ?? tileAleatorio(id);
-    const c = motor.criar(id, info.rotulo, criarJogador(p.x, p.y), performance.now(), 'criatura');
-    c.vidaMax = c.vida = VIDA_ESPECIAL[nome] ?? VIDA_CRIATURA[info.tipo] ?? 50;
-    aparencia.set(id, [{ nome }]);
+    const c = motor.criar(id, pf.nome, criarJogador(p.x, p.y), performance.now(), 'criatura');
+    c.ficha.atributos = { str: pf.str, dex: pf.dex, int: pf.int };
+    c.resistencias = { ...pf.resistencias };
+    c.vidaMax = c.vida = pf.vida;
+    c.manaMax = c.mana = manaMaxima(c.ficha);
+    c.stamMax = c.stam = estaminaMaxima(c.ficha);
+    if (c.bot) {
+      c.bot.passoMs = pf.passoMs;
+      c.bot.parado = pf.comportamento === 'parado';
+    }
+    aparencia.set(id, [{ nome, ...(pf.matiz ? { matiz: pf.matiz } : {}) }]);
   };
   const removerCriaturas = (): void => {
     for (const c of motor.listar()) if (c.bot?.modo === 'criatura') motor.remover(c.id);
@@ -547,6 +564,14 @@ async function iniciar(): Promise<void> {
   };
 
   const painel = new PainelEditor(elPainel, editor, catalogo, {
+    criaturas: animacoes.criaturas().map((c) => ({ ...c, perfil: perfilDe(c.nome)!, padraoFabrica: perfilPadrao(c.nome, c.tipo, c.rotulo, motor.regras.modelo) })),
+    matizes: animacoes.matizesDisponiveis(),
+    previaCriatura: (ctx, nome, matiz, x, y) => void animacoes.desenhar(ctx, [{ nome, ...(matiz ? { matiz } : {}) }], 'parado', 4, 0, x, y),
+    colocarCriatura(nome, perfil) {
+      pedirPosicao(perfil.nome.toLowerCase(), (p) => criarCriatura(nome, p, perfil));
+      painel.mostrarStatus(`Clique no mapa para colocar: ${perfil.nome} (botão direito cancela).`);
+    },
+    salvarPerfilCriatura: gravarPerfilSalvo,
     escolherCasa() {
       if (!casas.length) {
         painel.mostrarStatus('As casas não foram extraídas do cliente (rode o extrator).', true);
@@ -698,7 +723,7 @@ async function iniciar(): Promise<void> {
   canvas.addEventListener('mousedown', (e) => {
     entrada.mouse = posicaoNoCanvas(e);
     if (menu.aberto) return; // o clique fora só fecha o menu
-    if (editor.ativo) {
+    if (editor.ativo && !colocando) {
       if (e.button !== 0 && e.button !== 2) return;
       editor.iniciarGesto();
       entrada.pintando = { apagar: e.button === 2 };
@@ -840,7 +865,7 @@ async function iniciar(): Promise<void> {
 
   // ---------- combate por quadro ----------
   const andar = (c: Combatente, dir: Direcao, correndo: boolean, agora: number): boolean =>
-    tentarAndar(c.mov, dir, correndo, agora, arena, catalogo, (x, y) => ocupadoPorOutro(x, y, c.id));
+    tentarAndar(c.mov, dir, correndo, agora, arena, catalogo, (x, y) => ocupadoPorOutro(x, y, c.id), c.bot?.passoMs);
 
   const proximaPortaBot = new Map<string, number>();
   /** Bot do lado dono da porta a abre quando não enxerga o inimigo (sai da casa). */

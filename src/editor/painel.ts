@@ -1,6 +1,7 @@
 import type { CatalogoTiles } from '../mundo/catalogo';
 import type { DefinicaoTile } from '../mundo/tipos';
 import type { Editor, Ferramenta } from './editor';
+import { criarSubEditorCriaturas, type AcoesCriaturas, type CriaturaEditavel } from './painel-criaturas';
 
 /** Máximo de miniaturas por paleta (o resto aparece pela busca). */
 const LIMITE_PALETA = 400;
@@ -12,6 +13,11 @@ function descreverId(t: DefinicaoTile): string {
 
 /** Ações que o painel dispara; quem implementa é o main.ts. */
 export interface AcoesPainel {
+  criaturas: CriaturaEditavel[];
+  matizes: AcoesCriaturas['matizes'];
+  previaCriatura: AcoesCriaturas['previa'];
+  colocarCriatura: AcoesCriaturas['colocar'];
+  salvarPerfilCriatura: AcoesCriaturas['salvarPadrao'];
   salvar(): void;
   baixar(): void;
   carregarArquivo(arquivo: File): void;
@@ -96,6 +102,9 @@ export class PainelEditor {
     this.infoSelecionado = document.createElement('p');
     this.infoSelecionado.className = 'selecionado';
     raiz.append(this.infoSelecionado);
+    raiz.append(criarSubEditorCriaturas(acoes.criaturas, {
+      matizes: acoes.matizes, previa: acoes.previaCriatura, colocar: acoes.colocarCriatura, salvarPadrao: acoes.salvarPerfilCriatura,
+    }));
     raiz.append(this.paleta('Terreno', catalogo.listar('terreno')));
     raiz.append(this.paleta('Objetos', catalogo.listar('objeto')));
 

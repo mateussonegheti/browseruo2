@@ -96,6 +96,14 @@ export class Animacoes {
       .map(([nome, m]) => ({ nome, rotulo: m.rotulo, tipo: m.tipo }));
   }
 
+  /** Matizes extraídos do hues.mul, com uma cor de amostra (a do meio da tabela). */
+  matizesDisponiveis(): Array<{ id: number; cor: string }> {
+    return [...this.matizes.entries()].map(([id, t]) => {
+      const [r = 0, g = 0, b = 0] = t[Math.floor(t.length / 2)] ?? [];
+      return { id, cor: `rgb(${r},${g},${b})` };
+    });
+  }
+
   /** Animação da criatura com alguém em cima, se ela for montável. */
   montariaDe(nome: string): string | undefined {
     return this.meta.get(nome)?.montaria;

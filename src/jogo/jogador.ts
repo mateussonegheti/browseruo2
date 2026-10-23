@@ -56,6 +56,8 @@ export function atualizarJogador(j: EstadoJogador, agora: number): void {
 export function tentarAndar(
   j: EstadoJogador, dir: Direcao, correndo: boolean, agora: number, arena: Arena, cat: CatalogoTiles,
   ocupado?: (x: number, y: number) => boolean,
+  /** Duração fixa do passo (criaturas com velocidade própria). */
+  passoMs?: number,
 ): boolean {
   j.dir = dir;
   if (j.movimento) return false;
@@ -66,9 +68,9 @@ export function tentarAndar(
   j.movimento = {
     deX: j.x, deY: j.y, paraX: j.x + dx, paraY: j.y + dy,
     inicio: encadeia ? j.ultimoFim : agora,
-    duracao: j.montado
+    duracao: passoMs ?? (j.montado
       ? (correndo ? PASSO_MONTADO_CORRER_MS : PASSO_MONTADO_ANDAR_MS)
-      : (correndo ? PASSO_CORRER_MS : PASSO_ANDAR_MS),
+      : (correndo ? PASSO_CORRER_MS : PASSO_ANDAR_MS)),
   };
   return true;
 }

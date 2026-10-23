@@ -82,7 +82,7 @@ export function decidirBot(
 
 /** Criaturas andam à toa, com pausas. */
 function passear(bot: Combatente, agora: number, rng: Aleatorio): AcaoBot {
-  if (!bot.bot || agora < bot.bot.proximaDecisaoMs) return {};
+  if (!bot.bot || bot.bot.parado || agora < bot.bot.proximaDecisaoMs) return {};
   bot.bot.proximaDecisaoMs = agora + 500 + rng() * 1500;
   return rng() < 0.6 ? { mover: aleatoria(rng) } : {};
 }

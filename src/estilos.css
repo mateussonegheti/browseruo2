@@ -137,3 +137,10 @@ body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui,
 .menu-batalha-opcao, .menu-batalha-entrar { cursor: pointer; padding: 6px 10px; }
 .menu-batalha-opcao.ativo { outline: 2px solid #e0b84a; font-weight: bold; }
 .menu-batalha-entrar { display: block; margin: 12px auto 4px; }
+
+/* Sub-editor de criaturas */
+#painel .previa-criatura { display: block; margin: 0 auto 8px; background: #0f1115; border: 1px solid var(--borda); border-radius: 4px; }
+#painel .cores-criatura { display: flex; flex-wrap: wrap; gap: 3px; }
+#painel .cores-criatura button { width: 18px; height: 18px; padding: 0; border-radius: 3px; }
+#painel .cores-criatura button.cor-original { width: auto; padding: 0 6px; font-size: 11px; }
+#painel .grade-campos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 8px; }

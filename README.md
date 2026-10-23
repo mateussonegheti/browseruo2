@@ -184,6 +184,10 @@ Limitações: casas construídas antes dessa versão não têm identificador e s
 - Ao iniciar, vale a cópia do navegador (se existir); senão, `public/arenas/arena-padrao.json`.
   Se você editar o JSON à mão e não vir a mudança, use **Restaurar do projeto**.
 
+### Sub-editor de criaturas
+
+No editor, a seção **Criaturas** deixa escolher o monstro/animal, ver a prévia e editar nome, cor (matiz), vida, força, destreza, inteligência, velocidade (ms por passo), comportamento (passear/parado) e resistências. **Colocar no mapa** cria a criatura com esses dados no próximo clique; **Salvar como padrão** guarda o perfil no navegador (vale também para "+ Criatura" e o spawn aleatório). Criaturas são só de runtime (não vão para a arena), só se mexem fora do editor e ainda não atacam. A paleta também tem o grupo **Mobília**.
+
 ## Estrutura
 
 ```
