@@ -24,7 +24,7 @@ import { Janelas, type PecaPaperdoll } from './interface/janelas';
 import { MenuContexto, type OpcaoMenu } from './interface/menu-contexto';
 import { Sons } from './interface/sons';
 import { MenuCasas } from './interface/menu-casas';
-import { carregarCasas, construirCasa, motivoNaoConstruir, pegadaDaCasa, tetosSobre, type CasaDef } from './mundo/casas';
+import { carregarCasas, construirCasa, demolirCasa, placaEm, motivoNaoConstruir, pegadaDaCasa, tetosSobre, type CasaDef } from './mundo/casas';
 import type { Lado, ObjetoMapa } from './mundo/tipos';
 import { alternarPorta, portaEm, portaFechadaPerto } from './mundo/portas';
 import { Batalha, CONTAGEM_MS, montarParticipantes, type LadoBatalha } from './combate/batalha';
@@ -323,7 +323,8 @@ async function iniciar(): Promise<void> {
       const totem = arena.objetosEm(x, y).find((o) => o.id === (regrasJson as Regras).totem.tile);
       const totemBatalha = arena.objetosEm(x, y).find((o) => o.id === (regrasJson as Regras).batalha.tile);
       const porta = portaEm(arena, catalogo, x, y);
-      if (totem || totemBatalha || porta) return { totem, totemBatalha, porta, x, y };
+      const placa = placaEm(arena, catalogo, x, y);
+      if (totem || totemBatalha || porta || placa) return { totem, totemBatalha, porta, placa, x, y };
     }
     return null;
   };
@@ -341,6 +342,18 @@ async function iniciar(): Promise<void> {
     }
     if (alvo.totemBatalha) {
       abrirTotemBatalha(agora);
+      return;
+    }
+    if (alvo.placa) {
+      if (batalha) {
+        hud.avisar('Não dá para demolir durante a batalha.', agora);
+      } else if (window.confirm('Demolir esta casa? Você recebe o deed de volta.')) {
+        demolirCasa(arena, alvo.placa.casa!);
+        motor.darItem(ID_JOGADOR, ITEM_DEED);
+        janelas.atualizarMochila();
+        salvarLocal(arena.dados);
+        hud.avisar('Casa demolida. O deed voltou para a sua mochila.', agora);
+      }
       return;
     }
     const erro = alternarPorta(arena, catalogo, alvo.porta!, batalha?.b.lado ?? EQUIPE_JOGADOR, (x, y) => ocupadoPorOutro(x, y, ''));
@@ -473,7 +486,7 @@ async function iniciar(): Promise<void> {
             hud.avisar('Você não tem mais o deed.', performance.now());
             return;
           }
-          construirCasa(arena, casa, p.x, p.y);
+          construirCasa(arena, casa, p.x, p.y, catalogo);
           salvarLocal(arena.dados);
           janelas.atualizarMochila();
           hud.avisar(`${casa.nome} construída.`, performance.now());

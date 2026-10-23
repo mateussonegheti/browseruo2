@@ -102,7 +102,7 @@ export class Editor {
     }
     if (this.ferramenta === 'casa') {
       if (!this.casa) return false;
-      construirCasa(arena, this.casa, x, y);
+      construirCasa(arena, this.casa, x, y, this.catalogo);
       this.aoMudar();
       return true;
     }

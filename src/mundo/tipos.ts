@@ -50,6 +50,8 @@ export interface ObjetoMapa {
   id: number;
   /** Lado que controla a porta (A = quem nasce no spawn A); sem valor, qualquer um abre. */
   dono?: Lado;
+  /** Construção (deed) a que o objeto pertence; demolir a casa remove todos. */
+  casa?: number;
 }
 
 /** Lados da batalha: A nasce dentro da casa, B fora. */

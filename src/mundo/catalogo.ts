@@ -24,6 +24,12 @@ export class CatalogoTiles {
     return o.z >= Z_ANDAR_SUPERIOR || Boolean(this.porId.get(o.id)?.teto);
   }
 
+  /** Placa de casa (signpost/sign do grupo Casas): usada para demolir. */
+  ehPlaca(id: number): boolean {
+    const d = this.porId.get(id);
+    return d?.grupo === 'Casas' && /sign/i.test(d.nome);
+  }
+
   /** Id desconhecido não bloqueia (o renderizador o desenha em magenta). */
   bloqueia(id: number): boolean {
     return this.porId.get(id)?.bloqueia ?? false;

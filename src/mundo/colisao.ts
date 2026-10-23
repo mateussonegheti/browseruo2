@@ -10,7 +10,10 @@ export function tileBloqueado(arena: Arena, cat: CatalogoTiles, x: number, y: nu
   if (!arena.dentro(x, y)) return true;
   const terreno = arena.terrenoEm(x, y);
   if (terreno !== undefined && cat.bloqueia(terreno)) return true;
-  return arena.objetosEm(x, y).some((o) => o.z < Z_ANDAR_SUPERIOR && cat.bloqueia(o.id));
+  const chao = alturaDoChao(arena, cat, x, y);
+  // A fundação abaixo do piso da casa (vão da porta) não impede de passar
+  return arena.objetosEm(x, y).some((o) => o.z < Z_ANDAR_SUPERIOR && cat.bloqueia(o.id) &&
+    (chao === 0 || o.z + (cat.obter(o.id)?.altura ?? 0) > chao));
 }
 
 /**

@@ -29,7 +29,7 @@ export function alternarPorta(
   if (!arena.dentro(x, y)) return 'A porta não abre aí.';
   if (def.aberta && ocupado(x, y)) return 'Tem alguém no caminho da porta.';
   arena.removerExato(porta.x, porta.y, porta.z, porta.id);
-  arena.adicionarVarios([{ x, y, z: porta.z, id: def.par, dono: porta.dono }]);
+  arena.adicionarVarios([{ x, y, z: porta.z, id: def.par, dono: porta.dono, casa: porta.casa }]);
   return null;
 }
 
