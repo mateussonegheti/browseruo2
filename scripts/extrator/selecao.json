@@ -1,91 +1,654 @@
 {
   "comentario": "Quais tiles do cliente entram no catálogo. 'nomes' compara com o nome do tiledata (sem diferenciar maiúsculas). 'faixa' limita os ids do gráfico; sem ela vale 'faixaPadrao' (arte clássica, antes dos ids próprios do Outlands).",
-  "faixaPadrao": ["0x0001", "0x3FFF"],
+  "faixaPadrao": [
+    "0x0001",
+    "0x3FFF"
+  ],
   "terreno": [
-    { "grupo": "Grama", "nomes": ["grass", "dark grass", "medium grass", "forest grass", "tall grass"] },
-    { "grupo": "Terra", "nomes": ["dirt", "medium dirt", "gravel", "furrows"] },
-    { "grupo": "Areia", "nomes": ["sand", "beach sand"] },
-    { "grupo": "Pedra", "nomes": ["cobblestones", "stone", "sand stone", "brick", "tile", "cave"] },
-    { "grupo": "Madeira", "nomes": ["wooden floor", "planks"] },
-    { "grupo": "Neve e gelo", "nomes": ["snow"] },
-    { "grupo": "Água", "nomes": ["water"] },
-    { "grupo": "Rocha e lava", "nomes": ["rock", "lava"] }
+    {
+      "grupo": "Grama",
+      "nomes": [
+        "grass",
+        "dark grass",
+        "medium grass",
+        "forest grass",
+        "tall grass"
+      ]
+    },
+    {
+      "grupo": "Terra",
+      "nomes": [
+        "dirt",
+        "medium dirt",
+        "gravel",
+        "furrows"
+      ]
+    },
+    {
+      "grupo": "Areia",
+      "nomes": [
+        "sand",
+        "beach sand"
+      ]
+    },
+    {
+      "grupo": "Pedra",
+      "nomes": [
+        "cobblestones",
+        "stone",
+        "sand stone",
+        "brick",
+        "tile",
+        "cave"
+      ]
+    },
+    {
+      "grupo": "Madeira",
+      "nomes": [
+        "wooden floor",
+        "planks"
+      ]
+    },
+    {
+      "grupo": "Neve e gelo",
+      "nomes": [
+        "snow"
+      ]
+    },
+    {
+      "grupo": "Água",
+      "nomes": [
+        "water"
+      ]
+    },
+    {
+      "grupo": "Rocha e lava",
+      "nomes": [
+        "rock",
+        "lava"
+      ]
+    }
   ],
   "objetos": [
-    { "grupo": "Muro de pedra", "nomes": ["stone wall"] },
-    { "grupo": "Muro de arenito", "nomes": ["sandstone wall"] },
-    { "grupo": "Muro de mármore", "nomes": ["marble wall"] },
-    { "grupo": "Muro de madeira", "nomes": ["wooden wall", "log wall", "palisade"] },
-    { "grupo": "Muro de reboco", "nomes": ["plaster wall"] },
-    { "grupo": "Colunas", "nomes": ["marble column", "stone column", "sandstone column", "stone pillar", "pillar"] },
-    { "grupo": "Pisos", "nomes": ["flagstones", "cobblestones", "marble floor", "sandstone floor", "floor tile", "wooden floor", "cave floor"] },
-    { "grupo": "Escadas", "nomes": ["stone stairs", "wooden stairs", "marble stairs", "sandstone stairs"] },
-    { "grupo": "Cercas", "nomes": ["wooden fence", "iron fence"] },
-    { "grupo": "Natureza", "nomes": ["tree", "bush", "hedge", "rock", "rocks"] },
-    { "grupo": "Decoração", "nomes": ["crate", "brazier", "pedestal", "statue"] }
+    {
+      "grupo": "Muro de pedra",
+      "nomes": [
+        "stone wall"
+      ]
+    },
+    {
+      "grupo": "Muro de arenito",
+      "nomes": [
+        "sandstone wall"
+      ]
+    },
+    {
+      "grupo": "Muro de mármore",
+      "nomes": [
+        "marble wall"
+      ]
+    },
+    {
+      "grupo": "Muro de madeira",
+      "nomes": [
+        "wooden wall",
+        "log wall",
+        "palisade"
+      ]
+    },
+    {
+      "grupo": "Muro de reboco",
+      "nomes": [
+        "plaster wall"
+      ]
+    },
+    {
+      "grupo": "Colunas",
+      "nomes": [
+        "marble column",
+        "stone column",
+        "sandstone column",
+        "stone pillar",
+        "pillar"
+      ]
+    },
+    {
+      "grupo": "Pisos",
+      "nomes": [
+        "flagstones",
+        "cobblestones",
+        "marble floor",
+        "sandstone floor",
+        "floor tile",
+        "wooden floor",
+        "cave floor"
+      ]
+    },
+    {
+      "grupo": "Escadas",
+      "nomes": [
+        "stone stairs",
+        "wooden stairs",
+        "marble stairs",
+        "sandstone stairs"
+      ]
+    },
+    {
+      "grupo": "Cercas",
+      "nomes": [
+        "wooden fence",
+        "iron fence"
+      ]
+    },
+    {
+      "grupo": "Natureza",
+      "nomes": [
+        "tree",
+        "bush",
+        "hedge",
+        "rock",
+        "rocks"
+      ]
+    },
+    {
+      "grupo": "Decoração",
+      "nomes": [
+        "crate",
+        "brazier",
+        "pedestal",
+        "statue"
+      ]
+    }
   ],
   "comentarioGumps": "Gumps exportados para public/gumps/. 0x08C0 + índice da magia = ícone do livro de Magery.",
-  "gumps": ["0x08C3", "0x08CA", "0x08D3", "0x08DC", "0x08DD", "0x08E3", "0x08E5", "0x08E9", "0x08EA", "0x08F2"],
+  "gumps": [
+    "0x08C3",
+    "0x08CA",
+    "0x08D3",
+    "0x08DC",
+    "0x08DD",
+    "0x08E3",
+    "0x08E5",
+    "0x08E9",
+    "0x08EA",
+    "0x08F2"
+  ],
   "comentarioSons": "Sons exportados para public/sons/ (WAV). Ids iguais aos usados pelo ServUO (PlaySound).",
-  "sons": ["0x02D6", "0x01E0", "0x01E9", "0x01ED", "0x01F2", "0x0202", "0x0204", "0x0205", "0x0208", "0x020A", "0x0029", "0x0307"],
+  "sons": [
+    "0x02D6",
+    "0x01E0",
+    "0x01E9",
+    "0x01ED",
+    "0x01F2",
+    "0x0202",
+    "0x0204",
+    "0x0205",
+    "0x0208",
+    "0x020A",
+    "0x0029",
+    "0x0307",
+    "0x0232",
+    "0x0233",
+    "0x0236",
+    "0x0237",
+    "0x0238",
+    "0x0239",
+    "0x023A",
+    "0x023B",
+    "0x023C"
+  ],
   "comentarioEfeitos": "Efeitos de magia (art + animdata.def) e o raio (gumps 0x4E20-0x4E29), em public/efeitos/.",
-  "efeitos": ["0x379F", "0x36BD", "0x3709", "0x376A", "0x374A", "0x373A", "0x375A", "0x37B9"],
-  "efeitosGump": { "raio": ["0x4E20", "0x4E21", "0x4E22", "0x4E23", "0x4E24", "0x4E25", "0x4E26", "0x4E27", "0x4E28", "0x4E29"] },
+  "efeitos": [
+    "0x379F",
+    "0x36BD",
+    "0x3709",
+    "0x376A",
+    "0x374A",
+    "0x373A",
+    "0x375A",
+    "0x37B9"
+  ],
+  "efeitosGump": {
+    "raio": [
+      "0x4E20",
+      "0x4E21",
+      "0x4E22",
+      "0x4E23",
+      "0x4E24",
+      "0x4E25",
+      "0x4E26",
+      "0x4E27",
+      "0x4E28",
+      "0x4E29"
+    ]
+  },
   "comentarioAnimacoes": "Animações do anim.uoo para public/animacoes/. 'anim' = id do corpo (mobtypes.txt) ou da roupa (tiledata). 'acoes' traduz as ações do jogo para os ids de cada tipo de corpo. 'matizes' = cores do hues.mul usadas no jogo.",
   "animacoes": {
     "acoes": {
-      "humano": { "andar": 0, "correr": 2, "parado": 4, "castar": 16, "apanhar": 20, "morrer": 21,
-                  "montado-andar": 23, "montado-correr": 24, "montado-parado": 25, "montado-castar": 26 },
-      "montaria": { "andar": 23, "correr": 24, "parado": 25, "castar": 26 },
-      "animal": { "andar": 0, "correr": 1, "parado": 2, "apanhar": 7, "morrer": 8 },
-      "monstro": { "andar": 0, "parado": 1, "atacar": 4, "apanhar": 10, "morrer": 2 }
+      "humano": {
+        "andar": 0,
+        "correr": 2,
+        "parado": 4,
+        "castar": 16,
+        "apanhar": 20,
+        "morrer": 21,
+        "montado-andar": 23,
+        "montado-correr": 24,
+        "montado-parado": 25,
+        "montado-castar": 26,
+        "andar-armado": 1,
+        "correr-armado": 3,
+        "guarda-1m": 7,
+        "guarda-2m": 8,
+        "golpe-corte-1m": 9,
+        "golpe-perfura-1m": 10,
+        "golpe-esmaga-1m": 11,
+        "golpe-esmaga-2m": 12,
+        "golpe-corte-2m": 13,
+        "golpe-perfura-2m": 14,
+        "soco": 31
+      },
+      "montaria": {
+        "andar": 23,
+        "correr": 24,
+        "parado": 25,
+        "castar": 26
+      },
+      "animal": {
+        "andar": 0,
+        "correr": 1,
+        "parado": 2,
+        "apanhar": 7,
+        "morrer": 8
+      },
+      "monstro": {
+        "andar": 0,
+        "parado": 1,
+        "atacar": 4,
+        "apanhar": 10,
+        "morrer": 2
+      }
     },
     "corpos": [
-      { "anim": 400, "nome": "humano", "tipo": "humano", "rotulo": "Humano" },
-      { "anim": 200, "nome": "cavalo-1", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-1" },
-      { "anim": 204, "nome": "cavalo-2", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-2" },
-      { "anim": 226, "nome": "cavalo-3", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-3" },
-      { "anim": 228, "nome": "cavalo-4", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-4" },
-      { "anim": 210, "nome": "ostard-deserto", "tipo": "animal", "rotulo": "Ostard do deserto", "montaria": "montaria-ostard-deserto" },
-      { "anim": 219, "nome": "ostard-floresta", "tipo": "animal", "rotulo": "Ostard da floresta", "montaria": "montaria-ostard-floresta" },
-      { "anim": 218, "nome": "ostard-frenetico", "tipo": "animal", "rotulo": "Ostard frenético", "montaria": "montaria-ostard-frenetico" },
-      { "anim": 220, "nome": "lhama", "tipo": "animal", "rotulo": "Lhama", "montaria": "montaria-lhama" },
-      { "anim": 225, "nome": "lobo", "tipo": "animal", "rotulo": "Lobo" },
-      { "anim": 211, "nome": "urso", "tipo": "animal", "rotulo": "Urso" },
-      { "anim": 1, "nome": "ogro", "tipo": "monstro", "rotulo": "Ogro" },
-      { "anim": 17, "nome": "orc", "tipo": "monstro", "rotulo": "Orc" },
-      { "anim": 18, "nome": "ettin", "tipo": "monstro", "rotulo": "Ettin" },
-      { "anim": 53, "nome": "troll", "tipo": "monstro", "rotulo": "Troll" },
-      { "anim": 3, "nome": "zumbi", "tipo": "monstro", "rotulo": "Zumbi" },
-      { "anim": 50, "nome": "esqueleto", "tipo": "monstro", "rotulo": "Esqueleto" },
-      { "anim": 24, "nome": "lich", "tipo": "monstro", "rotulo": "Lich" },
-      { "anim": 4, "nome": "gargula", "tipo": "monstro", "rotulo": "Gárgula" },
-      { "anim": 9, "nome": "daemon", "tipo": "monstro", "rotulo": "Daemon" },
-      { "anim": 12, "nome": "dragao", "tipo": "monstro", "rotulo": "Dragão" }
+      {
+        "anim": 400,
+        "nome": "humano",
+        "tipo": "humano",
+        "rotulo": "Humano"
+      },
+      {
+        "anim": 200,
+        "nome": "cavalo-1",
+        "tipo": "animal",
+        "rotulo": "Cavalo",
+        "montaria": "montaria-cavalo-1"
+      },
+      {
+        "anim": 204,
+        "nome": "cavalo-2",
+        "tipo": "animal",
+        "rotulo": "Cavalo",
+        "montaria": "montaria-cavalo-2"
+      },
+      {
+        "anim": 226,
+        "nome": "cavalo-3",
+        "tipo": "animal",
+        "rotulo": "Cavalo",
+        "montaria": "montaria-cavalo-3"
+      },
+      {
+        "anim": 228,
+        "nome": "cavalo-4",
+        "tipo": "animal",
+        "rotulo": "Cavalo",
+        "montaria": "montaria-cavalo-4"
+      },
+      {
+        "anim": 210,
+        "nome": "ostard-deserto",
+        "tipo": "animal",
+        "rotulo": "Ostard do deserto",
+        "montaria": "montaria-ostard-deserto"
+      },
+      {
+        "anim": 219,
+        "nome": "ostard-floresta",
+        "tipo": "animal",
+        "rotulo": "Ostard da floresta",
+        "montaria": "montaria-ostard-floresta"
+      },
+      {
+        "anim": 218,
+        "nome": "ostard-frenetico",
+        "tipo": "animal",
+        "rotulo": "Ostard frenético",
+        "montaria": "montaria-ostard-frenetico"
+      },
+      {
+        "anim": 220,
+        "nome": "lhama",
+        "tipo": "animal",
+        "rotulo": "Lhama",
+        "montaria": "montaria-lhama"
+      },
+      {
+        "anim": 225,
+        "nome": "lobo",
+        "tipo": "animal",
+        "rotulo": "Lobo"
+      },
+      {
+        "anim": 211,
+        "nome": "urso",
+        "tipo": "animal",
+        "rotulo": "Urso"
+      },
+      {
+        "anim": 1,
+        "nome": "ogro",
+        "tipo": "monstro",
+        "rotulo": "Ogro"
+      },
+      {
+        "anim": 17,
+        "nome": "orc",
+        "tipo": "monstro",
+        "rotulo": "Orc"
+      },
+      {
+        "anim": 18,
+        "nome": "ettin",
+        "tipo": "monstro",
+        "rotulo": "Ettin"
+      },
+      {
+        "anim": 53,
+        "nome": "troll",
+        "tipo": "monstro",
+        "rotulo": "Troll"
+      },
+      {
+        "anim": 3,
+        "nome": "zumbi",
+        "tipo": "monstro",
+        "rotulo": "Zumbi"
+      },
+      {
+        "anim": 50,
+        "nome": "esqueleto",
+        "tipo": "monstro",
+        "rotulo": "Esqueleto"
+      },
+      {
+        "anim": 24,
+        "nome": "lich",
+        "tipo": "monstro",
+        "rotulo": "Lich"
+      },
+      {
+        "anim": 4,
+        "nome": "gargula",
+        "tipo": "monstro",
+        "rotulo": "Gárgula"
+      },
+      {
+        "anim": 9,
+        "nome": "daemon",
+        "tipo": "monstro",
+        "rotulo": "Daemon"
+      },
+      {
+        "anim": 12,
+        "nome": "dragao",
+        "tipo": "monstro",
+        "rotulo": "Dragão"
+      }
     ],
     "equipamentos": [
-      { "anim": 469, "nome": "robe", "tipo": "humano" },
-      { "anim": 700, "nome": "cabelo", "tipo": "humano" },
-      { "anim": 480, "nome": "sapatos", "tipo": "humano" }
+      {
+        "anim": 469,
+        "nome": "robe",
+        "tipo": "humano"
+      },
+      {
+        "anim": 700,
+        "nome": "cabelo",
+        "tipo": "humano"
+      },
+      {
+        "anim": 480,
+        "nome": "sapatos",
+        "tipo": "humano"
+      }
     ],
     "comentarioMontarias": "Animações da montaria com alguém em cima (anim do item da montaria no tiledata: 0x3E9F a 0x3EA6).",
     "montarias": [
-      { "anim": 820, "nome": "montaria-cavalo-1", "tipo": "montaria" },
-      { "anim": 824, "nome": "montaria-cavalo-2", "tipo": "montaria" },
-      { "anim": 846, "nome": "montaria-cavalo-3", "tipo": "montaria" },
-      { "anim": 848, "nome": "montaria-cavalo-4", "tipo": "montaria" },
-      { "anim": 825, "nome": "montaria-ostard-deserto", "tipo": "montaria" },
-      { "anim": 827, "nome": "montaria-ostard-floresta", "tipo": "montaria" },
-      { "anim": 218, "nome": "montaria-ostard-frenetico", "tipo": "animal" },
-      { "anim": 828, "nome": "montaria-lhama", "tipo": "montaria" }
+      {
+        "anim": 820,
+        "nome": "montaria-cavalo-1",
+        "tipo": "montaria"
+      },
+      {
+        "anim": 824,
+        "nome": "montaria-cavalo-2",
+        "tipo": "montaria"
+      },
+      {
+        "anim": 846,
+        "nome": "montaria-cavalo-3",
+        "tipo": "montaria"
+      },
+      {
+        "anim": 848,
+        "nome": "montaria-cavalo-4",
+        "tipo": "montaria"
+      },
+      {
+        "anim": 825,
+        "nome": "montaria-ostard-deserto",
+        "tipo": "montaria"
+      },
+      {
+        "anim": 827,
+        "nome": "montaria-ostard-floresta",
+        "tipo": "montaria"
+      },
+      {
+        "anim": 218,
+        "nome": "montaria-ostard-frenetico",
+        "tipo": "animal"
+      },
+      {
+        "anim": 828,
+        "nome": "montaria-lhama",
+        "tipo": "montaria"
+      }
     ],
-    "matizes": [1002, 1102, 1109, 3, 5, 33, 38, 88, 1150, 1153, 1175]
+    "matizes": [
+      1002,
+      1102,
+      1109,
+      3,
+      5,
+      33,
+      38,
+      88,
+      1150,
+      1153,
+      1175
+    ]
   },
   "comentarioInterface": "Cursores (art 0x206A-0x2079), fontes unicode, gumps do paperdoll/mochila e itens da mochila, em public/interface/.",
   "interface": {
-    "cursores": ["0x206A", "0x206B", "0x206C", "0x206D", "0x206E", "0x206F", "0x2070", "0x2071", "0x2072", "0x2073", "0x2074", "0x2075", "0x2076", "0x2077"],
-    "fontes": { "texto": "unifont1.mul", "titulo": "unifont.mul" },
-    "gumps": ["0x07D0", "0x000C", "0xC525", "0xC60C", "0xC530", "0xC4F6", "0x003C", "0x08AC", "0x0802", "0x0803", "0x0804", "0x0805", "0x0806", "0x0808", "0x0809"],
-    "itens": ["0x0EFA", "0x0F7A", "0x0F7B", "0x0F84", "0x0F85", "0x0F86", "0x0F88", "0x0F8C", "0x0F8D", "0x0F0C", "0x0F07", "0x0F0B", "0x0F09", "0x0F0A", "0x0F08"]
-  }
+    "cursores": [
+      "0x206A",
+      "0x206B",
+      "0x206C",
+      "0x206D",
+      "0x206E",
+      "0x206F",
+      "0x2070",
+      "0x2071",
+      "0x2072",
+      "0x2073",
+      "0x2074",
+      "0x2075",
+      "0x2076",
+      "0x2077"
+    ],
+    "fontes": {
+      "texto": "unifont1.mul",
+      "titulo": "unifont.mul"
+    },
+    "gumps": [
+      "0x07D0",
+      "0x000C",
+      "0xC525",
+      "0xC60C",
+      "0xC530",
+      "0xC4F6",
+      "0x003C",
+      "0x08AC",
+      "0x0802",
+      "0x0803",
+      "0x0804",
+      "0x0805",
+      "0x0806",
+      "0x0808",
+      "0x0809",
+      "0x004C"
+    ],
+    "itens": [
+      "0x0EFA",
+      "0x0F7A",
+      "0x0F7B",
+      "0x0F84",
+      "0x0F85",
+      "0x0F86",
+      "0x0F88",
+      "0x0F8C",
+      "0x0F8D",
+      "0x0F0C",
+      "0x0F07",
+      "0x0F0B",
+      "0x0F09",
+      "0x0F0A",
+      "0x0F08",
+      "0x0E40"
+    ]
+  },
+  "comentarioEquipaveis": "Armas, armaduras e escudos: o extrator tira do tiledata a animação, a camada, o gump do paperdoll (anim + 50000) e o ícone.",
+  "equipaveis": [
+    {
+      "item": "0x13FF",
+      "nome": "katana",
+      "rotulo": "Katana"
+    },
+    {
+      "item": "0x13B9",
+      "nome": "viking-sword",
+      "rotulo": "Viking Sword"
+    },
+    {
+      "item": "0x0F5E",
+      "nome": "broadsword",
+      "rotulo": "Broadsword"
+    },
+    {
+      "item": "0x0F61",
+      "nome": "longsword",
+      "rotulo": "Longsword"
+    },
+    {
+      "item": "0x1401",
+      "nome": "kryss",
+      "rotulo": "Kryss"
+    },
+    {
+      "item": "0x1405",
+      "nome": "war-fork",
+      "rotulo": "War Fork"
+    },
+    {
+      "item": "0x0F62",
+      "nome": "spear",
+      "rotulo": "Spear"
+    },
+    {
+      "item": "0x1407",
+      "nome": "war-mace",
+      "rotulo": "War Mace"
+    },
+    {
+      "item": "0x0F5C",
+      "nome": "mace",
+      "rotulo": "Mace"
+    },
+    {
+      "item": "0x143D",
+      "nome": "hammer-pick",
+      "rotulo": "Hammer Pick"
+    },
+    {
+      "item": "0x143E",
+      "nome": "halberd",
+      "rotulo": "Halberd"
+    },
+    {
+      "item": "0x0F4D",
+      "nome": "bardiche",
+      "rotulo": "Bardiche"
+    },
+    {
+      "item": "0x0F4B",
+      "nome": "double-axe",
+      "rotulo": "Double Axe"
+    },
+    {
+      "item": "0x0E89",
+      "nome": "quarter-staff",
+      "rotulo": "Quarter Staff"
+    },
+    {
+      "item": "0x1415",
+      "nome": "plate-peito",
+      "rotulo": "Platemail"
+    },
+    {
+      "item": "0x1411",
+      "nome": "plate-pernas",
+      "rotulo": "Platemail Legs"
+    },
+    {
+      "item": "0x1410",
+      "nome": "plate-bracos",
+      "rotulo": "Platemail Arms"
+    },
+    {
+      "item": "0x1414",
+      "nome": "plate-luvas",
+      "rotulo": "Platemail Gloves"
+    },
+    {
+      "item": "0x1413",
+      "nome": "plate-gorjal",
+      "rotulo": "Platemail Gorget"
+    },
+    {
+      "item": "0x1412",
+      "nome": "plate-elmo",
+      "rotulo": "Plate Helm"
+    },
+    {
+      "item": "0x1B76",
+      "nome": "heater-shield",
+      "rotulo": "Heater Shield"
+    },
+    {
+      "item": "0x1F03",
+      "nome": "robe",
+      "rotulo": "Robe"
+    }
+  ]
 }

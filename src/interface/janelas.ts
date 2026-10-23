@@ -6,6 +6,8 @@ import type { RecursosInterface } from './recursos';
 export interface PecaPaperdoll {
   gump: string;
   matiz?: number;
+  /** Item equipado (duplo clique na peça desequipa). */
+  item?: string;
 }
 
 const GUMP_PAPERDOLL = '0x07D0';
@@ -16,8 +18,13 @@ const ITEM_SPELLBOOK = '0x0EFA';
 /** Onde o corpo fica dentro do paperdoll (posição do cliente clássico). */
 const CORPO_X = 8;
 const CORPO_Y = 19;
-/** Área útil da mochila 0x3C, onde os itens podem ficar. */
-const AREA_MOCHILA = { x: 44, y: 65, w: 142, h: 94 };
+const GUMP_BAU = '0x004C';
+/** Área útil de cada contêiner (onde os itens podem ficar) e a grade inicial. */
+const AREA_MOCHILA = { x: 44, y: 65, w: 142, h: 94, colunas: 5, celulaX: 29, celulaY: 31 };
+const AREA_BAU = { x: 46, y: 62, w: 166, h: 120, colunas: 7, celulaX: 24, celulaY: 40 };
+
+type Area = typeof AREA_MOCHILA;
+type ChaveConteiner = 'mochila' | 'bau';
 
 /** O que as janelas precisam do jogo: mochila do jogador e as magias. */
 /** Valores mostrados no status completo (gump 0x0802). */
@@ -31,6 +38,12 @@ export interface DadosStatus {
 export interface AcoesJanelas {
   estoque(): Record<string, number>;
   usar(item: string): void;
+  equipar(item: string): void;
+  desequipar(item: string): void;
+  /** Armas, armaduras e escudos ficam no baú, não na mochila. */
+  ehEquipavel(item: string): boolean;
+  /** Item da mochila que abre o baú. */
+  itemBau: string;
   magias(): Array<{ id: string; nome: string; circulo: number }>;
   lancar(magia: string): void;
 }
@@ -45,8 +58,8 @@ function carregar(src: string): Promise<HTMLImageElement | null> {
 }
 
 export class Janelas {
-  private paperdoll: HTMLElement | null = null;
-  private mochila: HTMLElement | null = null;
+  private paperdoll: { el: HTMLElement; canvas: HTMLCanvasElement; nome: string; pecas: () => PecaPaperdoll[] } | null = null;
+  private conteineres: Record<ChaveConteiner, { el: HTMLElement; caixa: HTMLElement } | null> = { mochila: null, bau: null };
   private livro: HTMLElement | null = null;
   private status: { el: HTMLElement; canvas: HTMLCanvasElement; fundo: HTMLImageElement; obter: () => DadosStatus } | null = null;
   private posicoes = new Map<string, { x: number; y: number }>();
@@ -59,10 +72,11 @@ export class Janelas {
   ) {}
 
   get abertas(): boolean {
-    return Boolean(this.paperdoll || this.mochila || this.livro);
+    return Boolean(this.paperdoll || this.conteineres.mochila || this.conteineres.bau || this.livro);
   }
 
-  async alternarPaperdoll(nome: string, pecas: PecaPaperdoll[]): Promise<void> {
+  /** Paperdoll: `pecas` é chamado de novo a cada redesenho (ao equipar ou desequipar). */
+  async alternarPaperdoll(nome: string, pecas: () => PecaPaperdoll[]): Promise<void> {
     if (this.paperdoll) {
       this.fechar('paperdoll');
       return;
@@ -72,13 +86,26 @@ export class Janelas {
     const canvas = document.createElement('canvas');
     canvas.width = fundo.width;
     canvas.height = fundo.height;
-    const g = canvas.getContext('2d')!;
-    g.drawImage(fundo, 0, 0);
-    for (const p of [...pecas, { gump: GUMP_MOCHILA_PAPERDOLL }]) {
+    canvas.addEventListener('dblclick', (e) => void this.duploCliquePaperdoll(e.offsetX, e.offsetY));
+    const el = this.janela('paperdoll', canvas, { x: 80, y: 120 });
+    this.paperdoll = { el, canvas, nome, pecas };
+    await this.redesenharPaperdoll();
+  }
+
+  async redesenharPaperdoll(): Promise<void> {
+    if (!this.paperdoll) return;
+    const { canvas, nome, pecas } = this.paperdoll;
+    const fundo = await carregar(`/interface/gumps/${GUMP_PAPERDOLL}.png`);
+    if (!fundo) return;
+    const camadas: Array<{ img: CanvasImageSource }> = [];
+    for (const p of [...pecas(), { gump: GUMP_MOCHILA_PAPERDOLL }] as PecaPaperdoll[]) {
       const img = await carregar(`/interface/gumps/${p.gump}.png`);
-      if (!img) continue;
-      g.drawImage(p.matiz === undefined ? img : this.animacoes.tingir(img, p.matiz), CORPO_X, CORPO_Y);
+      if (img) camadas.push({ img: p.matiz === undefined ? img : this.animacoes.tingir(img, p.matiz) });
     }
+    const g = canvas.getContext('2d')!;
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    g.drawImage(fundo, 0, 0);
+    for (const c of camadas) g.drawImage(c.img, CORPO_X, CORPO_Y);
     const fonte = this.recursos.fontes.titulo ?? this.recursos.fontes.texto;
     if (fonte) fonte.desenhar(g, nome, canvas.width / 2, canvas.height - 44, '#e8d9a8', { contorno: '#000000' });
     else {
@@ -87,53 +114,111 @@ export class Janelas {
       g.fillStyle = '#e8d9a8';
       g.fillText(nome, canvas.width / 2, canvas.height - 30);
     }
-    // Duplo clique na mochila desenhada no corpo abre a mochila
-    const mascara = await carregar(`/interface/gumps/${GUMP_MOCHILA_PAPERDOLL}.png`);
-    canvas.addEventListener('dblclick', (e) => {
-      if (mascara && this.temPixel(mascara, e.offsetX - CORPO_X, e.offsetY - CORPO_Y)) void this.alternarMochila();
-    });
-    this.paperdoll = this.janela('paperdoll', canvas, { x: 80, y: 120 });
   }
 
-  async alternarMochila(): Promise<void> {
-    if (this.mochila) {
-      this.fechar('mochila');
+  /** Duplo clique no paperdoll: a mochila abre a mochila; uma peça equipada volta para o baú. */
+  private async duploCliquePaperdoll(x: number, y: number): Promise<void> {
+    if (!this.paperdoll) return;
+    const mochila = await carregar(`/interface/gumps/${GUMP_MOCHILA_PAPERDOLL}.png`);
+    if (mochila && this.temPixel(mochila, x - CORPO_X, y - CORPO_Y)) {
+      void this.alternarMochila();
       return;
     }
-    const fundo = await carregar(`/interface/gumps/${GUMP_MOCHILA}.png`);
+    // Da peça de cima para a de baixo
+    for (const p of [...this.paperdoll.pecas()].reverse()) {
+      if (!p.item) continue;
+      const img = await carregar(`/interface/gumps/${p.gump}.png`);
+      if (img && this.temPixel(img, x - CORPO_X, y - CORPO_Y)) {
+        this.acoes.desequipar(p.item);
+        await this.redesenharPaperdoll();
+        this.atualizarMochila();
+        return;
+      }
+    }
+  }
+
+  alternarMochila(): Promise<void> {
+    return this.alternarConteiner('mochila', GUMP_MOCHILA, AREA_MOCHILA, { x: 380, y: 180 });
+  }
+
+  alternarBau(): Promise<void> {
+    return this.alternarConteiner('bau', GUMP_BAU, AREA_BAU, { x: 640, y: 200 });
+  }
+
+  private async alternarConteiner(chave: ChaveConteiner, gump: string, area: Area, pos: { x: number; y: number }): Promise<void> {
+    if (this.conteineres[chave]) {
+      this.fechar(chave);
+      return;
+    }
+    const fundo = await carregar(`/interface/gumps/${gump}.png`);
     if (!fundo) return;
     const caixa = document.createElement('div');
     caixa.className = 'mochila';
     caixa.style.width = `${fundo.width}px`;
     caixa.style.height = `${fundo.height}px`;
     caixa.style.backgroundImage = `url(${fundo.src})`;
-    Object.entries(this.acoes.estoque()).filter(([, qtd]) => qtd > 0).forEach(([id, qtd], i) => {
-      const meta = this.recursos.itens[id];
-      if (!meta) return;
+    const el = this.janela(chave, caixa, pos);
+    this.conteineres[chave] = { el, caixa };
+    this.sincronizar(chave, area);
+  }
+
+  /** O que cada contêiner mostra: o baú guarda os equipáveis; a mochila, o resto e o próprio baú. */
+  private mostra(chave: ChaveConteiner, item: string): boolean {
+    return chave === 'bau' ? this.acoes.ehEquipavel(item) : !this.acoes.ehEquipavel(item);
+  }
+
+  /** Acrescenta itens que chegaram, tira os que acabaram e atualiza as quantidades. */
+  private sincronizar(chave: ChaveConteiner, area: Area): void {
+    const aberto = this.conteineres[chave];
+    if (!aberto) return;
+    const estoque = this.acoes.estoque();
+    const presentes = new Map([...aberto.caixa.querySelectorAll<HTMLImageElement>('img[data-item]')].map((i) => [i.dataset.item!, i]));
+    let indice = 0;
+    for (const [id, qtd] of Object.entries(estoque)) {
+      if (!this.mostra(chave, id) || !this.recursos.itens[id]) continue;
+      const atual = presentes.get(id);
+      presentes.delete(id);
+      if (qtd <= 0) {
+        atual?.remove();
+        continue;
+      }
+      const meta = this.recursos.itens[id]!;
+      const titulo = qtd > 1 ? `${meta.nome} (${qtd})` : meta.nome;
+      if (atual) {
+        if (atual.title !== titulo) atual.title = titulo;
+        indice++;
+        continue;
+      }
       const img = document.createElement('img');
       img.src = `/interface/itens/${id}.png`;
       img.alt = meta.nome;
       img.dataset.item = id;
-      img.title = qtd > 1 ? `${meta.nome} (${qtd})` : meta.nome;
+      img.title = titulo;
       img.draggable = false;
-      // Duplo clique usa o item (poções) ou abre o livro de magias
-      img.addEventListener('dblclick', () => {
-        if (id === ITEM_SPELLBOOK) void this.alternarLivro();
-        else this.acoes.usar(id);
-        this.atualizarMochila();
-      });
-      // Grade de 5 colunas na área útil, centralizando cada item na sua casa
-      const pos = this.itensMochila.get(id) ?? {
-        x: Math.round(AREA_MOCHILA.x + (i % 5) * 29 + 14 - meta.largura / 2),
-        y: Math.round(AREA_MOCHILA.y + Math.floor(i / 5) * 31 + 15 - meta.altura / 2),
+      img.addEventListener('dblclick', () => this.usarNoConteiner(id));
+      const chavePos = `${chave}:${id}`;
+      const pos = this.itensMochila.get(chavePos) ?? {
+        x: Math.round(area.x + (indice % area.colunas) * area.celulaX + area.celulaX / 2 - meta.largura / 2),
+        y: Math.round(area.y + Math.floor(indice / area.colunas) * area.celulaY + area.celulaY / 2 - meta.altura / 2),
       };
-      this.itensMochila.set(id, pos);
+      this.itensMochila.set(chavePos, pos);
       img.style.left = `${pos.x}px`;
       img.style.top = `${pos.y}px`;
-      this.arrastarItem(img, id, meta.largura, meta.altura);
-      caixa.append(img);
-    });
-    this.mochila = this.janela('mochila', caixa, { x: 380, y: 180 });
+      this.arrastarItem(img, chavePos, meta.largura, meta.altura, area);
+      aberto.caixa.append(img);
+      indice++;
+    }
+    for (const sobra of presentes.values()) sobra.remove();
+  }
+
+  private usarNoConteiner(id: string): void {
+    if (id === ITEM_SPELLBOOK) void this.alternarLivro();
+    else if (id === this.acoes.itemBau) void this.alternarBau();
+    else if (this.acoes.ehEquipavel(id)) {
+      this.acoes.equipar(id);
+      void this.redesenharPaperdoll();
+    } else this.acoes.usar(id);
+    this.atualizarMochila();
   }
 
   /** Status completo (gump 0x0802), com os valores atualizados enquanto estiver aberto. */
@@ -181,21 +266,10 @@ export class Janelas {
     for (const [v, y] of direita) escrever(v, 172, y);
   }
 
-  /** Atualiza as quantidades da mochila aberta (itens esgotados somem). */
+  /** Atualiza a mochila e o baú abertos (itens que chegaram, acabaram ou mudaram de quantidade). */
   atualizarMochila(): void {
-    if (!this.mochila) return;
-    const estoque = this.acoes.estoque();
-    for (const img of this.mochila.querySelectorAll<HTMLImageElement>('img[data-item]')) {
-      const id = img.dataset.item!;
-      const qtd = estoque[id] ?? 0;
-      if (qtd <= 0) {
-        img.remove();
-        continue;
-      }
-      const nome = this.recursos.itens[id]?.nome ?? id;
-      const titulo = qtd > 1 ? `${nome} (${qtd})` : nome;
-      if (img.title !== titulo) img.title = titulo;
-    }
+    this.sincronizar('mochila', AREA_MOCHILA);
+    this.sincronizar('bau', AREA_BAU);
   }
 
   /** Livro de magias (gump 0x08AC): círculos 1–4 na página da esquerda, 5–8 na da direita. */
@@ -274,7 +348,7 @@ export class Janelas {
 
   private fechar(chave: string): void {
     if (chave === 'paperdoll') {
-      this.paperdoll?.remove();
+      this.paperdoll?.el.remove();
       this.paperdoll = null;
     } else if (chave === 'livro') {
       this.livro?.remove();
@@ -282,14 +356,14 @@ export class Janelas {
     } else if (chave === 'status') {
       this.status?.el.remove();
       this.status = null;
-    } else {
-      this.mochila?.remove();
-      this.mochila = null;
+    } else if (chave === 'mochila' || chave === 'bau') {
+      this.conteineres[chave]?.el.remove();
+      this.conteineres[chave] = null;
     }
   }
 
-  /** Itens podem ser arrastados dentro da área útil da mochila. */
-  private arrastarItem(img: HTMLImageElement, id: string, w: number, h: number): void {
+  /** Itens podem ser arrastados dentro da área útil do contêiner. */
+  private arrastarItem(img: HTMLImageElement, id: string, w: number, h: number, area: Area): void {
     img.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
@@ -302,8 +376,8 @@ export class Janelas {
         if (!arrastou && Math.hypot(m.clientX - origem.x, m.clientY - origem.y) < 4) return;
         arrastou = true;
         img.classList.add('arrastando');
-        const x = Math.max(AREA_MOCHILA.x - w / 2, Math.min(AREA_MOCHILA.x + AREA_MOCHILA.w - w / 2, m.clientX - inicio.x));
-        const y = Math.max(AREA_MOCHILA.y - h / 2, Math.min(AREA_MOCHILA.y + AREA_MOCHILA.h - h / 2, m.clientY - inicio.y));
+        const x = Math.max(area.x - w / 2, Math.min(area.x + area.w - w / 2, m.clientX - inicio.x));
+        const y = Math.max(area.y - h / 2, Math.min(area.y + area.h - h / 2, m.clientY - inicio.y));
         img.style.left = `${x}px`;
         img.style.top = `${y}px`;
       };

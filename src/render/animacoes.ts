@@ -24,7 +24,8 @@ interface MetaAnimacao {
 
 export type AcaoBase = 'andar' | 'correr' | 'parado' | 'castar' | 'apanhar' | 'morrer' | 'atacar';
 /** As ações do humano montado têm o prefixo "montado-". */
-export type AcaoAnimacao = AcaoBase | `montado-${'andar' | 'correr' | 'parado' | 'castar'}`;
+/** Também aceita as ações extraídas com outros nomes (ex.: "golpe-corte-1m", "guarda-2m"). */
+export type AcaoAnimacao = AcaoBase | `montado-${'andar' | 'correr' | 'parado' | 'castar'}` | (string & {});
 
 /** Uma camada desenhada (corpo ou roupa) com matiz opcional do hues.mul. */
 export interface Camada {
@@ -50,8 +51,11 @@ export function direcaoArmazenada(dir: Direcao): { dir: number; espelhar: boolea
 }
 
 /** Ações substitutas quando o corpo não tem a pedida (ex.: monstro não corre). */
-const SUBSTITUTA: Partial<Record<AcaoAnimacao, AcaoAnimacao>> = {
+const SUBSTITUTA: Record<string, string> = {
   correr: 'andar', castar: 'atacar', atacar: 'parado', apanhar: 'parado', 'montado-castar': 'montado-parado',
+  'andar-armado': 'andar', 'correr-armado': 'correr', 'guarda-1m': 'parado', 'guarda-2m': 'guarda-1m', soco: 'castar',
+  'golpe-corte-1m': 'atacar', 'golpe-perfura-1m': 'golpe-corte-1m', 'golpe-esmaga-1m': 'golpe-corte-1m',
+  'golpe-corte-2m': 'golpe-corte-1m', 'golpe-perfura-2m': 'golpe-corte-2m', 'golpe-esmaga-2m': 'golpe-corte-2m',
 };
 
 export class Animacoes {
@@ -141,7 +145,7 @@ export class Animacoes {
   private lista(nome: string, acao: AcaoAnimacao): RetQuadro[][] | undefined {
     const m = this.meta.get(nome);
     if (!m) return undefined;
-    let a: AcaoAnimacao | undefined = acao;
+    let a: string | undefined = acao;
     while (a && !m.acoes[a]) a = SUBSTITUTA[a];
     return a ? m.acoes[a] : m.acoes['parado'];
   }

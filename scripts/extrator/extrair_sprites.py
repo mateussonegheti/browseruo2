@@ -538,9 +538,38 @@ def extrair_interface(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
             itens[f"0x{gid:04X}"] = {"nome": infos[gid].nome.replace("%s%", "").replace("%s", ""),
                                      "largura": img.largura, "altura": img.altura}
     meta["itens"] = itens
+    meta["equipaveis"] = selecao.get("_equipaveis", {})
     extrair_gumps(pasta_cliente / "gumps.uoo", [int(g, 0) for g in conf.get("gumps", [])], pasta / "gumps")
     (pasta / "interface.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     return len(meta["cursores"]) + len(meta["fontes"]) + len(itens)
+
+
+# ---------------------------------------------------------------- equipáveis (armas, armaduras, escudos)
+
+def preparar_equipaveis(pasta_cliente: Path, selecao: dict) -> dict[str, dict]:
+    """
+    Para cada item equipável, lê no tiledata a animação (u32 no byte 16) e a camada (byte 9) e acrescenta
+    à seleção: a animação (como roupa humana), o gump do paperdoll (anim + 50000) e o ícone do item.
+    """
+    lista = selecao.get("equipaveis", [])
+    if not lista:
+        return {}
+    dados = ler_arquivo_uoo(pasta_cliente / "artdata.uoo")
+    anim_conf = selecao.setdefault("animacoes", {})
+    interface = selecao.setdefault("interface", {})
+    meta: dict[str, dict] = {}
+    for e in lista:
+        gid = int(e["item"], 0)
+        reg = 12 + gid * TAM_REGISTRO_OBJETO
+        anim = struct.unpack_from("<I", dados, reg + 16)[0]
+        camada = dados[reg + 9]
+        anim_conf.setdefault("equipamentos", []).append({"anim": anim, "nome": e["nome"], "tipo": "humano"})
+        gump = f"0x{50000 + anim:04X}"
+        interface.setdefault("gumps", []).append(gump)
+        interface.setdefault("itens", []).append(e["item"])
+        meta[f"0x{gid:04X}"] = {"nome": e["nome"], "rotulo": e.get("rotulo", e["nome"]), "camada": camada,
+                                "anim": e["nome"], "gump": gump}
+    return meta
 
 
 # ---------------------------------------------------------------- principal
@@ -553,6 +582,7 @@ def main() -> int:
     args = ap.parse_args()
 
     selecao = json.loads(args.selecao.read_text(encoding="utf-8"))
+    selecao["_equipaveis"] = preparar_equipaveis(args.cliente, selecao)
     faixa_padrao = ler_faixa(selecao["faixaPadrao"])
     pasta_sprites = args.saida / "sprites"
 

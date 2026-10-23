@@ -14,10 +14,18 @@
       "poisoning": 100,
       "meditation": 100,
       "focus": 100,
-      "alchemy": 100
+      "alchemy": 100,
+      "swords": 100,
+      "macing": 100,
+      "fencing": 100,
+      "wrestling": 100,
+      "tactics": 100,
+      "anatomy": 100,
+      "parry": 100,
+      "lumberjacking": 100
     },
     "resistencias": {
-      "fisica": 70,
+      "fisica": 40,
       "fogo": 70,
       "frio": 70,
       "veneno": 70,
@@ -360,6 +368,292 @@
     "0x0F0B": 10,
     "0x0F09": 5,
     "0x0F08": 5,
-    "0x0F0A": 5
+    "0x0F0A": 5,
+    "0x0E40": 1,
+    "0x13FF": 1,
+    "0x13B9": 1,
+    "0x0F5E": 1,
+    "0x0F61": 1,
+    "0x1401": 1,
+    "0x1405": 1,
+    "0x0F62": 1,
+    "0x1407": 1,
+    "0x0F5C": 1,
+    "0x143D": 1,
+    "0x143E": 1,
+    "0x0F4D": 1,
+    "0x0F4B": 1,
+    "0x0E89": 1,
+    "0x1415": 1,
+    "0x1411": 1,
+    "0x1410": 1,
+    "0x1414": 1,
+    "0x1413": 1,
+    "0x1412": 1,
+    "0x1B76": 1
+  },
+  "comentarioCorpoACorpo": "Corpo a corpo (ServUO, ML): golpe a cada max(5, floor(velocidade×4 − Stam/30)) × 0,25 s; acerto (atk+20)/((def+20)×2); dano × (1 + Str + Anatomy + Tactics [+ Lumberjacking nos machados]); escudo bloqueia (Parry/400 + 5%) × (20+Dex)/100 se Dex < 80. Resistência física base 40; cada peça de plate +5 (teto 70) e bloqueia Meditation.",
+  "armas": {
+    "0x13FF": {
+      "nome": "Katana",
+      "min": 10,
+      "max": 14,
+      "velocidade": 2.5,
+      "maos": 1,
+      "golpe": "golpe-corte-1m",
+      "somAcerto": "0x023B",
+      "somErro": "0x023A",
+      "machado": false
+    },
+    "0x13B9": {
+      "nome": "Viking Sword",
+      "min": 15,
+      "max": 19,
+      "velocidade": 3.75,
+      "maos": 1,
+      "golpe": "golpe-corte-1m",
+      "somAcerto": "0x023B",
+      "somErro": "0x023A",
+      "machado": false
+    },
+    "0x0F5E": {
+      "nome": "Broadsword",
+      "min": 13,
+      "max": 17,
+      "velocidade": 3.25,
+      "maos": 1,
+      "golpe": "golpe-corte-1m",
+      "somAcerto": "0x023B",
+      "somErro": "0x023A",
+      "machado": false
+    },
+    "0x0F61": {
+      "nome": "Longsword",
+      "min": 14,
+      "max": 18,
+      "velocidade": 3.5,
+      "maos": 1,
+      "golpe": "golpe-corte-1m",
+      "somAcerto": "0x023B",
+      "somErro": "0x023A",
+      "machado": false
+    },
+    "0x1401": {
+      "nome": "Kryss",
+      "min": 10,
+      "max": 12,
+      "velocidade": 2.0,
+      "maos": 1,
+      "golpe": "golpe-perfura-1m",
+      "somAcerto": "0x023C",
+      "somErro": "0x0238",
+      "machado": false
+    },
+    "0x1405": {
+      "nome": "War Fork",
+      "min": 10,
+      "max": 14,
+      "velocidade": 2.5,
+      "maos": 1,
+      "golpe": "golpe-perfura-1m",
+      "somAcerto": "0x0236",
+      "somErro": "0x0238",
+      "machado": false
+    },
+    "0x0F62": {
+      "nome": "Spear",
+      "min": 13,
+      "max": 16,
+      "velocidade": 2.75,
+      "maos": 2,
+      "golpe": "golpe-perfura-2m",
+      "somAcerto": "0x023C",
+      "somErro": "0x0238",
+      "machado": false
+    },
+    "0x1407": {
+      "nome": "War Mace",
+      "min": 16,
+      "max": 20,
+      "velocidade": 4.0,
+      "maos": 1,
+      "golpe": "golpe-esmaga-1m",
+      "somAcerto": "0x0233",
+      "somErro": "0x0239",
+      "machado": false
+    },
+    "0x0F5C": {
+      "nome": "Mace",
+      "min": 11,
+      "max": 15,
+      "velocidade": 2.75,
+      "maos": 1,
+      "golpe": "golpe-esmaga-1m",
+      "somAcerto": "0x0233",
+      "somErro": "0x0239",
+      "machado": false
+    },
+    "0x143D": {
+      "nome": "Hammer Pick",
+      "min": 13,
+      "max": 17,
+      "velocidade": 3.25,
+      "maos": 1,
+      "golpe": "golpe-esmaga-1m",
+      "somAcerto": "0x0233",
+      "somErro": "0x0239",
+      "machado": false
+    },
+    "0x143E": {
+      "nome": "Halberd",
+      "min": 18,
+      "max": 21,
+      "velocidade": 4.0,
+      "maos": 2,
+      "golpe": "golpe-corte-2m",
+      "somAcerto": "0x0237",
+      "somErro": "0x0238",
+      "machado": false
+    },
+    "0x0F4D": {
+      "nome": "Bardiche",
+      "min": 17,
+      "max": 20,
+      "velocidade": 3.75,
+      "maos": 2,
+      "golpe": "golpe-corte-2m",
+      "somAcerto": "0x0237",
+      "somErro": "0x0238",
+      "machado": false
+    },
+    "0x0F4B": {
+      "nome": "Double Axe",
+      "min": 15,
+      "max": 18,
+      "velocidade": 3.25,
+      "maos": 2,
+      "golpe": "golpe-corte-2m",
+      "somAcerto": "0x0232",
+      "somErro": "0x023A",
+      "machado": true
+    },
+    "0x0E89": {
+      "nome": "Quarter Staff",
+      "min": 11,
+      "max": 14,
+      "velocidade": 2.25,
+      "maos": 2,
+      "golpe": "golpe-esmaga-2m",
+      "somAcerto": "0x0233",
+      "somErro": "0x0239",
+      "machado": false
+    }
+  },
+  "desarmado": {
+    "nome": "Punhos",
+    "min": 1,
+    "max": 4,
+    "velocidade": 2.5,
+    "maos": 0,
+    "golpe": "soco",
+    "somAcerto": "0x0233",
+    "somErro": "0x0239",
+    "machado": false
+  },
+  "armaduras": {
+    "0x1415": {
+      "nome": "Platemail",
+      "camada": "peito",
+      "resistencias": {
+        "fisica": 5,
+        "fogo": 3,
+        "frio": 2,
+        "veneno": 3,
+        "energia": 2
+      },
+      "bloqueiaMeditacao": true
+    },
+    "0x1411": {
+      "nome": "Platemail Legs",
+      "camada": "pernas",
+      "resistencias": {
+        "fisica": 5,
+        "fogo": 3,
+        "frio": 2,
+        "veneno": 3,
+        "energia": 2
+      },
+      "bloqueiaMeditacao": true
+    },
+    "0x1410": {
+      "nome": "Platemail Arms",
+      "camada": "bracos",
+      "resistencias": {
+        "fisica": 5,
+        "fogo": 3,
+        "frio": 2,
+        "veneno": 3,
+        "energia": 2
+      },
+      "bloqueiaMeditacao": true
+    },
+    "0x1414": {
+      "nome": "Platemail Gloves",
+      "camada": "luvas",
+      "resistencias": {
+        "fisica": 5,
+        "fogo": 3,
+        "frio": 2,
+        "veneno": 3,
+        "energia": 2
+      },
+      "bloqueiaMeditacao": true
+    },
+    "0x1413": {
+      "nome": "Platemail Gorget",
+      "camada": "gorjal",
+      "resistencias": {
+        "fisica": 5,
+        "fogo": 3,
+        "frio": 2,
+        "veneno": 3,
+        "energia": 2
+      },
+      "bloqueiaMeditacao": true
+    },
+    "0x1412": {
+      "nome": "Plate Helm",
+      "camada": "elmo",
+      "resistencias": {
+        "fisica": 5,
+        "fogo": 3,
+        "frio": 2,
+        "veneno": 3,
+        "energia": 2
+      },
+      "bloqueiaMeditacao": true
+    },
+    "0x1F03": {
+      "nome": "Robe",
+      "camada": "robe",
+      "resistencias": {},
+      "bloqueiaMeditacao": false
+    }
+  },
+  "escudos": {
+    "0x1B76": {
+      "nome": "Heater Shield",
+      "resistencias": {
+        "fisica": 0
+      }
+    }
+  },
+  "itemBau": "0x0E40",
+  "equipamentoInicial": {
+    "arma": null,
+    "escudo": null,
+    "armadura": {
+      "robe": "0x1F03"
+    }
   }
 }

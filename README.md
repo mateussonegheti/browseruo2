@@ -58,6 +58,9 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Fechar janela | Botão direito na janela (como no UO); arraste para mover |
 | Usar item | Duplo clique na mochila: poções; o spellbook abre o livro (clique numa magia para lançar) |
 | Status completo | Duplo clique na sua barra de vida (canto superior esquerdo) |
+| Guerra / paz | **Tab** · em guerra, duplo clique num alvo (ou "Atacar" no menu do botão direito) e chegue ao lado |
+| Equipar | Mochila → duplo clique no **baú** → duplo clique na arma, peça de plate ou escudo |
+| Desequipar | Duplo clique na peça no paperdoll (volta para o baú) |
 
 Tempos por passo (como no UO a pé): andar 400 ms, correr 200 ms.
 
@@ -96,6 +99,22 @@ resistências 70, FC 2 e FCR 6.
   gárgula, daemon e dragão. Elas passeiam pela arena e podem ser alvo das magias (morrem e renascem).
 - Para incluir outras criaturas, acrescente o id do corpo (veja `mobtypes.txt` no cliente) em `selecao.json` e rode
   o extrator de novo.
+
+## Corpo a corpo e equipamento
+
+- **Armas** (ServUO, ML): Katana, Viking Sword, Broadsword, Longsword, Kryss, War Fork, Spear, War Mace, Mace,
+  Hammer Pick, Halberd, Bardiche, Double Axe e Quarter Staff, com dano, velocidade e mãos de cada uma; sem arma,
+  os punhos (1–4).
+- **Golpe** automático em guerra quando o alvo está ao lado: a cada `max(5, floor(velocidade×4 − Stam/30)) × 0,25 s`;
+  acerto 50% entre iguais; dano × (1 + Str 35% + Anatomy 55% + Tactics 68,75% [+ Lumberjacking 30% nos machados])
+  e depois a resistência física. Dano de golpe interrompe magia; lançar magia reinicia o tempo do golpe.
+- **Armadura:** resistência física base 40; cada peça de plate (peito, pernas, braços, luvas, gorjal, elmo) +5
+  (plate completo = 70, o teto). Plate **bloqueia Meditation**: a mana volta bem mais devagar. O robe vai por cima.
+- **Heater Shield:** bloqueia o golpe inteiro com chance de (Parry/400 + 5%) × (20 + Dex)/100 — com Dex 25, ~13%.
+  Arma de duas mãos não deixa usar escudo.
+- **Mão livre:** com arma de duas mãos, ou arma + escudo, não dá para beber poção (como no UO).
+- Animações do cliente: andar/correr armado, posição de guerra (1 e 2 mãos) e golpes de corte, perfuração e
+  esmagamento; armas, plate e escudo aparecem no personagem e no paperdoll.
 
 ## Itens
 
@@ -210,11 +229,11 @@ Os tiles escolhidos vêm de `scripts/extrator/selecao.json` (grupos por nome do 
 - Personagem é um boneco simples (as animações do cliente, em `anim.uoo`, entram numa etapa posterior).
 - A cópia da arena no navegador mudou de chave (`browseruo.arena.v2`): arenas antigas usavam ids de placeholder.
 - Cliente apenas local: ainda não há servidor autoritativo nem outros jogadores (os bots rodam no navegador).
-- Só o jogador monta (bots não); criaturas não atacam; bots não bebem poções.
+- Só o jogador monta (bots não); criaturas não atacam; bots não bebem poções nem lutam corpo a corpo.
+- Arco e besta ainda não existem.
 
 ## Próximos marcos
 
 1. Criaturas agressivas.
 2. Servidor autoritativo (Node + WebSocket, tick fixo) reaproveitando `mundo/` e `jogo/`.
-3. Combate corpo a corpo e itens (swing timer, armas), com regras do ServUO como referência.
 4. Mais magias (Magic Arrow, Harm, Fireball, Mind Blast…).

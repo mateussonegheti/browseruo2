@@ -89,11 +89,21 @@ export class FonteUO {
   }
 }
 
+/** Item equipável: animação (nome em animacoes.json) e gump do paperdoll. */
+export interface MetaEquipavel {
+  nome: string;
+  rotulo: string;
+  camada: number;
+  anim: string;
+  gump: string;
+}
+
 export interface RecursosInterface {
   /** id do cursor -> ponto ativo [x, y] */
   cursores: Record<string, [number, number]>;
   fontes: { texto?: FonteUO; titulo?: FonteUO };
   itens: Record<string, MetaItem>;
+  equipaveis: Record<string, MetaEquipavel>;
 }
 
 function carregarImagem(src: string): Promise<HTMLImageElement | null> {
@@ -107,7 +117,7 @@ function carregarImagem(src: string): Promise<HTMLImageElement | null> {
 
 /** Carrega o que o extrator gerou; sem os arquivos, devolve recursos vazios (o jogo usa os padrões). */
 export async function carregarRecursosInterface(url = '/interface/interface.json'): Promise<RecursosInterface> {
-  const vazio: RecursosInterface = { cursores: {}, fontes: {}, itens: {} };
+  const vazio: RecursosInterface = { cursores: {}, fontes: {}, itens: {}, equipaveis: {} };
   try {
     const resp = await fetch(url);
     if (!resp.ok) return vazio;
@@ -115,13 +125,14 @@ export async function carregarRecursosInterface(url = '/interface/interface.json
       cursores: Record<string, [number, number]>;
       fontes: Record<string, MetaFonte>;
       itens: Record<string, MetaItem>;
+      equipaveis?: Record<string, MetaEquipavel>;
     };
     const fontes: RecursosInterface['fontes'] = {};
     for (const [nome, meta] of Object.entries(dados.fontes)) {
       const img = await carregarImagem(`/interface/fontes/${meta.arquivo}`);
       if (img && (nome === 'texto' || nome === 'titulo')) fontes[nome] = new FonteUO(meta, img);
     }
-    return { cursores: dados.cursores, fontes, itens: dados.itens };
+    return { cursores: dados.cursores, fontes, itens: dados.itens, equipaveis: dados.equipaveis ?? {} };
   } catch {
     return vazio;
   }

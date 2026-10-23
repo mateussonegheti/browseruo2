@@ -62,11 +62,49 @@ export interface Ficha {
   skills: {
     magery: number; evalInt: number; resist: number; inscription: number;
     poisoning: number; meditation: number; focus: number; alchemy: number;
+    swords: number; macing: number; fencing: number; wrestling: number;
+    tactics: number; anatomy: number; parry: number; lumberjacking: number;
   };
   resistencias: Record<Elemento, number>;
   fasterCasting: number;
   fasterCastRecovery: number;
   lowerManaCost: number;
+}
+
+/** Arma (ServUO, valores de ML). `golpe` é a animação de ataque do humano. */
+export interface DefArma {
+  nome: string;
+  min: number;
+  max: number;
+  /** Segundos por golpe (MlSpeed). */
+  velocidade: number;
+  /** 0 = punhos, 1 = uma mão, 2 = duas mãos. */
+  maos: number;
+  golpe: string;
+  somAcerto: string;
+  somErro: string;
+  /** Machados ganham o bônus de Lumberjacking. */
+  machado: boolean;
+}
+
+export interface DefArmadura {
+  nome: string;
+  /** Camada no corpo: peito, pernas, bracos, luvas, gorjal, elmo, robe. */
+  camada: string;
+  resistencias: Partial<Record<Elemento, number>>;
+  bloqueiaMeditacao: boolean;
+}
+
+export interface DefEscudo {
+  nome: string;
+  resistencias: Partial<Record<Elemento, number>>;
+}
+
+export interface Equipamento {
+  arma: string | null;
+  escudo: string | null;
+  /** camada -> item */
+  armadura: Record<string, string>;
 }
 
 export interface Regras {
@@ -80,6 +118,13 @@ export interface Regras {
   /** Conteúdo da mochila ao nascer e ao renascer: arte do item -> quantidade. */
   mochilaInicial: Record<string, number>;
   somBeber: string;
+  armas: Record<string, DefArma>;
+  desarmado: DefArma;
+  armaduras: Record<string, DefArmadura>;
+  escudos: Record<string, DefEscudo>;
+  equipamentoInicial: Equipamento;
+  /** Item da mochila que guarda os equipáveis (o baú). */
+  itemBau: string;
 }
 
 /** parado: boneco de treino · ativo: mago que luta · criatura: animal/monstro que só passeia. */
@@ -104,6 +149,15 @@ export interface Combatente {
   /** Bônus temporários de atributo (poções de força e agilidade). */
   modificadores: Array<{ atributo: 'str' | 'dex'; valor: number; ateMs: number }>;
   proximaRegenStamMs: number;
+  equipamento: Equipamento;
+  /** Resistências com a armadura (teto 70). */
+  resistencias: Record<Elemento, number>;
+  /** Modo de guerra e o alvo do corpo a corpo. */
+  guerra: boolean;
+  alvoAtaqueId: string | null;
+  proximoGolpeMs: number;
+  /** Golpe em andamento (para a animação). */
+  golpe: { inicioMs: number; fimMs: number; animacao: string } | null;
   /** Magia sendo lançada no alvo já escolhido; o efeito sai no fim (o personagem não anda até lá). */
   cast: { magia: DefMagia; alvoId: string; inicioMs: number; fimMs: number } | null;
   /** Magia escolhida, esperando o alvo (cursor de mira). */
@@ -130,5 +184,6 @@ export type EventoCombate =
   | { tipo: 'aviso'; paraId: string; texto: string }
   | { tipo: 'som'; som: string; alvoId: string }
   | { tipo: 'visual'; visual: string; origemId: string; alvoId: string; duracaoMs: number }
+  | { tipo: 'golpe'; origemId: string; alvoId: string; acertou: boolean }
   | { tipo: 'morte'; alvoId: string }
   | { tipo: 'respawn'; alvoId: string };

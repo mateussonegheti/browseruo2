@@ -1,5 +1,5 @@
 // Fórmulas da era ML, transcritas do ServUO (commit d76bf44). Referências por função.
-import type { DefVeneno, Elemento, Ficha } from './tipos';
+import type { DefArma, DefVeneno, Ficha } from './tipos';
 
 export type Aleatorio = () => number;
 
@@ -61,7 +61,7 @@ export function recuperacaoMs(f: Ficha): number {
  * dado × (30 + 0,9 × EvalInt)% × (100 + bônus de Inscription + Int/10)% × (100 − resistência)%.
  */
 export function danoMagia(
-  rng: Aleatorio, bonus: number, dados: number, lados: number, caster: Ficha, alvo: Ficha, elemento: Elemento,
+  rng: Aleatorio, bonus: number, dados: number, lados: number, caster: Ficha, resistencia: number,
 ): number {
   let dano = dado(rng, dados, lados, bonus) * 100;
   const inscribeFixo = Math.floor(caster.skills.inscription * 10);
@@ -72,8 +72,46 @@ export function danoMagia(
   dano = Math.floor((dano * escalaEval) / 100);
   dano = Math.floor((dano * (100 + bonusDano)) / 100);
   dano = Math.floor(dano / 100);
-  const resistencia = Math.min(70, alvo.resistencias[elemento]);
-  return Math.max(0, Math.floor((dano * (100 - resistencia)) / 100));
+  return aplicarResistencia(dano, resistencia);
+}
+
+/** AOS.Damage com 100% de um elemento; resistência de jogador limitada a 70. */
+export function aplicarResistencia(dano: number, resistencia: number): number {
+  return Math.max(0, Math.floor((dano * (100 - Math.min(70, resistencia))) / 100));
+}
+
+// ---------------------------------------------------------------- corpo a corpo (BaseWeapon, ML)
+
+/** GetDelay (ML): max(5, floor(velocidade × 4 − Stam/30)) × 0,25 s. */
+export function atrasoGolpeMs(velocidade: number, stam: number): number {
+  const ticks = Math.floor(velocidade * 4 - Math.floor(stam / 30));
+  return Math.max(5, ticks) * 250;
+}
+
+/** CheckHit (AoS): (atk + 20) / ((def + 20) × 2), mínimo 2%. */
+export function chanceAcerto(skillAtaque: number, skillDefesa: number): number {
+  return Math.max(0.02, (skillAtaque + 20) / ((skillDefesa + 20) * 2));
+}
+
+/** GetBonus do ServUO: valor × fator + extra ao chegar no limite, em fração. */
+function bonusFisico(valor: number, fator: number, limite: number, extra: number): number {
+  return (valor * fator + (valor >= limite ? extra : 0)) / 100;
+}
+
+/** ScaleDamageAOS: dano base × (1 + Str + Anatomy + Tactics [+ Lumberjacking]), depois a resistência física. */
+export function danoGolpe(rng: Aleatorio, arma: DefArma, f: Ficha, str: number, resistenciaFisica: number): number {
+  const base = inteiro(rng, arma.min, arma.max);
+  let total = bonusFisico(str, 0.3, 100, 5) + bonusFisico(f.skills.anatomy, 0.5, 100, 5) +
+    bonusFisico(f.skills.tactics, 0.625, 100, 6.25);
+  if (arma.machado) total += bonusFisico(f.skills.lumberjacking, 0.2, 100, 10);
+  return aplicarResistencia(base + Math.floor(base * total), resistenciaFisica);
+}
+
+/** CheckParry com escudo: Parry/400 (+5% com 100); Dex abaixo de 80 reduz. */
+export function chanceBloqueio(parry: number, dex: number): number {
+  let chance = parry / 400 + (parry >= 100 ? 0.05 : 0);
+  if (dex < 80) chance = (chance * (20 + dex)) / 100;
+  return chance;
 }
 
 /** HealSpell (ramo AoS/SE): Magery.Fixed/120 + 1d4, ×1,5 em outro alvo. */
@@ -139,11 +177,12 @@ export function intervaloRegenVidaMs(): number {
 }
 
 /** RegenRates (ramo ML), sem armadura que bloqueie Meditation e sem itens de regeneração. */
-export function intervaloRegenManaMs(f: Ficha): number {
+export function intervaloRegenManaMs(f: Ficha, armaduraBloqueia = false): number {
   const med = f.skills.meditation;
   const focus = f.skills.focus;
   const bonusFocus = focus / 200;
-  let bonusMed = 0.0075 * med + 0.0025 * f.atributos.int;
+  // Armadura que bloqueia Meditation (plate) zera o bônus de meditação
+  let bonusMed = armaduraBloqueia ? 0 : 0.0075 * med + 0.0025 * f.atributos.int;
   if (bonusMed >= 100) bonusMed *= 1.1;
   const baseItem = (((med / 2 + focus / 4) / 90) * 0.65) + 2.35;
   const bonusItem = (baseItem * 0 - (baseItem - 1)) / 10;

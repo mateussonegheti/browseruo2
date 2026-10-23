@@ -221,6 +221,24 @@ await espera(100);
 await pagina.screenshot({ path: join(SAIDA, 'menu.png') });
 await pagina.keyboard.press('Escape');
 
+// Equipar pelo baú e atacar em guerra
+await pagina.keyboard.press('b');
+await espera(300);
+if (!(await pagina.isVisible('img[data-item="0x0E40"]'))) { await pagina.keyboard.press('b'); await espera(300); }
+await pagina.dblclick('img[data-item="0x0E40"]');
+await espera(300);
+await pagina.dblclick('img[data-item="0x13FF"]');
+ok(await pagina.evaluate(() => window.__jogo.motor.obter('jogador').equipamento.arma === '0x13FF'), 'duplo clique na katana do baú equipa');
+await pagina.keyboard.press('Tab');
+ok(await pagina.evaluate(() => window.__jogo.motor.obter('jogador').guerra), 'Tab liga o modo de guerra');
+const vidaAntes = await pagina.evaluate(() => {
+  const j = window.__jogo; const b = j.motor.listar().find((c) => c.bot?.modo === 'parado');
+  b.mov.x = j.jogador.x + 1; b.mov.y = j.jogador.y; b.vida = b.vidaMax; j.motor.atacar('jogador', b.id); return b.vida;
+});
+await espera(5500);
+ok(await pagina.evaluate((v) => window.__jogo.motor.listar().find((c) => c.bot?.modo === 'parado').vida < v, vidaAntes), 'em guerra, golpeia o bot ao lado');
+await pagina.keyboard.press('Tab');
+
 // Criaturas
 await pagina.click('text=Spawn aleatório (6)');
 ok(await pagina.evaluate(() => window.__jogo.motor.listar().filter((c) => c.bot?.modo === 'criatura').length === 7), 'spawn aleatório cria mais 6 criaturas');

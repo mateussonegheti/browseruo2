@@ -38,15 +38,8 @@ const COR_BOT = '#c2453c';
 // Aparência (matizes do hues.mul): pele, sapatos, robe e cabelo
 const PELE = 1002, CABELO = 1102, SAPATOS = 1109;
 const ROBE_JOGADOR = 5, ROBE_BOT = 33;
-const camadasMago = (robe: number): Camada[] => [
-  { nome: 'humano', matiz: PELE }, { nome: 'sapatos', matiz: SAPATOS },
-  { nome: 'robe', matiz: robe }, { nome: 'cabelo', matiz: CABELO },
-];
-/** Gumps do paperdoll (anim + 50000) com as mesmas cores das camadas animadas. */
-const PAPERDOLL_JOGADOR: PecaPaperdoll[] = [
-  { gump: '0x000C', matiz: PELE }, { gump: '0xC530', matiz: SAPATOS },
-  { gump: '0xC525', matiz: ROBE_JOGADOR }, { gump: '0xC60C', matiz: CABELO },
-];
+/** Ordem das camadas de armadura no corpo (de baixo para cima); o robe vai por cima da armadura. */
+const ORDEM_ARMADURA = ['pernas', 'peito', 'bracos', 'luvas', 'gorjal', 'robe'];
 const CURSOR_PADRAO = '0x2071';
 const CURSOR_MIRA = '0x2076';
 /** Vida das criaturas por tipo, com exceções para as mais fortes. */
@@ -74,6 +67,13 @@ async function iniciar(): Promise<void> {
     usar: (item) => motor.usarItem(ID_JOGADOR, item, performance.now()),
     magias: () => motor.regras.magias,
     lancar: (magia) => motor.iniciarCast(ID_JOGADOR, magia, performance.now()),
+    equipar: (item) => {
+      const erro = motor.equipar(ID_JOGADOR, item);
+      if (erro) hud.avisar(erro, performance.now());
+    },
+    desequipar: (item) => void motor.desequipar(ID_JOGADOR, item),
+    ehEquipavel: (item) => Boolean(motor.regras.armas[item] || motor.regras.armaduras[item] || motor.regras.escudos[item]),
+    itemBau: (regrasJson as Regras).itemBau,
   });
   const menu = new MenuContexto(document.querySelector<HTMLElement>('#janelas')!, fonte);
   // Barras do cliente só se os gumps foram extraídos
@@ -109,7 +109,43 @@ async function iniciar(): Promise<void> {
     },
   });
   const eu = motor.criar(ID_JOGADOR, 'Você', jogador, performance.now());
-  const aparencia = new Map<string, Camada[]>([[ID_JOGADOR, camadasMago(ROBE_JOGADOR)]]);
+  /** Criaturas: corpo fixo. Humanos (você e bots): montados a partir do equipamento, com a cor do robe. */
+  const aparencia = new Map<string, Camada[]>();
+  const corRobe = new Map<string, number>([[ID_JOGADOR, ROBE_JOGADOR]]);
+
+  /** Itens equipados na ordem de desenho: armaduras, robe, (cabelo), elmo, escudo, arma. */
+  const ordemEquipados = (c: Combatente): { antesDoCabelo: string[]; depois: string[]; temElmo: boolean } => {
+    const arm = c.equipamento.armadura;
+    const antesDoCabelo = ORDEM_ARMADURA.map((k) => arm[k]).filter((v): v is string => Boolean(v));
+    const depois = [arm['elmo'], c.equipamento.escudo, c.equipamento.arma].filter((v): v is string => Boolean(v));
+    return { antesDoCabelo, depois, temElmo: Boolean(arm['elmo']) };
+  };
+  const matizDoItem = (c: Combatente, item: string): number | undefined =>
+    motor.regras.armaduras[item]?.camada === 'robe' ? corRobe.get(c.id) : undefined;
+
+  const camadasHumano = (c: Combatente): Camada[] => {
+    const { antesDoCabelo, depois, temElmo } = ordemEquipados(c);
+    const anim = (item: string) => recursos.equipaveis[item]?.anim ?? (motor.regras.armaduras[item]?.camada === 'robe' ? 'robe' : '');
+    return [
+      { nome: 'humano', matiz: PELE }, { nome: 'sapatos', matiz: SAPATOS },
+      ...antesDoCabelo.map((it) => ({ nome: anim(it), matiz: matizDoItem(c, it) })),
+      ...(temElmo ? [] : [{ nome: 'cabelo', matiz: CABELO }]),
+      ...depois.map((it) => ({ nome: anim(it) })),
+    ].filter((cam) => cam.nome);
+  };
+
+  /** Peças do paperdoll (gump = anim + 50000) com o item de cada uma, para desequipar com duplo clique. */
+  const pecasPaperdoll = (c: Combatente): PecaPaperdoll[] => {
+    const { antesDoCabelo, depois, temElmo } = ordemEquipados(c);
+    const gump = (item: string) => recursos.equipaveis[item]?.gump ?? (motor.regras.armaduras[item]?.camada === 'robe' ? '0xC525' : '');
+    return [
+      { gump: '0x000C', matiz: PELE }, { gump: '0xC530', matiz: SAPATOS },
+      ...antesDoCabelo.map((it) => ({ gump: gump(it), matiz: matizDoItem(c, it), item: it })),
+      ...(temElmo ? [] : [{ gump: '0xC60C', matiz: CABELO }]),
+      ...depois.map((it) => ({ gump: gump(it), item: it })),
+    ].filter((p) => p.gump);
+  };
+  const abrirPaperdoll = (): void => void janelas.alternarPaperdoll('Você', () => pecasPaperdoll(eu));
   const efeitos = new Efeitos();
   efeitos.fonte = fonte;
   void efeitos.carregar();
@@ -154,7 +190,7 @@ async function iniciar(): Promise<void> {
     contadorBots++;
     const id = `bot-${contadorBots}`;
     motor.criar(id, `Bot ${modo} ${contadorBots}`, criarJogador(p.x, p.y), performance.now(), modo);
-    aparencia.set(id, camadasMago(ROBE_BOT));
+    corRobe.set(id, ROBE_BOT);
     hud.avisar(`Bot ${modo} ${contadorBots} entrou na arena.`, performance.now());
   };
   /** Sem posição escolhida (testes e atalhos): perto do jogador. */
@@ -368,15 +404,17 @@ async function iniciar(): Promise<void> {
     if (!c) return;
     if (c.id === ID_JOGADOR) {
       const opcoes: OpcaoMenu[] = [
-        { rotulo: 'Paperdoll', acao: () => void janelas.alternarPaperdoll('Você', PAPERDOLL_JOGADOR) },
+        { rotulo: 'Paperdoll', acao: abrirPaperdoll },
         { rotulo: 'Mochila', acao: () => void janelas.alternarMochila() },
       ];
       if (montaria) opcoes.push({ rotulo: 'Desmontar', acao: desmontar });
       menu.abrir(e.clientX, e.clientY, 'Você', opcoes);
       return;
     }
+    const opcoesAlvo: OpcaoMenu[] = [{ rotulo: 'Atacar', acao: () => void motor.atacar(ID_JOGADOR, c.id) }];
     const anim = montariaDaCriatura(c);
-    if (anim) menu.abrir(e.clientX, e.clientY, c.nome, [{ rotulo: 'Montar', acao: () => tentarMontar(c, anim) }]);
+    if (anim) opcoesAlvo.push({ rotulo: 'Montar', acao: () => tentarMontar(c, anim) });
+    menu.abrir(e.clientX, e.clientY, c.nome, opcoesAlvo);
   });
 
   canvas.addEventListener('mousedown', (e) => {
@@ -440,7 +478,12 @@ async function iniciar(): Promise<void> {
     if (c.id === ID_JOGADOR) {
       // Como no UO: duplo clique em si mesmo desmonta; a pé, abre o paperdoll
       if (montaria) desmontar();
-      else void janelas.alternarPaperdoll('Você', PAPERDOLL_JOGADOR);
+      else abrirPaperdoll();
+      return;
+    }
+    // Em guerra, duplo clique ataca (como no UO); em paz, monta
+    if (eu.guerra) {
+      motor.atacar(ID_JOGADOR, c.id);
       return;
     }
     const anim = montariaDaCriatura(c);
@@ -488,7 +531,12 @@ async function iniciar(): Promise<void> {
     else if (k === 'escape') {
       if (colocando) colocando = null;
       else motor.cancelarMira(ID_JOGADOR);
-    } else if (k === 'p') void janelas.alternarPaperdoll('Você', PAPERDOLL_JOGADOR);
+    } else if (k === 'p') abrirPaperdoll();
+    else if (k === 'tab') {
+      e.preventDefault();
+      motor.alternarGuerra(ID_JOGADOR);
+      hud.avisar(eu.guerra ? 'Modo de guerra.' : 'Modo de paz.', agora);
+    }
     else if (k === 'b') void janelas.alternarMochila();
     else if (k === 't' && eu.mira) {
       if (eu.ultimoAlvoId) motor.escolherAlvo(ID_JOGADOR, eu.ultimoAlvoId, agora);
@@ -536,6 +584,11 @@ async function iniciar(): Promise<void> {
       return { acao: 'morrer', progresso: Math.min(0.999, (agora - morte) / 1000) };
     }
     if (c.cast) return { acao: 'castar', progresso: Math.min(0.999, (agora - c.cast.inicioMs) / (c.cast.fimMs - c.cast.inicioMs)) };
+    if (c.golpe) {
+      const progresso = (agora - c.golpe.inicioMs) / (c.golpe.fimMs - c.golpe.inicioMs);
+      return { acao: c.mov.montado ? 'montado-castar' : c.golpe.animacao, progresso };
+    }
+    const armado = Boolean(c.equipamento.arma);
     const m = c.mov.movimento;
     const fimApanhar = apanharAte.get(c.id) ?? 0;
     if (!m && !c.mov.montado && agora < fimApanhar) {
@@ -545,15 +598,17 @@ async function iniciar(): Promise<void> {
       const passo = m?.duracao ?? (c.mov.montado ? 200 : 400);
       const correndo = c.mov.montado ? passo <= 100 : passo <= 200;
       // Um ciclo de animação a cada dois passos, como no cliente
-      return { acao: correndo ? 'correr' : 'andar', progresso: (agora / (passo * 2)) % 1 };
+      const acao = correndo ? (armado ? 'correr-armado' : 'correr') : (armado ? 'andar-armado' : 'andar');
+      return { acao, progresso: (agora / (passo * 2)) % 1 };
     }
+    if (c.guerra) return { acao: motor.armaDe(c).maos === 2 ? 'guarda-2m' : 'guarda-1m', progresso: (agora / 2000) % 1 };
     return { acao: 'parado', progresso: (agora / 2000) % 1 };
   };
 
   const personagens = (agora: number): PersonagemRender[] =>
     motor.listar().map((c) => ({
       ...estadoAnimacao(c, agora),
-      camadas: aparencia.get(c.id),
+      camadas: c.bot?.modo === 'criatura' ? aparencia.get(c.id) : camadasHumano(c),
       montaria: c.id === ID_JOGADOR ? montaria?.anim : undefined,
       mov: c.mov,
       nome: c.nome,
@@ -641,7 +696,7 @@ async function iniciar(): Promise<void> {
     const sobre = hover && arena.dentro(hover.x, hover.y) ? ` · cursor (${hover.x}, ${hover.y})` : '';
     elHud.textContent = editor.ativo
       ? `EDITOR · ${arena.nome} ${arena.largura}×${arena.altura}${sobre}`
-      : `JOGO · (${jogador.x}, ${jogador.y}) · segure o botão esquerdo para andar · 1–0: magias · E: editor`;
+      : `JOGO${eu.guerra ? ' · GUERRA' : ''} · (${jogador.x}, ${jogador.y}) · segure o botão esquerdo para andar · 1–0: magias · Tab: guerra/paz · E: editor`;
 
     requestAnimationFrame(quadro);
   };

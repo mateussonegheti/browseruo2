@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import regrasJson from '../src/combate/regras.json';
 import { MotorCombate } from '../src/combate/motor';
 import {
+  atrasoGolpeMs, chanceAcerto, chanceBloqueio, danoGolpe,
   chanceCure, chanceResistir, curaGreaterHeal, curaHeal, custoMana, danoMagia, danoVeneno, duracaoParalisiaMs,
   intervaloRegenManaMs, nivelVeneno, pontosReflexo, recuperacaoMs, tempoCastMs,
 } from '../src/combate/formulas';
@@ -48,10 +49,9 @@ describe('fórmulas (mago com todas as skills em 100)', () => {
     expect(recuperacaoMs({ ...mago, fasterCastRecovery: 0 })).toBe(1500);
   });
   it('dano: Energy Bolt 41–45 × 1,2 (Eval) × 1,2 (Int + Inscription) × 30% (resistência 70)', () => {
-    expect(danoMagia(minimo, 40, 1, 5, mago, mago, 'energia')).toBe(17);
-    expect(danoMagia(maximo, 40, 1, 5, mago, mago, 'energia')).toBe(19);
-    const semResist = { ...mago, resistencias: { ...mago.resistencias, energia: 0 } };
-    expect(danoMagia(minimo, 40, 1, 5, mago, semResist, 'energia')).toBe(59);
+    expect(danoMagia(minimo, 40, 1, 5, mago, 70)).toBe(17);
+    expect(danoMagia(maximo, 40, 1, 5, mago, 70)).toBe(19);
+    expect(danoMagia(minimo, 40, 1, 5, mago, 0)).toBe(59);
   });
   it('curas', () => {
     expect(curaHeal(minimo, mago, false)).toBe(9);
@@ -271,5 +271,53 @@ describe('mochila: poções e reagentes', () => {
     expect(a.itens['0x0F88']).toBe(99);
     a.itens['0x0F7A'] = 0;
     expect(motor.iniciarCast('a', 'energy-bolt', 5000)).toMatch(/reagentes/);
+  });
+});
+
+describe('corpo a corpo, armas e armaduras', () => {
+  it('fórmulas: velocidade, acerto, dano e bloqueio', () => {
+    expect(atrasoGolpeMs(2.5, 25)).toBe(2500); // Katana com Stam 25
+    expect(atrasoGolpeMs(2.5, 45)).toBe(2250); // com Greater Agility
+    expect(atrasoGolpeMs(4.0, 25)).toBe(4000); // Halberd
+    expect(atrasoGolpeMs(1.0, 200)).toBe(1250); // mínimo de 5 ticks
+    expect(chanceAcerto(100, 100)).toBe(0.5);
+    const katana = regras.armas['0x13FF']!;
+    expect(danoGolpe(minimo, katana, mago, 100, 40)).toBe(15); // 10 + 15 de bônus, 40% de resistência
+    expect(danoGolpe(maximo, katana, mago, 100, 40)).toBe(21);
+    expect(danoGolpe(minimo, katana, mago, 100, 70)).toBe(7);
+    expect(chanceBloqueio(100, 25)).toBeCloseTo(0.135);
+  });
+  it('equipar: arma de duas mãos tira o escudo; plate sobe a resistência física e bloqueia Meditation', () => {
+    const { motor, a } = montar();
+    expect(motor.equipar('a', '0x1B76')).toBeNull();
+    expect(motor.equipar('a', '0x143E')).toBeNull(); // Halberd
+    expect(a.equipamento.escudo).toBeNull();
+    expect(a.itens['0x1B76']).toBe(1);
+    expect(a.resistencias.fisica).toBe(40);
+    for (const p of ['0x1415', '0x1411', '0x1410', '0x1414', '0x1413', '0x1412']) motor.equipar('a', p);
+    expect(a.resistencias.fisica).toBe(70);
+    expect(a.resistencias.energia).toBe(70);
+    expect(motor.usarItem('a', '0x0F0C', 0)).toMatch(/mão livre/);
+    motor.desequipar('a', '0x1412');
+    expect(a.resistencias.fisica).toBe(65);
+    expect(a.itens['0x1412']).toBe(1);
+  });
+  it('em guerra, golpeia o alvo ao lado no ritmo da arma; dano interrompe o cast', () => {
+    const { motor, b } = montar({ rng: minimo });
+    b.mov.x = 6; // ao lado
+    motor.equipar('a', '0x13FF');
+    motor.iniciarCast('b', 'flamestrike', 0);
+    motor.escolherAlvo('b', 'a', 0);
+    expect(motor.atacar('a', 'b')).toBeNull();
+    motor.atualizar(0);
+    expect(b.vida).toBe(85); // 15 de dano
+    expect(b.cast).toBeNull();
+    motor.atualizar(2499);
+    expect(b.vida).toBe(85);
+    motor.atualizar(2500);
+    expect(b.vida).toBe(70);
+    b.mov.x = 9; // longe: não golpeia (só a regeneração de vida, +1 aos 3,3 s)
+    motor.atualizar(5000);
+    expect(b.vida).toBe(71);
   });
 });
