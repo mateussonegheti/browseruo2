@@ -57,6 +57,8 @@ export const PORTA_PAREDE_X = 0x4000 + 0x6b5;
 export const PORTA_PAREDE_Y = 0x4000 + 0x6bd;
 /** Placa que a casa ganha quando a estrutura não traz uma. */
 export const PLACA_PADRAO = 0x4000 + 0xb98;
+const PLACA_LATAO = 0x4000 + 0xbd2;
+const Z_PLACA_LATAO = 15;
 
 type Tile = [number, number, number, number];
 
@@ -131,6 +133,11 @@ export function complementosDaCasa(casa: CasaDef, cat: CatalogoTiles): Tile[] {
       if (!melhor || p.y > melhor.y || (p.y === melhor.y && p.x > melhor.x)) melhor = p;
     }
     if (melhor) extras.push([PLACA_PADRAO, melhor.x, melhor.y, 0]);
+  }
+  // O sprite da placa de latão fica no topo da imagem: descê-lo ~15 z o deixa na altura do chão, ao lado do suporte
+  const suporte = [...casa.tiles, ...extras].find(([id]) => cat.ehPlaca(id));
+  if (suporte && cat.obter(PLACA_LATAO) && !casa.tiles.some(([id]) => id === PLACA_LATAO)) {
+    extras.push([PLACA_LATAO, suporte[1], suporte[2], suporte[3] - Z_PLACA_LATAO]);
   }
   return extras;
 }
