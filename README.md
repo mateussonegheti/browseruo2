@@ -161,7 +161,12 @@ Limitações: sem portas (os marcadores de porta do multi não têm sprite), sem
 - **Portas** (grupos *Portas* e *Portas abertas*): 7 tipos × 8 orientações. Abrir troca o objeto de tile e de sprite (offsets do ServUO). No editor, o seletor *Dono das portas colocadas* grava `dono` (`A` = quem nasce no spawn A); a porta só responde a esse lado, e não fecha sobre alguém. Para uma casa, posicione a porta no vão e escolha dono A.
 - **Spawns A e B**: ferramentas *Spawn A* (verde) e *Spawn B* (laranja) do editor; `spawnB` é opcional no mapa.
 - **Editor**: *Casa pronta…* escolhe uma estrutura do menu do deed e a ferramenta *Casa* a carimba (sem gastar deed); *Pegar deed* põe um na mochila.
-- **Previsto (ainda não implementado)**: totem de batalha com modos 1x1/2x2/3x3/FFA, contagem com todos paralisados, modo *treino* (kit completo, ao morrer sai com o que tinha) e modo *a vera* (loot próprio, o vencedor loota e sai pelo totem). A base já está: lados A/B, spawns, donos de porta e corpo lootável.
+- **Batalha contra bots**: duplo clique no totem de batalha (virtue stone `0x1870` sobre o altar `0x120E`) abre o menu. Escolha modo (1x1, 2x2, 3x3, FFA), tipo e lado.
+  - Lado A nasce no *Spawn A* (dentro da casa, dono das portas); lado B no *Spawn B* (se não houver, 8 tiles à direita do A). Bots do lado A abrem a própria porta quando não enxergam o inimigo.
+  - Todos ficam paralisados por 5 s (sem andar nem castar) na contagem.
+  - **Treino**: kit completo; ao morrer você sai da arena com o kit de antes. Dá para sair a qualquer momento pelo totem.
+  - **A vera**: você entra com o seu kit; os corpos ficam lootáveis. Se perder, renasce fora; se vencer, loota e sai pelo totem (só após o fim).
+  - A edição (tecla E) fica bloqueada durante a batalha. Rode o extrator para gerar o totem de batalha no catálogo.
 
 ## Editor de arena
 

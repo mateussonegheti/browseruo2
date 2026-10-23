@@ -8,7 +8,7 @@ import {
   intervaloRegenVidaMs, manaMaxima, nivelVeneno, pontosReflexo, recuperacaoMs, tempoCastMs, vidaMaxima,
   type Aleatorio,
 } from './formulas';
-import type { Combatente, DefArma, DefMagia, Elemento, EventoCombate, Ficha, ModoBot, Regras } from './tipos';
+import type { Combatente, DefArma, Equipamento, DefMagia, Elemento, EventoCombate, Ficha, ModoBot, Regras } from './tipos';
 
 const ELEMENTOS: Elemento[] = ['fisica', 'fogo', 'frio', 'veneno', 'energia'];
 /** Quanto da animação de golpe aparece (o resto do tempo é a espera até o próximo golpe). */
@@ -43,6 +43,11 @@ const COR_ALERTA = '#ffb36b';
  * Motor de combate de magia, orientado a tempo: quem chama informa `agora` (ms).
  * Não conhece DOM nem canvas; a interface lê os combatentes e consome os eventos.
  */
+export interface FotoKit {
+  itens: Record<string, number>;
+  equipamento: Equipamento;
+}
+
 export class MotorCombate {
   private readonly combatentes = new Map<string, Combatente>();
   private readonly agendados: Agendado[] = [];
@@ -174,6 +179,7 @@ export class MotorCombate {
 
   remover(id: string): void {
     this.combatentes.delete(id);
+    this.retidos.delete(id);
     for (const c of this.combatentes.values()) if (c.ultimoAlvoId === id) c.ultimoAlvoId = null;
   }
 
@@ -293,12 +299,85 @@ export class MotorCombate {
     return null;
   }
 
+  /** Em batalha, quem morre fica no corpo até a batalha decidir (ids retidos). */
+  private readonly retidos = new Set<string>();
+
+  /** Retém (ou solta) o respawn automático de um personagem. */
+  reterRespawn(id: string, reter: boolean): void {
+    if (reter) this.retidos.add(id);
+    else this.retidos.delete(id);
+  }
+
   /** Põe itens na mochila (totem). */
   darItem(id: string, item: string, qtd = 1): boolean {
     const c = this.combatentes.get(id);
     if (!c) return false;
     c.itens[item] = (c.itens[item] ?? 0) + qtd;
     return true;
+  }
+
+  /** Guarda o kit (mochila e equipamento) para devolver depois da batalha de treino. */
+  fotografar(id: string): FotoKit | null {
+    const c = this.combatentes.get(id);
+    return c ? structuredClone({ itens: c.itens, equipamento: c.equipamento }) : null;
+  }
+
+  /** Devolve o kit guardado. */
+  restaurarFoto(id: string, foto: FotoKit): void {
+    const c = this.combatentes.get(id);
+    if (!c) return;
+    const f = structuredClone(foto);
+    c.itens = f.itens;
+    c.equipamento = f.equipamento;
+    this.recalcularEquipamento(c);
+  }
+
+  /** Kit completo de batalha: equipamento e mochila iniciais. */
+  kitCompleto(id: string): void {
+    const c = this.combatentes.get(id);
+    if (!c) return;
+    c.equipamento = structuredClone(this.regras.equipamentoInicial);
+    c.itens = this.mochilaSemEquipados(c);
+    this.recalcularEquipamento(c);
+  }
+
+  /** Deixa o personagem pronto para lutar: vida cheia, sem efeitos, parado por `paralisiaMs`. */
+  prepararLuta(id: string, agora: number, paralisiaMs: number): void {
+    const c = this.combatentes.get(id);
+    if (!c) return;
+    c.morto = false;
+    c.espolio = {};
+    this.recalcularMaximos(c);
+    c.vida = c.vidaMax;
+    c.mana = c.manaMax;
+    c.stam = c.stamMax;
+    c.veneno = null;
+    c.modificadores = [];
+    c.reflexo = 0;
+    c.cast = null;
+    c.mira = null;
+    c.guerra = false;
+    c.alvoAtaqueId = null;
+    c.golpe = null;
+    c.travas = {};
+    c.proximaMagiaMs = 0;
+    c.mov.movimento = null;
+    this.retidos.add(id);
+    c.paralisadoAteMs = agora + paralisiaMs;
+  }
+
+  /** Solta o respawn do morto para daqui a `emMs`. */
+  agendarRespawn(id: string, emMs: number): void {
+    const c = this.combatentes.get(id);
+    if (!c) return;
+    this.retidos.delete(id);
+    c.respawnEmMs = emMs;
+  }
+
+  /** Revive agora (usa `posicaoRespawn`). */
+  reviver(id: string, agora: number): void {
+    const c = this.combatentes.get(id);
+    if (c) this.renascer(c, agora);
   }
 
   /** Consome itens da mochila (deed ao construir). Retorna false se não houver. */
@@ -373,7 +452,7 @@ export class MotorCombate {
 
     for (const c of this.combatentes.values()) {
       if (c.morto) {
-        if (agora >= c.respawnEmMs) this.renascer(c, agora);
+        if (agora >= c.respawnEmMs && !this.retidos.has(c.id)) this.renascer(c, agora);
         continue;
       }
       if (c.modificadores.some((m) => agora >= m.ateMs)) {

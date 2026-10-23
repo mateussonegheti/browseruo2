@@ -127,3 +127,9 @@ body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui,
 .menu-casas-cartao small { opacity: .7; }
 .menu-totem { width: min(420px, 92vw); }
 .menu-totem .menu-casas-cartao img { max-height: 60px; image-rendering: pixelated; }
+.menu-batalha { width: min(460px, 92vw); padding-bottom: 10px; }
+.menu-batalha p { margin: 12px; }
+.menu-batalha-linha { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 12px 0; }
+.menu-batalha-opcao, .menu-batalha-entrar { cursor: pointer; padding: 6px 10px; }
+.menu-batalha-opcao.ativo { outline: 2px solid #e0b84a; font-weight: bold; }
+.menu-batalha-entrar { display: block; margin: 12px auto 4px; }

@@ -509,9 +509,11 @@
     {"nome": "Grade de ferro", "base": "0x0685"},
     {"nome": "Porta de vime", "base": "0x0695"}
   ],
-  "comentarioEspeciais": "Objetos com função no jogo (grupo Especiais do editor). O totem abre o menu de itens.",
+  "comentarioEspeciais": "Objetos com função no jogo (grupo Especiais do editor). O totem abre o menu de itens; a pedra (0x1870) sobre o altar (0x120E) é o totem de batalha.",
   "especiais": [
-    {"id": "0x3B0F", "nome": "Totem"}
+    {"id": "0x3B0F", "nome": "Totem"},
+    {"id": "0x120E", "nome": "Altar do totem de batalha"},
+    {"id": "0x1870", "nome": "Totem de batalha"}
   ],
   "comentarioCasas": "Estruturas de multi.mul oferecidas pelo deed (public/casas/casas.json). Pares com o mesmo desenho são variantes (A/B).",
   "casas": [

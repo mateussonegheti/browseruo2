@@ -135,6 +135,8 @@ export interface Regras {
   itemBau: string;
   /** Totem: objeto do mapa (id do catálogo) que oferece itens ao jogador; novos itens entram em `itens`. */
   totem: { tile: number; itens: string[] };
+  /** Pedra do totem de batalha. */
+  batalha: { tile: number };
 }
 
 /** parado: boneco de treino · ativo: mago que luta · criatura: animal/monstro que só passeia. */

@@ -816,6 +816,9 @@
     }
   },
   "itemBau": "0x0E40",
+  "batalha": {
+    "tile": 22640
+  },
   "totem": {
     "tile": 31503,
     "itens": ["0x14F0"]

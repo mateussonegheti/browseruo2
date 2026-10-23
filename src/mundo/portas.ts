@@ -32,3 +32,16 @@ export function alternarPorta(
   arena.adicionarVarios([{ x, y, z: porta.z, id: def.par, dono: porta.dono }]);
   return null;
 }
+
+/** Porta fechada do `lado` a até `alcance` tiles de (x, y): os bots a usam para sair da casa. */
+export function portaFechadaPerto(
+  arena: Arena, cat: CatalogoTiles, x: number, y: number, lado: Lado, alcance = 2,
+): ObjetoMapa | undefined {
+  for (let dy = -alcance; dy <= alcance; dy++) {
+    for (let dx = -alcance; dx <= alcance; dx++) {
+      const porta = portaEm(arena, cat, x + dx, y + dy);
+      if (porta && porta.dono === lado && !cat.obter(porta.id)?.porta?.aberta) return porta;
+    }
+  }
+  return undefined;
+}

@@ -26,7 +26,10 @@ import { Sons } from './interface/sons';
 import { MenuCasas } from './interface/menu-casas';
 import { carregarCasas, construirCasa, motivoNaoConstruir, pegadaDaCasa, tetosSobre, type CasaDef } from './mundo/casas';
 import type { Lado, ObjetoMapa } from './mundo/tipos';
-import { alternarPorta, portaEm } from './mundo/portas';
+import { alternarPorta, portaEm, portaFechadaPerto } from './mundo/portas';
+import { Batalha, CONTAGEM_MS, montarParticipantes, type LadoBatalha } from './combate/batalha';
+import type { FotoKit } from './combate/motor';
+import { MenuBatalha, type EscolhaBatalha } from './interface/menu-batalha';
 import { MenuTotem } from './interface/menu-totem';
 
 const ITEM_DEED = '0x14F0';
@@ -44,6 +47,7 @@ const VELOCIDADE_CAMERA_EDITOR = 700; // px/s
 const ID_JOGADOR = 'jogador';
 const COR_JOGADOR = '#3d6fd1';
 const COR_BOT = '#c2453c';
+const COR_ALIADO = '#5ecb7a';
 
 // Aparência (matizes do hues.mul): pele, sapatos, robe e cabelo
 const PELE = 1002, CABELO = 1102, SAPATOS = 1109;
@@ -117,10 +121,12 @@ async function iniciar(): Promise<void> {
   };
 
   // ---------- combate ----------
+  /** Batalha contra bots em andamento (o lobby é onde o jogador estava ao entrar). */
+  let batalha: { b: Batalha; lobby: { x: number; y: number }; foto: FotoKit | null; fimTratado: boolean; morreu: boolean } | null = null;
   const motor = new MotorCombate(regrasJson as Regras, {
     temVisao: (a, b) => temLinhaDeVisao(arena, catalogo, a, b),
     posicaoRespawn: (c) => {
-      if (c.id === ID_JOGADOR) return tileLivrePerto(arena.spawn, c.id);
+      if (c.id === ID_JOGADOR) return tileLivrePerto(batalha?.lobby ?? arena.spawn, c.id);
       if (c.bot?.modo === 'criatura') return tileAleatorio(c.id);
       return tileLivrePerto(jogador, c.id, 6);
     },
@@ -315,8 +321,9 @@ async function iniciar(): Promise<void> {
       const x = t.x + dx;
       const y = t.y + dy;
       const totem = arena.objetosEm(x, y).find((o) => o.id === (regrasJson as Regras).totem.tile);
+      const totemBatalha = arena.objetosEm(x, y).find((o) => o.id === (regrasJson as Regras).batalha.tile);
       const porta = portaEm(arena, catalogo, x, y);
-      if (totem || porta) return { totem, porta, x, y };
+      if (totem || totemBatalha || porta) return { totem, totemBatalha, porta, x, y };
     }
     return null;
   };
@@ -332,9 +339,123 @@ async function iniciar(): Promise<void> {
       abrirTotem();
       return;
     }
-    const erro = alternarPorta(arena, catalogo, alvo.porta!, EQUIPE_JOGADOR, (x, y) => ocupadoPorOutro(x, y, ''));
+    if (alvo.totemBatalha) {
+      abrirTotemBatalha(agora);
+      return;
+    }
+    const erro = alternarPorta(arena, catalogo, alvo.porta!, batalha?.b.lado ?? EQUIPE_JOGADOR, (x, y) => ocupadoPorOutro(x, y, ''));
     if (erro) hud.avisar(erro, agora);
     else salvarLocal(arena.dados);
+  };
+
+  // ---------- batalha contra bots ----------
+  const menuBatalha = new MenuBatalha(document.querySelector<HTMLElement>('#janelas')!);
+  const ID_BOT_BATALHA = 'batalha-bot-';
+
+  const spawnDoLado = (lado: LadoBatalha): { x: number; y: number } => {
+    if (lado === 'A') return arena.spawn;
+    const b = arena.spawnB;
+    if (b) return b;
+    const a = arena.spawn;
+    return { x: Math.min(arena.largura - 1, a.x + 8), y: a.y };
+  };
+
+  const teleportar = (c: Combatente, p: { x: number; y: number }): void => {
+    c.mov.x = p.x;
+    c.mov.y = p.y;
+    c.mov.movimento = null;
+  };
+
+  const iniciarBatalha = (e: EscolhaBatalha, agora: number): void => {
+    if (batalha) return;
+    if (eu.morto) {
+      hud.avisar('Você está morto.', agora);
+      return;
+    }
+    desmontar();
+    removerBots();
+    removerCriaturas();
+    const lobby = { x: jogador.x, y: jogador.y };
+    const foto = e.tipo === 'treino' ? motor.fotografar(ID_JOGADOR) : null;
+    if (e.tipo === 'treino') motor.kitCompleto(ID_JOGADOR);
+    const outro: LadoBatalha = e.lado === 'A' ? 'B' : 'A';
+    const participantes = montarParticipantes(e.modo, e.lado, ID_JOGADOR, (n) => `${ID_BOT_BATALHA}${n}`);
+    teleportar(eu, tileLivrePerto(spawnDoLado(e.lado), ID_JOGADOR));
+    let n = 0;
+    for (const p of participantes) {
+      if (p.id === ID_JOGADOR) continue;
+      const aliado = p.equipe === e.lado;
+      const pos = tileLivrePerto(spawnDoLado(aliado ? e.lado : outro), p.id, aliado ? 1 : 0);
+      motor.criar(p.id, `${aliado ? 'Aliado' : 'Inimigo'} ${++n}`, criarJogador(pos.x, pos.y), agora, 'ativo');
+      corRobe.set(p.id, aliado ? ROBE_JOGADOR : ROBE_BOT);
+    }
+    for (const p of participantes) motor.prepararLuta(p.id, agora, CONTAGEM_MS);
+    batalha = { b: new Batalha(e.modo, e.tipo, e.lado, ID_JOGADOR, participantes, agora), lobby, foto, fimTratado: false, morreu: false };
+    janelas.atualizarMochila();
+    hud.avisar(`Batalha ${e.modo.toUpperCase()} (${e.tipo === 'treino' ? 'treino' : 'a vera'}) contra bots.`, agora);
+  };
+
+  /** Fecha a batalha: remove os bots e, no treino, devolve o kit de antes. */
+  const encerrarBatalha = (agora: number, levarAoLobby: boolean): void => {
+    if (!batalha) return;
+    const { lobby, foto } = batalha;
+    batalha = null;
+    for (const c of motor.listar()) if (c.id.startsWith(ID_BOT_BATALHA)) motor.remover(c.id);
+    motor.reterRespawn(ID_JOGADOR, false);
+    if (eu.morto) motor.reviver(ID_JOGADOR, agora);
+    if (foto) motor.restaurarFoto(ID_JOGADOR, foto);
+    if (levarAoLobby) teleportar(eu, tileLivrePerto(lobby, ID_JOGADOR));
+    eu.paralisadoAteMs = 0;
+    janelas.atualizarMochila();
+  };
+
+  const abrirTotemBatalha = (agora: number): void => {
+    if (!batalha) {
+      menuBatalha.abrirEntrada((e) => iniciarBatalha(e, performance.now()));
+      return;
+    }
+    const livre = batalha.b.tipo === 'treino' || (batalha.b.fase === 'fim' && !eu.morto);
+    menuBatalha.abrirSaida(livre ? null : 'Na batalha a vera só dá para sair depois que ela acabar.', () => {
+      encerrarBatalha(performance.now(), true);
+      hud.avisar('Você saiu da arena.', performance.now());
+    });
+    void agora;
+  };
+
+  /** Contagem, fim da batalha e retorno ao lobby. */
+  const atualizarBatalha = (agora: number): void => {
+    if (!batalha) return;
+    const { b } = batalha;
+    const fase = b.atualizar(agora, (id) => {
+      const c = motor.obter(id);
+      return Boolean(c) && !c!.morto;
+    });
+    if (b.tipo === 'treino' && eu.morto) {
+      encerrarBatalha(agora, true);
+      hud.avisar('Você caiu. Saiu da arena com o kit de antes.', agora);
+      return;
+    }
+    if (fase === 'fim' && !batalha.fimTratado) {
+      batalha.fimTratado = true;
+      hud.avisar(b.jogadorVenceu ? 'Vitória! Clique duas vezes no totem para sair.' : 'Você perdeu a batalha.', agora);
+      if (eu.morto) {
+        batalha.morreu = true;
+        motor.agendarRespawn(ID_JOGADOR, agora + motor.regras.respawnMs);
+      }
+    }
+    // A vera: o perdedor renasce no lobby (renascer já o leva para lá) e a batalha acaba
+    if (batalha.morreu && !eu.morto) {
+      encerrarBatalha(agora, false);
+      hud.avisar('Você renasceu fora da arena.', agora);
+    }
+  };
+
+  const textoBatalha = (agora: number): string | null => {
+    if (!batalha) return null;
+    const { b } = batalha;
+    if (b.fase === 'contagem') return `Batalha ${b.modo.toUpperCase()} começa em ${b.segundosRestantes(agora)}…`;
+    if (b.fase === 'luta') return `Batalha ${b.modo.toUpperCase()} · ${b.tipo === 'treino' ? 'treino' : 'a vera'}`;
+    return 'Fim da batalha · duplo clique no totem para sair';
   };
 
   const abrirDeed = (): void => {
@@ -396,6 +517,7 @@ async function iniciar(): Promise<void> {
   });
 
   const trocarArena = (mapa: Mapa, mensagem: string): void => {
+    encerrarBatalha(performance.now(), false);
     arena = new Arena(mapa);
     jogador = criarJogador(arena.spawn.x, arena.spawn.y);
     eu.mov = jogador;
@@ -497,6 +619,10 @@ async function iniciar(): Promise<void> {
   };
 
   const alternarEditor = (agora: number): void => {
+    if (batalha && !editor.ativo) {
+      hud.avisar('Saia da batalha antes de abrir o editor.', agora);
+      return;
+    }
     if (!editor.ativo) cameraEditor = cameraAtual(agora);
     editor.alternar();
     entrada.segurando = false;
@@ -696,6 +822,18 @@ async function iniciar(): Promise<void> {
   const andar = (c: Combatente, dir: Direcao, correndo: boolean, agora: number): boolean =>
     tentarAndar(c.mov, dir, correndo, agora, arena, catalogo, (x, y) => ocupadoPorOutro(x, y, c.id));
 
+  const proximaPortaBot = new Map<string, number>();
+  /** Bot do lado dono da porta a abre quando não enxerga o inimigo (sai da casa). */
+  const abrirPortaDoBot = (c: Combatente, inimigo: Combatente, agora: number): void => {
+    const lado = batalha!.b.equipeDe(c.id);
+    if (lado !== 'A' && lado !== 'B') return;
+    if ((proximaPortaBot.get(c.id) ?? 0) > agora) return;
+    proximaPortaBot.set(c.id, agora + 1200);
+    if (temLinhaDeVisao(arena, catalogo, c.mov, inimigo.mov)) return;
+    const porta = portaFechadaPerto(arena, catalogo, c.mov.x, c.mov.y, lado);
+    if (porta) alternarPorta(arena, catalogo, porta, lado, (x, y) => ocupadoPorOutro(x, y, ''));
+  };
+
   const atualizarCombate = (agora: number): void => {
     motor.atualizar(agora);
     for (let i = murosTemporarios.length - 1; i >= 0; i--) {
@@ -707,7 +845,11 @@ async function iniciar(): Promise<void> {
     for (const c of motor.listar()) {
       if (c.id !== ID_JOGADOR) atualizarJogador(c.mov, agora);
       if (!c.bot) continue;
-      const acao = decidirBot(c, eu, motor, agora, Math.random, (a, b) => temLinhaDeVisao(arena, catalogo, a, b));
+      const inimigo = batalha && c.id.startsWith(ID_BOT_BATALHA)
+        ? batalha.b.inimigoMaisProximo(c.id, motor.listar().filter((o) => !o.morto && batalha!.b.equipeDe(o.id) !== undefined)) ?? eu
+        : eu;
+      if (batalha?.b.fase === 'luta' && c.id.startsWith(ID_BOT_BATALHA) && !c.morto) abrirPortaDoBot(c, inimigo, agora);
+      const acao = decidirBot(c, inimigo, motor, agora, Math.random, (a, b) => temLinhaDeVisao(arena, catalogo, a, b));
       if (acao.lancar) motor.iniciarCast(c.id, acao.lancar, agora);
       else if (acao.alvo) motor.escolherAlvo(c.id, acao.alvo, agora);
       else if (acao.cancelarMira) motor.cancelarMira(c.id);
@@ -765,7 +907,7 @@ async function iniciar(): Promise<void> {
       montaria: c.id === ID_JOGADOR ? montaria?.anim : undefined,
       mov: c.mov,
       nome: c.nome,
-      cor: c.bot ? COR_BOT : COR_JOGADOR,
+      cor: c.bot ? (batalha?.b.aliados(ID_JOGADOR, c.id) ? COR_ALIADO : COR_BOT) : COR_JOGADOR,
       vidaFrac: c.vida / c.vidaMax,
       morto: c.morto,
       envenenado: Boolean(c.veneno),
@@ -838,6 +980,7 @@ async function iniciar(): Promise<void> {
         }
       }
       atualizarCombate(agora);
+      atualizarBatalha(agora);
     }
 
     const camera = cameraAtual(agora);
@@ -865,7 +1008,7 @@ async function iniciar(): Promise<void> {
       janelas.atualizarStatus();
       ultimaMochila = agora;
     }
-    hud.dicaExtra = colocando ? `Clique no chão para colocar: ${colocando.texto} · Esc ou botão direito cancela` : null;
+    hud.dicaExtra = textoBatalha(agora) ?? (colocando ? `Clique no chão para colocar: ${colocando.texto} · Esc ou botão direito cancela` : null);
     if (!editor.ativo) hud.atualizar(eu, eu.ultimoAlvoId ? motor.obter(eu.ultimoAlvoId) : undefined, agora);
 
     const sobre = hover && arena.dentro(hover.x, hover.y) ? ` · cursor (${hover.x}, ${hover.y})` : '';
