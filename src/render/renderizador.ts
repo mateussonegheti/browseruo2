@@ -70,6 +70,8 @@ export class Renderizador {
   private readonly ctx: CanvasRenderingContext2D;
   private largura = 0;
   private altura = 0;
+  /** Desenhos que vão por cima de tudo no quadro (nome e barra de vida). */
+  private sobrepor: Array<() => void> = [];
   private readonly imagens = new Map<string, HTMLImageElement | 'carregando' | 'erro'>();
   /** Fonte do cliente para nomes e textos (sem ela, usa a fonte do sistema). */
   fonte?: FonteUO;
@@ -123,7 +125,9 @@ export class Renderizador {
     this.coletarObjetos(q, visivel, itens);
     for (const p of q.personagens) this.coletarPersonagem(p, q.agora, itens, q.arena);
     itens.sort((a, b) => a.chave - b.chave);
+    this.sobrepor = [];
     for (const item of itens) item.desenhar();
+    for (const f of this.sobrepor) f();
     q.sobreposicao?.(ctx);
 
     this.desenharEdicao(q);
@@ -396,6 +400,12 @@ export class Renderizador {
       ctx.ellipse(c.x, c.y - 28 - alto, 20, 38 + alto / 2, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
+    // Nome e barra de vida vão numa passada final (não são cortados por tiles à frente)
+    this.sobrepor.push(() => this.desenharNomeEBarra(c, p, alto));
+  }
+
+  private desenharNomeEBarra(c: Ponto, p: PersonagemRender, alto: number): void {
+    const { ctx } = this;
     this.textoCentral(p.nome, c.x, c.y - 72 - alto, p.cor === '#3d6fd1' ? '#9cc0ff' : '#ffb0a8');
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(c.x - 15, c.y + 12, 30, 4);
