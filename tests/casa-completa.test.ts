@@ -29,7 +29,6 @@ describe('casa completa', () => {
     const a = new Arena(criarMapaVazio('t', 16, 16, 1));
     a.adicionarObjeto(0, 0, 0, 1);
     const id = construirCasa(a, casa, 4, 4, cat);
-    expect(placaEm(a, cat, 4, 4) || [0, 1, 2].some((y) => placaEm(a, cat, 4 + 0, 4 + y) || placaEm(a, cat, 5, 4 + y))).toBeTruthy;
     const total = a.dados.objetos.filter((o) => o.casa === id).length;
     expect(total).toBeGreaterThanOrEqual(tiles.length);
     expect(demolirCasa(a, id)).toBe(total);
