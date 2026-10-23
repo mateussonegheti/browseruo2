@@ -32,6 +32,8 @@ export class HudCombate {
   private readonly log: HTMLElement;
   private readonly dicaMira: HTMLElement;
   private avisos: Array<{ texto: string; ate: number }> = [];
+  /** Dica mostrada no alto quando não há mira de magia (ex.: posicionar um bot). */
+  dicaExtra: string | null = null;
 
   constructor(
     private readonly raiz: HTMLElement, private readonly motor: MotorCombate, acoes: AcoesHud,
@@ -119,7 +121,9 @@ export class HudCombate {
         ? `${Math.min(100, ((agora - eu.cast.inicioMs) / (eu.cast.fimMs - eu.cast.inicioMs)) * 100)}%`
         : '0%';
     }
-    this.dicaMira.hidden = !eu.mira;
+    const dica = eu.mira ? 'Clique no alvo · T: último alvo · Y: você mesmo · Esc: cancelar' : this.dicaExtra;
+    if (this.dicaMira.textContent !== dica) this.dicaMira.textContent = dica ?? '';
+    this.dicaMira.hidden = !dica;
 
     this.avisos = this.avisos.filter((a) => a.ate > agora);
     const texto = this.avisos.map((a) => a.texto).join('\n');

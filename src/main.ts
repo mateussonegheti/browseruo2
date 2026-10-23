@@ -19,6 +19,8 @@ import { MotorCombate } from './combate/motor';
 import { decidirBot } from './combate/bot';
 import type { Combatente, ModoBot, Regras } from './combate/tipos';
 import { HudCombate } from './interface/hud-combate';
+import { carregarRecursosInterface, cssCursor, cursorDirecional } from './interface/recursos';
+import { Janelas, type PecaPaperdoll } from './interface/janelas';
 import { Sons } from './interface/sons';
 
 const NOME_ARENA_PADRAO = 'arena-padrao';
@@ -39,6 +41,13 @@ const camadasMago = (robe: number): Camada[] => [
   { nome: 'humano', matiz: PELE }, { nome: 'sapatos', matiz: SAPATOS },
   { nome: 'robe', matiz: robe }, { nome: 'cabelo', matiz: CABELO },
 ];
+/** Gumps do paperdoll (anim + 50000) com as mesmas cores das camadas animadas. */
+const PAPERDOLL_JOGADOR: PecaPaperdoll[] = [
+  { gump: '0x000C', matiz: PELE }, { gump: '0xC530', matiz: SAPATOS },
+  { gump: '0xC525', matiz: ROBE_JOGADOR }, { gump: '0xC60C', matiz: CABELO },
+];
+const CURSOR_PADRAO = '0x2071';
+const CURSOR_MIRA = '0x2076';
 /** Vida das criaturas por tipo, com exceções para as mais fortes. */
 const VIDA_CRIATURA: Record<string, number> = { animal: 40, monstro: 120 };
 const VIDA_ESPECIAL: Record<string, number> = { ogro: 160, ettin: 180, troll: 150, lich: 200, daemon: 300, dragao: 400 };
@@ -53,6 +62,11 @@ async function iniciar(): Promise<void> {
   const animacoes = new Animacoes();
   await animacoes.carregar();
   const renderizador = new Renderizador(canvas, catalogo, animacoes);
+  const recursos = await carregarRecursosInterface();
+  renderizador.fonte = recursos.fontes.texto;
+  document.documentElement.style.setProperty('--cursor-ui', cssCursor(recursos, CURSOR_PADRAO));
+  document.documentElement.style.setProperty('--cursor-pegar', cssCursor(recursos, '0x2075', 'grabbing'));
+  const janelas = new Janelas(document.querySelector<HTMLElement>('#janelas')!, recursos, animacoes);
   const terrenoPadrao = catalogo.listar('terreno')[0]?.id ?? 1;
 
   // ---------- estado ----------
@@ -79,7 +93,12 @@ async function iniciar(): Promise<void> {
   const eu = motor.criar(ID_JOGADOR, 'Você', jogador, performance.now());
   const aparencia = new Map<string, Camada[]>([[ID_JOGADOR, camadasMago(ROBE_JOGADOR)]]);
   const efeitos = new Efeitos();
+  efeitos.fonte = recursos.fontes.texto;
   void efeitos.carregar();
+  /** Criatura em que o jogador está montado (fica fora do mundo enquanto isso). */
+  let montaria: { c: Combatente; anim: string } | null = null;
+  /** Algo esperando um clique no chão para ser posicionado (bot ou criatura). */
+  let colocando: { texto: string; criar: (p: { x: number; y: number }) => void } | null = null;
   const sons = new Sons();
   let contadorBots = 0;
 
@@ -113,24 +132,25 @@ async function iniciar(): Promise<void> {
     return tileLivrePerto(arena.spawn, id, 3);
   }
 
-  const adicionarBot = (modo: ModoBot): void => {
+  const criarBot = (modo: ModoBot, p: { x: number; y: number }): void => {
     contadorBots++;
     const id = `bot-${contadorBots}`;
-    const p = tileLivrePerto(jogador, id, 5);
     motor.criar(id, `Bot ${modo} ${contadorBots}`, criarJogador(p.x, p.y), performance.now(), modo);
     aparencia.set(id, camadasMago(ROBE_BOT));
     hud.avisar(`Bot ${modo} ${contadorBots} entrou na arena.`, performance.now());
   };
+  /** Sem posição escolhida (testes e atalhos): perto do jogador. */
+  const adicionarBot = (modo: ModoBot): void => criarBot(modo, tileLivrePerto(jogador, `bot-${contadorBots + 1}`, 5));
   const removerBots = (): void => {
     for (const c of motor.listar()) if (c.bot && c.bot.modo !== 'criatura') motor.remover(c.id);
   };
 
-  const adicionarCriatura = (nome: string): void => {
+  const criarCriatura = (nome: string, pos?: { x: number; y: number }): void => {
     const info = animacoes.criaturas().find((c) => c.nome === nome);
     if (!info) return;
     contadorBots++;
     const id = `criatura-${contadorBots}`;
-    const p = tileAleatorio(id);
+    const p = pos ?? tileAleatorio(id);
     const c = motor.criar(id, info.rotulo, criarJogador(p.x, p.y), performance.now(), 'criatura');
     c.vidaMax = c.vida = VIDA_ESPECIAL[nome] ?? VIDA_CRIATURA[info.tipo] ?? 50;
     aparencia.set(id, [{ nome }]);
@@ -143,14 +163,43 @@ async function iniciar(): Promise<void> {
     motor.iniciarCast(ID_JOGADOR, magiaId, performance.now());
   };
 
+  /** Montar: a criatura sai do mundo e passa a ser desenhada embaixo do jogador. */
+  const montar = (c: Combatente, anim: string): void => {
+    motor.remover(c.id);
+    montaria = { c, anim };
+    jogador.montado = true;
+    hud.avisar(`Você montou: ${c.nome}.`, performance.now());
+  };
+  const desmontar = (): void => {
+    if (!montaria) return;
+    const { c } = montaria;
+    const p = tileLivrePerto(jogador, c.id, 1);
+    c.mov.x = p.x;
+    c.mov.y = p.y;
+    c.mov.movimento = null;
+    c.mov.dir = jogador.dir;
+    motor.adicionar(c);
+    montaria = null;
+    jogador.montado = false;
+  };
+
+  /** Botões do painel: o cursor vira target e o clique no chão escolhe o lugar. */
+  const pedirPosicao = (texto: string, criar: (p: { x: number; y: number }) => void): void => {
+    colocando = { texto, criar };
+    hud.avisar(`Escolha onde colocar: ${texto}.`, performance.now());
+  };
+
   const hud = new HudCombate(elCombate, motor, {
     lancar: lancarMagia,
-    adicionarBot,
+    adicionarBot: (modo) => pedirPosicao(`bot ${modo}`, (p) => criarBot(modo, p)),
     removerBots,
-    adicionarCriatura,
+    adicionarCriatura: (nome) => {
+      const rotulo = animacoes.criaturas().find((c) => c.nome === nome)?.rotulo ?? nome;
+      pedirPosicao(rotulo.toLowerCase(), (p) => criarCriatura(nome, p));
+    },
     spawnCriaturas: (n) => {
       const lista = animacoes.criaturas();
-      for (let i = 0; i < n && lista.length; i++) adicionarCriatura(lista[Math.floor(Math.random() * lista.length)]!.nome);
+      for (let i = 0; i < n && lista.length; i++) criarCriatura(lista[Math.floor(Math.random() * lista.length)]!.nome);
     },
     removerCriaturas,
     alternarSom: () => (sons.ativo = !sons.ativo),
@@ -168,6 +217,8 @@ async function iniciar(): Promise<void> {
     arena = new Arena(mapa);
     jogador = criarJogador(arena.spawn.x, arena.spawn.y);
     eu.mov = jogador;
+    montaria = null;
+    colocando = null;
     removerBots();
     removerCriaturas();
     painel.definirNome(mapa.nome);
@@ -274,6 +325,21 @@ async function iniciar(): Promise<void> {
         editor.aplicar(t.x, t.y, entrada.pintando.apagar);
         entrada.ultimoTile = t;
       }
+    } else if (colocando) {
+      // Target de posicionamento: esquerdo coloca, direito cancela
+      const agora = performance.now();
+      if (e.button === 2) {
+        colocando = null;
+        return;
+      }
+      const t = e.button === 0 ? tileSobMouse(cameraAtual(agora)) : null;
+      if (!t) return;
+      if (!arena.dentro(t.x, t.y) || tileBloqueado(arena, catalogo, t.x, t.y) || ocupadoPorOutro(t.x, t.y, '')) {
+        hud.avisar('Não dá para colocar aí.', agora);
+        return;
+      }
+      colocando.criar(t);
+      colocando = null;
     } else if (e.button === 0 && eu.mira) {
       // Cursor de mira: o clique escolhe o alvo em vez de andar
       const agora = performance.now();
@@ -281,7 +347,9 @@ async function iniciar(): Promise<void> {
       if (alvo) motor.escolherAlvo(ID_JOGADOR, alvo.id, agora);
       else motor.cancelarMira(ID_JOGADOR);
     } else if (e.button === 0) {
-      entrada.segurando = true;
+      // Clique em outro personagem não anda (permite o duplo clique para montar)
+      const sob = combatenteSobMouse(performance.now());
+      if (!sob || sob.id === ID_JOGADOR) entrada.segurando = true;
     }
   });
 
@@ -295,6 +363,25 @@ async function iniciar(): Promise<void> {
         entrada.ultimoTile = t;
       }
     }
+  });
+
+  canvas.addEventListener('dblclick', () => {
+    if (editor.ativo || colocando || eu.mira) return;
+    const agora = performance.now();
+    const c = combatenteSobMouse(agora);
+    if (!c) return;
+    if (c.id === ID_JOGADOR) {
+      // Como no UO: duplo clique em si mesmo desmonta; a pé, abre o paperdoll
+      if (montaria) desmontar();
+      else void janelas.alternarPaperdoll('Você', PAPERDOLL_JOGADOR);
+      return;
+    }
+    const anim = c.bot?.modo === 'criatura' ? animacoes.montariaDe(aparencia.get(c.id)?.[0]?.nome ?? '') : undefined;
+    if (!anim) return;
+    if (montaria) hud.avisar('Você já está montado.', agora);
+    else if (eu.morto) hud.avisar('Você está morto.', agora);
+    else if (Math.max(Math.abs(c.mov.x - jogador.x), Math.abs(c.mov.y - jogador.y)) > 1) hud.avisar('Chegue mais perto para montar.', agora);
+    else montar(c, anim);
   });
 
   canvas.addEventListener('mouseleave', () => { entrada.mouse = null; });
@@ -327,7 +414,11 @@ async function iniciar(): Promise<void> {
     // Atalhos de combate
     const magia = motor.regras.magias.find((m) => m.tecla === k);
     if (magia) lancarMagia(magia.id);
-    else if (k === 'escape') motor.cancelarMira(ID_JOGADOR);
+    else if (k === 'escape') {
+      if (colocando) colocando = null;
+      else motor.cancelarMira(ID_JOGADOR);
+    } else if (k === 'p') void janelas.alternarPaperdoll('Você', PAPERDOLL_JOGADOR);
+    else if (k === 'b') void janelas.alternarMochila();
     else if (k === 't' && eu.mira) {
       if (eu.ultimoAlvoId) motor.escolherAlvo(ID_JOGADOR, eu.ultimoAlvoId, agora);
       else hud.avisar('Nenhum alvo anterior.', agora);
@@ -359,7 +450,10 @@ async function iniciar(): Promise<void> {
       efeitos.adicionar(ev, agora);
       if (ev.tipo === 'som') sons.tocar(ev.som);
       else if (ev.tipo === 'aviso' && ev.paraId === ID_JOGADOR) hud.avisar(ev.texto, agora);
-      else if (ev.tipo === 'morte') hud.avisar(`${motor.obter(ev.alvoId)?.nome ?? '?'} morreu.`, agora);
+      else if (ev.tipo === 'morte') {
+        if (ev.alvoId === ID_JOGADOR) desmontar();
+        hud.avisar(`${motor.obter(ev.alvoId)?.nome ?? '?'} morreu.`, agora);
+      }
     }
   };
 
@@ -372,9 +466,10 @@ async function iniciar(): Promise<void> {
     if (c.cast) return { acao: 'castar', progresso: Math.min(0.999, (agora - c.cast.inicioMs) / (c.cast.fimMs - c.cast.inicioMs)) };
     const m = c.mov.movimento;
     if (m || agora - c.mov.ultimoFim < 120) {
-      const passo = m?.duracao ?? 400;
+      const passo = m?.duracao ?? (c.mov.montado ? 200 : 400);
+      const correndo = c.mov.montado ? passo <= 100 : passo <= 200;
       // Um ciclo de animação a cada dois passos, como no cliente
-      return { acao: passo <= 200 ? 'correr' : 'andar', progresso: (agora / (passo * 2)) % 1 };
+      return { acao: correndo ? 'correr' : 'andar', progresso: (agora / (passo * 2)) % 1 };
     }
     return { acao: 'parado', progresso: (agora / 2000) % 1 };
   };
@@ -383,6 +478,7 @@ async function iniciar(): Promise<void> {
     motor.listar().map((c) => ({
       ...estadoAnimacao(c, agora),
       camadas: aparencia.get(c.id),
+      montaria: c.id === ID_JOGADOR ? montaria?.anim : undefined,
       mov: c.mov,
       nome: c.nome,
       cor: c.bot ? COR_BOT : COR_JOGADOR,
@@ -399,6 +495,22 @@ async function iniciar(): Promise<void> {
     if (!c) return null;
     const v = posicaoVisual(c.mov, agora);
     return tileParaMundo(v.x, v.y);
+  };
+
+  /** Cursor do cliente: target na mira, luva apontando para onde o personagem andaria no jogo. */
+  let cursorAtual = '';
+  const atualizarCursor = (): void => {
+    let id = CURSOR_PADRAO;
+    if (!editor.ativo) {
+      if (eu.mira || colocando) id = CURSOR_MIRA;
+      else if (entrada.mouse) {
+        id = cursorDirecional(entrada.mouse.x - canvas.clientWidth / 2,
+          entrada.mouse.y - (canvas.clientHeight / 2 - DESLOCAMENTO_CORPO_PX));
+      }
+    }
+    if (id === cursorAtual) return;
+    cursorAtual = id;
+    canvas.style.cursor = cssCursor(recursos, id, id === CURSOR_MIRA ? 'crosshair' : 'default');
   };
 
   // ---------- laço principal ----------
@@ -436,7 +548,9 @@ async function iniciar(): Promise<void> {
       grade: editor.ativo && editor.grade,
       sobreposicao: editor.ativo ? undefined : (ctx) => efeitos.desenhar(ctx, agora, posicaoNoMundo(agora)),
     });
-    canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira));
+    canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando));
+    atualizarCursor();
+    hud.dicaExtra = colocando ? `Clique no chão para colocar: ${colocando.texto} · Esc ou botão direito cancela` : null;
     if (!editor.ativo) hud.atualizar(eu, eu.ultimoAlvoId ? motor.obter(eu.ultimoAlvoId) : undefined, agora);
 
     const sobre = hover && arena.dentro(hover.x, hover.y) ? ` · cursor (${hover.x}, ${hover.y})` : '';
@@ -451,7 +565,10 @@ async function iniciar(): Promise<void> {
   // Gancho de depuração apenas em desenvolvimento (usado nos testes de navegador).
   if (import.meta.env.DEV) {
     Object.defineProperty(window, '__jogo', {
-      value: { get jogador() { return jogador; }, get arena() { return arena; }, editor, motor, adicionarBot },
+      value: {
+        get jogador() { return jogador; }, get arena() { return arena; }, get montaria() { return montaria; },
+        editor, motor, adicionarBot, criarCriatura, janelas,
+      },
     });
   }
 }

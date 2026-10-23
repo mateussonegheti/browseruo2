@@ -411,7 +411,7 @@ def extrair_animacoes(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
     indice = indexar_anim(pasta_cliente / "anim.uoo")
     gerados: dict[str, dict] = {}
     with open(pasta_cliente / "anim.uoo", "rb") as arq:
-        for item in conf["corpos"] + conf.get("equipamentos", []):
+        for item in conf["corpos"] + conf.get("equipamentos", []) + conf.get("montarias", []):
             anim = item["anim"]
             if anim not in indice:
                 print(f"  aviso: animação {anim} não existe", file=sys.stderr)
@@ -435,10 +435,98 @@ def extrair_animacoes(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
                 "anim": anim, "tipo": item["tipo"], "arquivo": f"{item['nome']}.png",
                 "rotulo": item.get("rotulo", item["nome"]), "acoes": meta_acoes,
             }
+            if "montaria" in item:
+                gerados[item["nome"]]["montaria"] = item["montaria"]
     pasta.mkdir(parents=True, exist_ok=True)
     meta = {"versao": 1, "animacoes": gerados, "matizes": ler_matizes(pasta_cliente / "hues.mul", conf.get("matizes", []))}
     (pasta / "animacoes.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     return len(gerados)
+
+
+# ---------------------------------------------------------------- interface (cursores, fontes, itens)
+
+def extrair_cursores(arte: bytes, indice: dict[int, int], ids: list[int], pasta: Path) -> dict[str, list[int]]:
+    """Cursores do art: a borda azul marca a área e um pixel verde na 1ª coluna/linha marca o ponto ativo."""
+    pontos: dict[str, list[int]] = {}
+    for gid in ids:
+        if gid not in indice:
+            continue
+        img = decodificar_imagem(arte, indice[gid])
+        rgba = bytearray(img.rgba)
+        larg, alt = img.largura, img.altura
+        verde = lambda o: rgba[o + 1] > 200 and rgba[o] < 60 and rgba[o + 2] < 60  # noqa: E731
+        hx = next((x for x in range(larg) if verde(x * 4)), 0)
+        hy = next((y for y in range(alt) if verde(y * larg * 4)), 0)
+        # Apaga a moldura (1ª e última linha/coluna), que não faz parte do desenho
+        for x in range(larg):
+            for y in (0, alt - 1):
+                rgba[(y * larg + x) * 4 + 3] = 0
+        for y in range(alt):
+            for x in (0, larg - 1):
+                rgba[(y * larg + x) * 4 + 3] = 0
+        gravar_png(pasta / f"0x{gid:04X}.png", Imagem(larg, alt, bytes(rgba)))
+        pontos[f"0x{gid:04X}"] = [hx, hy]
+    return pontos
+
+
+def extrair_fonte(caminho: Path, pasta: Path, nome: str) -> dict:
+    """unifont*.mul: 0x10000 deslocamentos; glifo = dx, dy (i8), largura, altura (u8) e 1 bit por pixel."""
+    dados = caminho.read_bytes()
+    caracteres = [c for c in range(32, 256) if c != 127]
+    glifos = []
+    for c in caracteres:
+        pos = struct.unpack_from("<I", dados, c * 4)[0]
+        if pos == 0 or pos + 4 > len(dados):
+            glifos.append((c, 0, 0, 0, 0, b""))
+            continue
+        dx, dy, larg, alt = struct.unpack_from("<bbBB", dados, pos)
+        glifos.append((c, dx, dy, larg, alt, dados[pos + 4:pos + 4 + ((larg + 7) // 8) * alt]))
+    larg_total = sum(g[3] + 1 for g in glifos)
+    topo = min((g[2] for g in glifos if g[4]), default=0)  # dy pode ser negativo
+    alt_total = max(g[2] - topo + g[4] for g in glifos)
+    rgba = bytearray(larg_total * alt_total * 4)
+    meta: dict[str, list[int]] = {}
+    x0 = 0
+    for c, dx, dy, larg, alt, bits in glifos:
+        por_linha = (larg + 7) // 8
+        for y in range(alt):
+            for x in range(larg):
+                if bits[y * por_linha + x // 8] >> (7 - x % 8) & 1:
+                    o = ((dy - topo + y) * larg_total + x0 + x) * 4
+                    rgba[o:o + 4] = b"\xff\xff\xff\xff"
+        # [x no atlas, largura, deslocamento x]; o y já está embutido (glifos alinhados pelo topo da linha)
+        meta[str(c)] = [x0, larg, dx]
+        x0 += larg + 1
+    gravar_png(pasta / f"{nome}.png", Imagem(larg_total, alt_total, bytes(rgba)))
+    espaco = meta.get("32", [0, 0, 0])
+    if espaco[1] == 0:
+        meta["32"] = [0, 0, 0]
+    return {"arquivo": f"{nome}.png", "altura": alt_total, "glifos": meta}
+
+
+def extrair_interface(pasta_cliente: Path, selecao: dict, pasta: Path) -> int:
+    conf = selecao.get("interface")
+    if not conf:
+        return 0
+    arte = ler_arquivo_uoo(pasta_cliente / "art.uoo")
+    indice = indexar_entradas(arte)
+    infos = ler_tiledata(pasta_cliente / "artdata.uoo", TAM_REGISTRO_OBJETO, pos_nome=36, pos_altura=32)
+    meta: dict = {"versao": 1}
+    meta["cursores"] = extrair_cursores(arte, indice, [int(c, 0) for c in conf.get("cursores", [])], pasta / "cursores")
+    meta["fontes"] = {nome: extrair_fonte(pasta_cliente / arquivo, pasta / "fontes", nome)
+                      for nome, arquivo in conf.get("fontes", {}).items()}
+    itens = {}
+    for texto in conf.get("itens", []):
+        gid = int(texto, 0)
+        if gid in indice:
+            img = decodificar_imagem(arte, indice[gid])
+            gravar_png(pasta / "itens" / f"0x{gid:04X}.png", img)
+            itens[f"0x{gid:04X}"] = {"nome": infos[gid].nome.replace("%s%", "").replace("%s", ""),
+                                     "largura": img.largura, "altura": img.altura}
+    meta["itens"] = itens
+    extrair_gumps(pasta_cliente / "gumps.uoo", [int(g, 0) for g in conf.get("gumps", [])], pasta / "gumps")
+    (pasta / "interface.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    return len(meta["cursores"]) + len(meta["fontes"]) + len(itens)
 
 
 # ---------------------------------------------------------------- principal
@@ -490,11 +578,14 @@ def main() -> int:
     n_efeitos = extrair_efeitos(args.cliente, selecao, args.saida / "efeitos")
     print("Gravando animacoes de personagens e criaturas (pode levar alguns minutos)...")
     n_anim = extrair_animacoes(args.cliente, selecao, args.saida / "animacoes")
+    print("Gravando interface (cursores, fontes, gumps e itens)...")
+    n_interface = extrair_interface(args.cliente, selecao, args.saida / "interface")
 
     n_terreno = sum(1 for t in tiles if t["tipo"] == "terreno")
     print(f"Pronto: {n_terreno} terrenos e {len(tiles) - n_terreno} objetos em {destino}")
     print(f"        {n_gumps} gumps em public/gumps e {n_sons} sons em public/sons")
-    print(f"        {n_efeitos} efeitos em public/efeitos e {n_anim} animações em public/animacoes")
+    print(f"        {n_efeitos} efeitos em public/efeitos e {n_anim} animacoes em public/animacoes")
+    print(f"        {n_interface} cursores/fontes/itens em public/interface")
     return 0
 
 

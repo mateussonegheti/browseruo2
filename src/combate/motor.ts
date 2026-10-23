@@ -59,6 +59,11 @@ export class MotorCombate {
     return c;
   }
 
+  /** Devolve ao combate um combatente removido (ex.: a montaria quando o cavaleiro desmonta). */
+  adicionar(c: Combatente): void {
+    this.combatentes.set(c.id, c);
+  }
+
   remover(id: string): void {
     this.combatentes.delete(id);
     for (const c of this.combatentes.values()) if (c.ultimoAlvoId === id) c.ultimoAlvoId = null;

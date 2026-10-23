@@ -13,14 +13,18 @@ interface RetQuadro {
 
 interface MetaAnimacao {
   anim: number;
-  tipo: 'humano' | 'animal' | 'monstro';
+  tipo: 'humano' | 'animal' | 'monstro' | 'montaria';
+  /** Animação usada quando alguém monta esta criatura. */
+  montaria?: string;
   arquivo: string;
   rotulo: string;
   /** ação -> [direção armazenada 0..4] -> quadros */
   acoes: Record<string, RetQuadro[][]>;
 }
 
-export type AcaoAnimacao = 'andar' | 'correr' | 'parado' | 'castar' | 'apanhar' | 'morrer' | 'atacar';
+export type AcaoBase = 'andar' | 'correr' | 'parado' | 'castar' | 'apanhar' | 'morrer' | 'atacar';
+/** As ações do humano montado têm o prefixo "montado-". */
+export type AcaoAnimacao = AcaoBase | `montado-${'andar' | 'correr' | 'parado' | 'castar'}`;
 
 /** Uma camada desenhada (corpo ou roupa) com matiz opcional do hues.mul. */
 export interface Camada {
@@ -46,7 +50,9 @@ export function direcaoArmazenada(dir: Direcao): { dir: number; espelhar: boolea
 }
 
 /** Ações substitutas quando o corpo não tem a pedida (ex.: monstro não corre). */
-const SUBSTITUTA: Partial<Record<AcaoAnimacao, AcaoAnimacao>> = { correr: 'andar', castar: 'atacar', atacar: 'parado', apanhar: 'parado' };
+const SUBSTITUTA: Partial<Record<AcaoAnimacao, AcaoAnimacao>> = {
+  correr: 'andar', castar: 'atacar', atacar: 'parado', apanhar: 'parado', 'montado-castar': 'montado-parado',
+};
 
 export class Animacoes {
   private meta = new Map<string, MetaAnimacao>();
@@ -81,8 +87,14 @@ export class Animacoes {
   /** Lista de corpos de criaturas (para o spawn). */
   criaturas(): Array<{ nome: string; rotulo: string; tipo: string }> {
     return [...this.meta.entries()]
-      .filter(([, m]) => m.tipo !== 'humano')
+      .filter(([, m]) => m.tipo === 'animal' || m.tipo === 'monstro')
+      .filter(([nome]) => !nome.startsWith('montaria-'))
       .map(([nome, m]) => ({ nome, rotulo: m.rotulo, tipo: m.tipo }));
+  }
+
+  /** Animação da criatura com alguém em cima, se ela for montável. */
+  montariaDe(nome: string): string | undefined {
+    return this.meta.get(nome)?.montaria;
   }
 
   /** Quantos quadros a ação tem para o corpo (para calcular o quadro atual). */
@@ -134,14 +146,19 @@ export class Animacoes {
     return a ? m.acoes[a] : m.acoes['parado'];
   }
 
-  /** Folha original ou recolorida com o matiz (índice da cor = tom de cinza do pixel, como no cliente). */
+  /** Folha original ou recolorida com o matiz. */
   private folha(c: Camada): CanvasImageSource | undefined {
     const img = this.imagens.get(c.nome);
     if (!img || c.matiz === undefined) return img;
-    const chave = `${c.nome}:${c.matiz}`;
+    return this.tingir(img, c.matiz);
+  }
+
+  /** Recolore uma imagem com um matiz do hues.mul (índice da cor = tom de cinza do pixel, como no cliente). */
+  tingir(img: HTMLImageElement, matiz: number): CanvasImageSource {
+    const chave = `${img.src}:${matiz}`;
     const pronta = this.tingidas.get(chave);
     if (pronta) return pronta;
-    const tabela = this.matizes.get(c.matiz);
+    const tabela = this.matizes.get(matiz);
     if (!tabela) return img;
     const canvas = document.createElement('canvas');
     canvas.width = img.width;

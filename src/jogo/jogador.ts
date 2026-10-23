@@ -7,6 +7,9 @@ import type { Direcao } from '../mundo/tipos';
 /** Tempo por passo (ms), como no UO a pé. */
 export const PASSO_ANDAR_MS = 400;
 export const PASSO_CORRER_MS = 200;
+/** Montado: o dobro da velocidade. */
+export const PASSO_MONTADO_ANDAR_MS = 200;
+export const PASSO_MONTADO_CORRER_MS = 100;
 /** Se o último passo terminou há menos que isso, o próximo mantém o ritmo (sem soluço). */
 const TOLERANCIA_ENCADEAR_MS = 100;
 
@@ -26,10 +29,12 @@ export interface EstadoJogador {
   movimento: Movimento | null;
   /** Instante em que o último passo terminou. */
   ultimoFim: number;
+  /** Em cima de uma montaria (anda mais rápido). */
+  montado: boolean;
 }
 
 export function criarJogador(x: number, y: number): EstadoJogador {
-  return { x, y, dir: 4, movimento: null, ultimoFim: Number.NEGATIVE_INFINITY };
+  return { x, y, dir: 4, movimento: null, ultimoFim: Number.NEGATIVE_INFINITY, montado: false };
 }
 
 /** Conclui o passo em andamento quando o tempo dele acabou. */
@@ -61,7 +66,9 @@ export function tentarAndar(
   j.movimento = {
     deX: j.x, deY: j.y, paraX: j.x + dx, paraY: j.y + dy,
     inicio: encadeia ? j.ultimoFim : agora,
-    duracao: correndo ? PASSO_CORRER_MS : PASSO_ANDAR_MS,
+    duracao: j.montado
+      ? (correndo ? PASSO_MONTADO_CORRER_MS : PASSO_MONTADO_ANDAR_MS)
+      : (correndo ? PASSO_CORRER_MS : PASSO_ANDAR_MS),
   };
   return true;
 }

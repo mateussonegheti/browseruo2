@@ -86,3 +86,14 @@ html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--tex
   .status-combate .barras { width: 170px; }
   .bots { top: auto; bottom: 110px; }
 }
+
+/* ---------- interface do cliente (cursores e gumps) ---------- */
+body, button, select, label, .gump, #painel, #combate { cursor: var(--cursor-ui, auto); }
+#combate button, #painel button { cursor: var(--cursor-ui, pointer); }
+#janelas { position: fixed; inset: 0; pointer-events: none; }
+.gump { position: fixed; pointer-events: auto; user-select: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
+.gump canvas { display: block; }
+.mochila { position: relative; background-repeat: no-repeat; }
+.mochila img { position: absolute; image-rendering: pixelated; }
+.mochila img:hover { filter: brightness(1.25); }
+.mochila img.arrastando { cursor: var(--cursor-pegar, grabbing); filter: brightness(1.25) drop-shadow(0 0 2px #fff); }

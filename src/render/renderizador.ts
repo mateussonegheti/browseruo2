@@ -5,6 +5,7 @@ import type { CatalogoTiles } from '../mundo/catalogo';
 import type { DefinicaoTile } from '../mundo/tipos';
 import { posicaoVisual, type EstadoJogador } from '../jogo/jogador';
 import type { AcaoAnimacao, Animacoes, Camada } from './animacoes';
+import type { FonteUO } from '../interface/recursos';
 
 /** Um personagem a desenhar (jogador ou bot). */
 export interface PersonagemRender {
@@ -23,6 +24,8 @@ export interface PersonagemRender {
   acao?: AcaoAnimacao;
   /** 0 a 1 ao longo da ação atual. */
   progresso?: number;
+  /** Animação da montaria quando o personagem está montado. */
+  montaria?: string;
 }
 
 export interface QuadroRender {
@@ -65,6 +68,8 @@ export class Renderizador {
   private largura = 0;
   private altura = 0;
   private readonly imagens = new Map<string, HTMLImageElement | 'carregando' | 'erro'>();
+  /** Fonte do cliente para nomes e textos (sem ela, usa a fonte do sistema). */
+  fonte?: FonteUO;
 
   constructor(
     private readonly canvas: HTMLCanvasElement, private readonly catalogo: CatalogoTiles,
@@ -313,30 +318,40 @@ export class Renderizador {
       ctx.stroke();
     }
     const acao = p.morto ? 'morrer' : p.acao ?? 'parado';
-    this.animacoes!.desenhar(ctx, p.camadas!, acao, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6, p.morto ? 0.85 : 1);
+    const montado = Boolean(p.montaria) && !p.morto;
+    if (montado) {
+      // Montaria primeiro, depois o cavaleiro com as ações "montado-"
+      const base = (acao === 'castar' ? 'castar' : acao) as AcaoAnimacao;
+      this.animacoes!.desenhar(ctx, [{ nome: p.montaria! }], base, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6);
+      const cavaleiro = `montado-${acao === 'andar' || acao === 'correr' || acao === 'castar' ? acao : 'parado'}` as AcaoAnimacao;
+      this.animacoes!.desenhar(ctx, p.camadas!, cavaleiro, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6);
+    } else {
+      this.animacoes!.desenhar(ctx, p.camadas!, acao, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6, p.morto ? 0.85 : 1);
+    }
     if (p.morto) {
       this.textoCentral(`${p.nome} (morto)`, c.x, c.y - 14, '#b0b0b0');
       return;
     }
+    const alto = montado ? 22 : 0; // montado, o nome e os contornos sobem
     if (p.envenenado) {
       ctx.fillStyle = 'rgba(80,220,80,0.25)';
       ctx.beginPath();
-      ctx.ellipse(c.x, c.y - 26, 14, 30, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x, c.y - 26 - alto, 14, 30, 0, 0, Math.PI * 2);
       ctx.fill();
     }
     if (p.paralisado) {
       ctx.strokeStyle = 'rgba(255,220,90,0.9)';
       ctx.lineWidth = 2;
-      ctx.strokeRect(c.x - 14, c.y - 66, 28, 72);
+      ctx.strokeRect(c.x - 14, c.y - 66 - alto, 28, 72 + alto);
     }
     if (p.reflexo) {
       ctx.strokeStyle = 'rgba(120,180,255,0.55)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(c.x, c.y - 28, 20, 38, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x, c.y - 28 - alto, 20, 38 + alto / 2, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
-    this.textoCentral(p.nome, c.x, c.y - 72, p.cor === '#3d6fd1' ? '#9cc0ff' : '#ffb0a8');
+    this.textoCentral(p.nome, c.x, c.y - 72 - alto, p.cor === '#3d6fd1' ? '#9cc0ff' : '#ffb0a8');
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(c.x - 15, c.y + 12, 30, 4);
     ctx.fillStyle = p.envenenado ? '#55d655' : '#3c7bff';
@@ -345,6 +360,10 @@ export class Renderizador {
 
   private textoCentral(texto: string, x: number, y: number, cor: string): void {
     const { ctx } = this;
+    if (this.fonte) {
+      this.fonte.desenhar(ctx, texto, x, y - this.fonte.altura + 4, cor);
+      return;
+    }
     ctx.font = 'bold 11px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.lineWidth = 3;

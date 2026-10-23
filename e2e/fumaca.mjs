@@ -182,9 +182,30 @@ ok(v2 < v1, `T acerta o último alvo (vida ${v1} -> ${v2})`);
 await pagina.keyboard.press('7');
 await pagina.keyboard.press('y');
 ok(await pagina.evaluate(() => window.__jogo.motor.obter('jogador').cast?.alvoId === 'jogador'), 'Y mira em si mesmo (Heal)');
+// Posicionar com target: o botão pede um clique no chão
+await pagina.click('text=+ Bot parado');
+await espera(100);
+ok((await pagina.textContent('.dica-mira'))?.includes('Clique no chão'), 'botão de bot abre o target de posicionamento');
+const antesBots = await pagina.evaluate(() => window.__jogo.motor.listar().filter((c) => c.bot?.modo === 'parado').length);
+const destino = await pagina.evaluate(() => { const j = window.__jogo.jogador; return { x: j.x - 2, y: j.y + 2 }; });
+await pagina.mouse.click(640 + (-2 - 2) * 22, 360 + (-2 + 2) * 22);
+ok(await pagina.evaluate(([n, d]) => window.__jogo.motor.listar().some((c) => c.bot?.modo === 'parado' && c.mov.x === d.x && c.mov.y === d.y) &&
+  window.__jogo.motor.listar().filter((c) => c.bot?.modo === 'parado').length === n + 1, [antesBots, destino]), 'bot aparece no tile clicado');
+
+// Montar: duplo clique no cavalo ao lado; duplo clique em si mesmo desmonta
+await pagina.evaluate(() => { const j = window.__jogo; j.criarCriatura('cavalo-1', { x: j.jogador.x + 1, y: j.jogador.y }); for (const c of j.motor.listar()) if (c.bot?.modo === 'criatura') c.bot.proximaDecisaoMs = 1e12; });
+await pagina.mouse.dblclick(640 + 22, 360 + 22 - 20);
+ok(await pagina.evaluate(() => window.__jogo.montaria?.anim === 'montaria-cavalo-1' && window.__jogo.jogador.montado), 'duplo clique no cavalo monta');
+await pagina.mouse.dblclick(640, 360 - 25);
+ok(await pagina.evaluate(() => window.__jogo.montaria === null && !window.__jogo.jogador.montado), 'duplo clique em si mesmo desmonta');
+await pagina.keyboard.press('p');
+await pagina.keyboard.press('b');
+await espera(500);
+ok(await pagina.evaluate(() => document.querySelectorAll('#janelas .gump').length === 2), 'P abre o paperdoll e B a mochila');
+
 // Criaturas
 await pagina.click('text=Spawn aleatório (6)');
-ok(await pagina.evaluate(() => window.__jogo.motor.listar().filter((c) => c.bot?.modo === 'criatura').length === 6), 'spawn aleatório cria 6 criaturas');
+ok(await pagina.evaluate(() => window.__jogo.motor.listar().filter((c) => c.bot?.modo === 'criatura').length === 7), 'spawn aleatório cria mais 6 criaturas');
 await espera(600);
 await pagina.screenshot({ path: join(SAIDA, 'combate.png') });
 

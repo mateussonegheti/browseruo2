@@ -4,6 +4,7 @@ PvP enxuto no estilo Ultima Online, rodando no navegador. Projeto pessoal.
 **Marco 1:** arena com sprites reais do cliente, movimento no estilo UO e editor de arena interno.
 **Marco 2:** combate de magia (era ML) contra bots, com ícones, sons e efeitos do cliente.
 **Marco 3:** animações originais de personagens e criaturas, com spawn de cavalos, montarias e monstros.
+**Marco 4:** montar, paperdoll e mochila, fonte e cursores do cliente, posicionar bots e criaturas com target.
 
 ## Como rodar
 
@@ -26,7 +27,8 @@ python scripts/extrator/extrair_sprites.py
 ```
 
 O mesmo comando grava, também fora do git: ícones das magias (`public/gumps/`), sons (`public/sons/`),
-efeitos de magia (`public/efeitos/`) e animações de personagens e criaturas (`public/animacoes/`, ~35 s).
+efeitos de magia (`public/efeitos/`), animações de personagens, criaturas e montarias (`public/animacoes/`, ~35 s)
+e a interface (`public/interface/`: cursores, fontes `unifont`, gumps do paperdoll e da mochila, itens).
 Sem esses arquivos o jogo funciona com losangos/caixas, siglas no lugar dos ícones, efeitos desenhados, boneco simples
 e sem som.
 
@@ -47,8 +49,12 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Editor: grade | Tecla **G** |
 | Lançar magia | Teclas **1** a **0** ou clique na barra de magias: a mira abre na hora |
 | Escolher alvo | Clique no personagem · **T**: último alvo · **Y**: você mesmo · **Esc**: cancelar |
-| Bots de teste | Painel no canto superior direito: bot parado (boneco) ou bot ativo (anda e lança magias) |
-| Criaturas | Mesmo painel: escolher na lista e **+ Criatura**, ou **Spawn aleatório (6)** |
+| Bots de teste | Painel no canto superior direito: **+ Bot parado** / **+ Bot ativo** e clique no chão (target) |
+| Criaturas | Mesmo painel: escolher na lista, **+ Criatura** e clique no chão; ou **Spawn aleatório (6)** |
+| Cancelar o posicionamento | **Esc** ou botão direito |
+| Montar / desmontar | Duplo clique no cavalo, ostard ou lhama ao lado · duplo clique em si mesmo desmonta |
+| Paperdoll / mochila | **P** / **B** (a pé, duplo clique em si mesmo abre o paperdoll; duplo clique na mochila dele abre a mochila) |
+| Fechar janela | Botão direito na janela (como no UO); arraste para mover |
 
 Tempos por passo (como no UO a pé): andar 400 ms, correr 200 ms.
 
@@ -87,6 +93,15 @@ resistências 70, FC 2 e FCR 6.
   gárgula, daemon e dragão. Elas passeiam pela arena e podem ser alvo das magias (morrem e renascem).
 - Para incluir outras criaturas, acrescente o id do corpo (veja `mobtypes.txt` no cliente) em `selecao.json` e rode
   o extrator de novo.
+
+## Interface do cliente
+
+- **Cursores** originais (luva): aponta para onde o personagem andaria, vira o target na mira e ao posicionar.
+- **Fonte** `unifont1.mul` nos nomes, no dano e nas palavras de poder; `unifont.mul` no nome do paperdoll.
+- **Paperdoll** (gump 0x07D0) com o corpo e as roupas nas mesmas cores do personagem, e **mochila** (0x003C) com
+  spellbook, reagentes e poções que dá para arrastar lá dentro (por enquanto são decorativos).
+- **Montarias:** cavalos, ostards e lhama. Montado, anda em 200 ms e corre em 100 ms por passo. Ao morrer, você cai
+  da montaria e ela fica ao lado.
 
 ## Editor de arena
 
@@ -177,12 +192,12 @@ Os tiles escolhidos vêm de `scripts/extrator/selecao.json` (grupos por nome do 
 - Personagem é um boneco simples (as animações do cliente, em `anim.uoo`, entram numa etapa posterior).
 - A cópia da arena no navegador mudou de chave (`browseruo.arena.v2`): arenas antigas usavam ids de placeholder.
 - Cliente apenas local: ainda não há servidor autoritativo nem outros jogadores (os bots rodam no navegador).
-- Montar nas montarias ainda não existe (elas só aparecem no mundo); criaturas não atacam.
+- Só o jogador monta (bots não); criaturas não atacam; os itens da mochila ainda não são usáveis.
 - A animação de "apanhar" (get hit) ainda não é usada.
 
 ## Próximos marcos
 
-1. Montar (cavalos e ostards) e criaturas agressivas.
+1. Criaturas agressivas e usar os itens da mochila (poções, spellbook).
 2. Servidor autoritativo (Node + WebSocket, tick fixo) reaproveitando `mundo/` e `jogo/`.
 3. Combate corpo a corpo e itens (swing timer, armas), com regras do ServUO como referência.
 4. Mais magias (Magic Arrow, Harm, Fireball, Mind Blast…).

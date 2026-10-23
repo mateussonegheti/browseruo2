@@ -129,6 +129,18 @@ describe('jogador', () => {
     expect(tentarAndar(j, 2, true, 2000, a, cat)).toBe(true);
     expect(j.movimento?.duracao).toBe(PASSO_CORRER_MS);
   });
+  it('montado anda em 200 ms e corre em 100 ms; ninguém entra em tile ocupado', () => {
+    const a = arenaVazia();
+    const j = criarJogador(5, 5);
+    j.montado = true;
+    tentarAndar(j, 2, false, 0, a, cat);
+    expect(j.movimento?.duracao).toBe(200);
+    atualizarJogador(j, 200);
+    tentarAndar(j, 2, true, 300, a, cat);
+    expect(j.movimento?.duracao).toBe(100);
+    atualizarJogador(j, 400);
+    expect(tentarAndar(j, 2, false, 500, a, cat, (x, y) => x === 8 && y === 5)).toBe(false);
+  });
   it('não inicia novo passo enquanto outro está em curso', () => {
     const a = arenaVazia();
     const j = criarJogador(5, 5);

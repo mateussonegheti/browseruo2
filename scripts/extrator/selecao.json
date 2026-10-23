@@ -34,20 +34,22 @@
   "comentarioAnimacoes": "Animações do anim.uoo para public/animacoes/. 'anim' = id do corpo (mobtypes.txt) ou da roupa (tiledata). 'acoes' traduz as ações do jogo para os ids de cada tipo de corpo. 'matizes' = cores do hues.mul usadas no jogo.",
   "animacoes": {
     "acoes": {
-      "humano": { "andar": 0, "correr": 2, "parado": 4, "castar": 16, "apanhar": 20, "morrer": 21 },
+      "humano": { "andar": 0, "correr": 2, "parado": 4, "castar": 16, "apanhar": 20, "morrer": 21,
+                  "montado-andar": 23, "montado-correr": 24, "montado-parado": 25, "montado-castar": 26 },
+      "montaria": { "andar": 23, "correr": 24, "parado": 25, "castar": 26 },
       "animal": { "andar": 0, "correr": 1, "parado": 2, "apanhar": 7, "morrer": 8 },
       "monstro": { "andar": 0, "parado": 1, "atacar": 4, "apanhar": 10, "morrer": 2 }
     },
     "corpos": [
       { "anim": 400, "nome": "humano", "tipo": "humano", "rotulo": "Humano" },
-      { "anim": 200, "nome": "cavalo-1", "tipo": "animal", "rotulo": "Cavalo" },
-      { "anim": 204, "nome": "cavalo-2", "tipo": "animal", "rotulo": "Cavalo" },
-      { "anim": 226, "nome": "cavalo-3", "tipo": "animal", "rotulo": "Cavalo" },
-      { "anim": 228, "nome": "cavalo-4", "tipo": "animal", "rotulo": "Cavalo" },
-      { "anim": 210, "nome": "ostard-deserto", "tipo": "animal", "rotulo": "Ostard do deserto" },
-      { "anim": 219, "nome": "ostard-floresta", "tipo": "animal", "rotulo": "Ostard da floresta" },
-      { "anim": 218, "nome": "ostard-frenetico", "tipo": "animal", "rotulo": "Ostard frenético" },
-      { "anim": 220, "nome": "lhama", "tipo": "animal", "rotulo": "Lhama" },
+      { "anim": 200, "nome": "cavalo-1", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-1" },
+      { "anim": 204, "nome": "cavalo-2", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-2" },
+      { "anim": 226, "nome": "cavalo-3", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-3" },
+      { "anim": 228, "nome": "cavalo-4", "tipo": "animal", "rotulo": "Cavalo", "montaria": "montaria-cavalo-4" },
+      { "anim": 210, "nome": "ostard-deserto", "tipo": "animal", "rotulo": "Ostard do deserto", "montaria": "montaria-ostard-deserto" },
+      { "anim": 219, "nome": "ostard-floresta", "tipo": "animal", "rotulo": "Ostard da floresta", "montaria": "montaria-ostard-floresta" },
+      { "anim": 218, "nome": "ostard-frenetico", "tipo": "animal", "rotulo": "Ostard frenético", "montaria": "montaria-ostard-frenetico" },
+      { "anim": 220, "nome": "lhama", "tipo": "animal", "rotulo": "Lhama", "montaria": "montaria-lhama" },
       { "anim": 225, "nome": "lobo", "tipo": "animal", "rotulo": "Lobo" },
       { "anim": 211, "nome": "urso", "tipo": "animal", "rotulo": "Urso" },
       { "anim": 1, "nome": "ogro", "tipo": "monstro", "rotulo": "Ogro" },
@@ -66,6 +68,24 @@
       { "anim": 700, "nome": "cabelo", "tipo": "humano" },
       { "anim": 480, "nome": "sapatos", "tipo": "humano" }
     ],
+    "comentarioMontarias": "Animações da montaria com alguém em cima (anim do item da montaria no tiledata: 0x3E9F a 0x3EA6).",
+    "montarias": [
+      { "anim": 820, "nome": "montaria-cavalo-1", "tipo": "montaria" },
+      { "anim": 824, "nome": "montaria-cavalo-2", "tipo": "montaria" },
+      { "anim": 846, "nome": "montaria-cavalo-3", "tipo": "montaria" },
+      { "anim": 848, "nome": "montaria-cavalo-4", "tipo": "montaria" },
+      { "anim": 825, "nome": "montaria-ostard-deserto", "tipo": "montaria" },
+      { "anim": 827, "nome": "montaria-ostard-floresta", "tipo": "montaria" },
+      { "anim": 218, "nome": "montaria-ostard-frenetico", "tipo": "animal" },
+      { "anim": 828, "nome": "montaria-lhama", "tipo": "montaria" }
+    ],
     "matizes": [1002, 1102, 1109, 3, 5, 33, 38, 88, 1150, 1153, 1175]
+  },
+  "comentarioInterface": "Cursores (art 0x206A-0x2079), fontes unicode, gumps do paperdoll/mochila e itens da mochila, em public/interface/.",
+  "interface": {
+    "cursores": ["0x206A", "0x206B", "0x206C", "0x206D", "0x206E", "0x206F", "0x2070", "0x2071", "0x2072", "0x2073", "0x2074", "0x2075", "0x2076", "0x2077"],
+    "fontes": { "texto": "unifont1.mul", "titulo": "unifont.mul" },
+    "gumps": ["0x07D0", "0x000C", "0xC525", "0xC60C", "0xC530", "0xC4F6", "0x003C"],
+    "itens": ["0x0EFA", "0x0F7A", "0x0F7B", "0x0F84", "0x0F85", "0x0F86", "0x0F88", "0x0F8C", "0x0F8D", "0x0F0C", "0x0F07", "0x0F0B", "0x0F09", "0x0F0A", "0x0F08"]
   }
 }

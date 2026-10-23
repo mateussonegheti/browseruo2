@@ -1,5 +1,6 @@
 import type { EventoCombate } from '../combate/tipos';
 import type { Ponto } from '../nucleo/projecao';
+import type { FonteUO } from '../interface/recursos';
 
 interface Visual {
   visual: string;
@@ -53,6 +54,8 @@ export class Efeitos {
   private visuais: Visual[] = [];
   private textos: TextoFlutuante[] = [];
   private folhas = new Map<string, FolhaEfeito>();
+  /** Fonte do cliente para os textos sobre os personagens. */
+  fonte?: FonteUO;
 
   /** Carrega as folhas extraídas do cliente. Sem elas, os efeitos são desenhados à mão. */
   async carregar(url = '/efeitos/efeitos.json'): Promise<void> {
@@ -112,10 +115,14 @@ export class Efeitos {
       const progresso = (agora - t.inicio) / (t.fim - t.inicio);
       const y = p.y - 70 - t.linha * 15 - progresso * 18;
       ctx.globalAlpha = progresso > 0.75 ? (1 - progresso) * 4 : 1;
-      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-      ctx.strokeText(t.texto, p.x, y);
-      ctx.fillStyle = t.cor;
-      ctx.fillText(t.texto, p.x, y);
+      if (this.fonte) {
+        this.fonte.desenhar(ctx, t.texto, p.x, y - this.fonte.altura + 4, t.cor);
+      } else {
+        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+        ctx.strokeText(t.texto, p.x, y);
+        ctx.fillStyle = t.cor;
+        ctx.fillText(t.texto, p.x, y);
+      }
       ctx.globalAlpha = 1;
     }
   }
