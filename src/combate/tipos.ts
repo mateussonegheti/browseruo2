@@ -2,10 +2,18 @@
 import type { EstadoJogador } from '../jogo/jogador';
 
 export type Elemento = 'fisica' | 'fogo' | 'frio' | 'veneno' | 'energia';
-export type TipoAlvo = 'outro' | 'qualquer' | 'proprio';
+/** 'local': a mira escolhe um tile (Teleport, Wall of Stone). */
+export type TipoAlvo = 'outro' | 'qualquer' | 'proprio' | 'local';
 
 export type EfeitoMagia =
-  | { tipo: 'dano'; bonus: number; dados: number; lados: number; elemento: Elemento; atrasoMs: number; visual: string }
+  | { tipo: 'dano'; bonus: number; dados: number; lados: number; elemento: Elemento; atrasoMs: number; visual: string;
+      /** Harm: metade do dano a 2 tiles, um quarto mais longe. */
+      perdePorDistancia?: boolean }
+  | { tipo: 'mente'; maximo: number; atrasoMs: number }
+  | { tipo: 'maldicao'; percentualBase: number; resistencias: number }
+  | { tipo: 'dreno-mana'; base: number; devolveMs: number }
+  | { tipo: 'teleporte'; alcanceTiles: number }
+  | { tipo: 'muro'; alcanceTiles: number; duracaoMs: number; objeto: number }
   | { tipo: 'veneno'; alcanceForteTiles: number; limiares: number[]; niveis: number[] }
   | { tipo: 'paralisia'; baseS: number; porMagery: number; fatorResistido: number }
   | { tipo: 'cura'; formula: 'heal' | 'greater-heal' }
@@ -146,8 +154,8 @@ export interface Combatente {
   itens: Record<string, number>;
   /** Travas de uso (ex.: "cura" das poções, ou o próprio item) -> liberada em (ms). */
   travas: Record<string, number>;
-  /** Bônus temporários de atributo (poções de força e agilidade). */
-  modificadores: Array<{ atributo: 'str' | 'dex'; valor: number; ateMs: number }>;
+  /** Bônus e penalidades temporários (poções de força/agilidade, Curse). */
+  modificadores: Array<{ atributo: 'str' | 'dex' | 'int' | 'resistencias'; valor: number; ateMs: number; origem?: string }>;
   proximaRegenStamMs: number;
   equipamento: Equipamento;
   /** Resistências com a armadura (teto 70). */
@@ -158,8 +166,8 @@ export interface Combatente {
   proximoGolpeMs: number;
   /** Golpe em andamento (para a animação). */
   golpe: { inicioMs: number; fimMs: number; animacao: string } | null;
-  /** Magia sendo lançada no alvo já escolhido; o efeito sai no fim (o personagem não anda até lá). */
-  cast: { magia: DefMagia; alvoId: string; inicioMs: number; fimMs: number } | null;
+  /** Magia sendo lançada no alvo (ou tile) já escolhido; o efeito sai no fim (o personagem não anda até lá). */
+  cast: { magia: DefMagia; alvoId: string; local?: { x: number; y: number }; inicioMs: number; fimMs: number } | null;
   /** Magia escolhida, esperando o alvo (cursor de mira). */
   mira: DefMagia | null;
   /** Recuperação entre magias (FCR). */
@@ -183,7 +191,7 @@ export type EventoCombate =
   | { tipo: 'texto'; alvoId: string; texto: string; cor: string }
   | { tipo: 'aviso'; paraId: string; texto: string }
   | { tipo: 'som'; som: string; alvoId: string }
-  | { tipo: 'visual'; visual: string; origemId: string; alvoId: string; duracaoMs: number }
+  | { tipo: 'visual'; visual: string; origemId: string; alvoId: string; duracaoMs: number; local?: { x: number; y: number } }
   | { tipo: 'golpe'; origemId: string; alvoId: string; acertou: boolean }
   | { tipo: 'morte'; alvoId: string }
   | { tipo: 'respawn'; alvoId: string };

@@ -102,14 +102,14 @@ export class HudCombate {
     const barra = div('barra-magias');
     for (const m of motor.regras.magias) {
       const b = botao('', () => acoes.lancar(m.id));
-      b.title = `${m.nome} (${m.palavras}) · ${m.circulo}º círculo · tecla ${m.tecla}`;
+      b.title = `${m.nome} (${m.palavras}) · ${m.circulo}º círculo · tecla ${m.tecla.replace('shift+', 'Shift+')}`;
       b.dataset.magia = m.id;
       const img = document.createElement('img');
       img.src = `/gumps/${m.icone}.png`;
       img.alt = m.nome;
       img.addEventListener('error', () => { img.replaceWith(spanTexto(m.nome.split(' ').map((p) => p[0]).join(''), 'sigla')); });
       const progresso = div('progresso');
-      b.append(img, progresso, spanTexto(m.tecla, 'tecla'));
+      b.append(img, progresso, spanTexto(m.tecla.replace('shift+', 'S'), 'tecla'));
       this.botoesMagia.set(m.id, { botao: b, progresso });
       barra.append(b);
     }
@@ -144,7 +144,9 @@ export class HudCombate {
         ? `${Math.min(100, ((agora - eu.cast.inicioMs) / (eu.cast.fimMs - eu.cast.inicioMs)) * 100)}%`
         : '0%';
     }
-    const dica = eu.mira ? 'Clique no alvo · T: último alvo · Y: você mesmo · Esc: cancelar' : this.dicaExtra;
+    const dica = eu.mira
+      ? (eu.mira.alvo === 'local' ? 'Clique no chão · Esc: cancelar' : 'Clique no alvo · T: último alvo · Y: você mesmo · Esc: cancelar')
+      : this.dicaExtra;
     if (this.dicaMira.textContent !== dica) this.dicaMira.textContent = dica ?? '';
     this.dicaMira.hidden = !dica;
 

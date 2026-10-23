@@ -107,6 +107,12 @@ export class Arena {
     return topo;
   }
 
+  /** Remove um objeto específico (ex.: o Wall of Stone quando acaba). */
+  removerExato(x: number, y: number, z: number, id: number): void {
+    const o = this.objetosEm(x, y).find((q) => q.z === z && q.id === id);
+    if (o) this.removerObjeto(o);
+  }
+
   definirSpawn(x: number, y: number): void {
     if (this.dentro(x, y)) this.dados.spawn = { x, y };
   }

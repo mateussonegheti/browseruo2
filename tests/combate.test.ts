@@ -321,3 +321,65 @@ describe('corpo a corpo, armas e armaduras', () => {
     expect(b.vida).toBe(71);
   });
 });
+
+describe('magias novas', () => {
+  it('Magic Arrow 4, Fireball 8; Harm cai com a distância (dano mínimo, resistência 70)', () => {
+    const { motor, b } = montar({ rng: minimo });
+    const danos = (): number[] => motor.coletarEventos().flatMap((e) => (e.tipo === 'dano' ? [e.valor] : []));
+    b.mov.x = 6; // 1 tile
+    lancar(motor, 'a', 'b', 'harm', 0);
+    expect(danos()).toEqual([7]); // 25 × 30%
+    b.mov.x = 9; // 4 tiles: um quarto
+    lancar(motor, 'a', 'b', 'harm', 5000);
+    expect(danos()).toEqual([1]);
+    lancar(motor, 'a', 'b', 'magic-arrow', 10000);
+    expect(danos()).toEqual([4]);
+    lancar(motor, 'a', 'b', 'fireball', 15000);
+    expect(danos()).toEqual([8]);
+  });
+  it('Mind Blast: (Magery + Int)/5 + 2..6 de frio, 1 s depois', () => {
+    const { motor, b } = montar({ rng: minimo });
+    const t = lancar(motor, 'a', 'b', 'mind-blast', 0);
+    expect(b.vida).toBe(100);
+    motor.atualizar(t + 1000);
+    expect(b.vida).toBe(88); // 42 × 30%
+  });
+  it('Curse: −8% Str/Dex/Int e −10 nas resistências elementais por 121 s', () => {
+    const { motor, b } = montar();
+    const t = lancar(motor, 'a', 'b', 'curse', 0);
+    expect(b.vidaMax).toBe(96);
+    expect(b.manaMax).toBe(92);
+    expect(b.resistencias.energia).toBe(60);
+    expect(b.resistencias.fisica).toBe(40);
+    motor.atualizar(t + 121000);
+    expect(b.resistencias.energia).toBe(70);
+    expect(b.vidaMax).toBe(100);
+  });
+  it('Mana Drain tira 40 e devolve depois de 5 s', () => {
+    const { motor, b } = montar();
+    const t = lancar(motor, 'a', 'b', 'mana-drain', 0);
+    expect(b.mana).toBeLessThanOrEqual(61); // 100 − 40 (+1 de regeneração no mesmo instante)
+    motor.atualizar(t + 5000);
+    expect(b.mana).toBeGreaterThanOrEqual(100);
+  });
+  it('Teleport leva a um tile livre e visível; Wall of Stone ergue 3 peças', () => {
+    const muros: Array<{ x: number; y: number }> = [];
+    const motor = new MotorCombate(regras, {
+      aleatorio: minimo, temVisao: () => true, posicaoRespawn: () => ({ x: 0, y: 0 }),
+      tileLivre: (x) => x !== 9, criarMuro: (tiles) => muros.push(...tiles),
+    });
+    const a = motor.criar('a', 'A', criarJogador(5, 5), 0);
+    motor.iniciarCast('a', 'teleport', 0);
+    expect(motor.escolherLocal('a', 9, 5, 0)).toMatch(/Não dá/);
+    motor.iniciarCast('a', 'teleport', 0);
+    expect(motor.escolherLocal('a', 30, 5, 0)).toMatch(/longe/);
+    motor.iniciarCast('a', 'teleport', 0);
+    expect(motor.escolherLocal('a', 10, 8, 0)).toBeNull();
+    motor.atualizar(1000);
+    expect([a.mov.x, a.mov.y]).toEqual([10, 8]);
+    motor.iniciarCast('a', 'wall-of-stone', 2000);
+    motor.escolherLocal('a', 10, 4, 2000);
+    motor.atualizar(3000);
+    expect(muros).toHaveLength(3);
+  });
+});

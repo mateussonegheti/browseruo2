@@ -47,7 +47,7 @@ O `npm run e2e` usa o Playwright. Se o Chromium dele não estiver instalado: `np
 | Editor: apagar | Botão direito |
 | Editor: mover a câmera | W/A/S/D ou setas |
 | Editor: grade | Tecla **G** |
-| Lançar magia | Teclas **1** a **0** ou clique na barra de magias: a mira abre na hora |
+| Lançar magia | Teclas **1** a **0** e **Shift+1** a **Shift+8**, clique na barra ou no livro: a mira abre na hora |
 | Escolher alvo | Clique no personagem · **T**: último alvo · **Y**: você mesmo · **Esc**: cancelar |
 | Bots de teste | Painel no canto superior direito: **+ Bot parado** / **+ Bot ativo** e clique no chão (target) |
 | Criaturas | Mesmo painel: escolher na lista, **+ Criatura** e clique no chão; ou **Spawn aleatório (6)** |
@@ -82,6 +82,14 @@ resistências 70, FC 2 e FCR 6.
 | 8 | Greater Heal | 4 | 11 |
 | 9 | Cure | 2 | 6 |
 | 0 | Magic Reflection (clássico: reflete magias) | 5 | 14 |
+| Shift+1 | Magic Arrow | 1 | 4 |
+| Shift+2 | Harm (metade a 2 tiles, ¼ mais longe) | 2 | 6 |
+| Shift+3 | Fireball | 3 | 9 |
+| Shift+4 | Teleport (clique no chão, até 11 tiles) | 3 | 9 |
+| Shift+5 | Wall of Stone (3 peças por 10 s, bloqueiam passagem e visão) | 3 | 9 |
+| Shift+6 | Curse (−8% Str/Dex/Int e −10 nas resistências elementais por ~2 min) | 4 | 11 |
+| Shift+7 | Mana Drain (tira 40 de mana, devolve em 5 s) | 4 | 11 |
+| Shift+8 | Mind Blast ((Magery + Int)/5 + 2..6, frio, 1 s depois) | 5 | 14 |
 
 - **Mira primeiro** (estilo Sphere/DMS): a tecla abre a mira, o clique no alvo começa o cast e o efeito sai no fim
   do tempo de cast. Durante o cast o personagem não anda; qualquer dano interrompe (*fizzle*). A mana só é gasta
@@ -236,4 +244,4 @@ Os tiles escolhidos vêm de `scripts/extrator/selecao.json` (grupos por nome do 
 
 1. Criaturas agressivas.
 2. Servidor autoritativo (Node + WebSocket, tick fixo) reaproveitando `mundo/` e `jogo/`.
-4. Mais magias (Magic Arrow, Harm, Fireball, Mind Blast…).
+3. Arco e besta; bots que lutam corpo a corpo, montam e bebem poções.

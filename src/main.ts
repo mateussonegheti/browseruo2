@@ -107,7 +107,17 @@ async function iniciar(): Promise<void> {
       if (c.bot?.modo === 'criatura') return tileAleatorio(c.id);
       return tileLivrePerto(jogador, c.id, 6);
     },
+    tileLivre: (x, y) => arena.dentro(x, y) && !tileBloqueado(arena, catalogo, x, y) && !ocupadoPorOutro(x, y, ''),
+    criarMuro: (tiles, objeto, ateMs) => {
+      for (const t of tiles) {
+        if (!arena.dentro(t.x, t.y) || arena.objetosEm(t.x, t.y).some((o) => o.z === 0)) continue;
+        arena.adicionarObjeto(t.x, t.y, 0, objeto);
+        murosTemporarios.push({ ...t, objeto, ateMs });
+      }
+    },
   });
+  /** Muros do Wall of Stone, que somem sozinhos. */
+  const murosTemporarios: Array<{ x: number; y: number; objeto: number; ateMs: number }> = [];
   const eu = motor.criar(ID_JOGADOR, 'Você', jogador, performance.now());
   /** Criaturas: corpo fixo. Humanos (você e bots): montados a partir do equipamento, com a cor do robe. */
   const aparencia = new Map<string, Camada[]>();
@@ -445,6 +455,11 @@ async function iniciar(): Promise<void> {
       }
       colocando.criar(t);
       colocando = null;
+    } else if (e.button === 0 && eu.mira?.alvo === 'local') {
+      // Teleport e Wall of Stone: a mira escolhe o tile
+      const agora = performance.now();
+      const t = tileSobMouse(cameraAtual(agora));
+      if (t) motor.escolherLocal(ID_JOGADOR, t.x, t.y, agora);
     } else if (e.button === 0 && eu.mira) {
       // Cursor de mira: o clique escolhe o alvo em vez de andar
       const agora = performance.now();
@@ -525,8 +540,9 @@ async function iniciar(): Promise<void> {
       else entrada.teclas.add(k);
       return;
     }
-    // Atalhos de combate
-    const magia = motor.regras.magias.find((m) => m.tecla === k);
+    // Atalhos de combate: 1–0 e Shift+1–8
+    const tecla = e.shiftKey && /^Digit\d$/.test(e.code) ? `shift+${e.code.slice(5)}` : k;
+    const magia = motor.regras.magias.find((m) => m.tecla === tecla);
     if (magia) lancarMagia(magia.id);
     else if (k === 'escape') {
       if (colocando) colocando = null;
@@ -551,6 +567,12 @@ async function iniciar(): Promise<void> {
 
   const atualizarCombate = (agora: number): void => {
     motor.atualizar(agora);
+    for (let i = murosTemporarios.length - 1; i >= 0; i--) {
+      const m = murosTemporarios[i]!;
+      if (agora < m.ateMs) continue;
+      arena.removerExato(m.x, m.y, 0, m.objeto);
+      murosTemporarios.splice(i, 1);
+    }
     for (const c of motor.listar()) {
       if (c.id !== ID_JOGADOR) atualizarJogador(c.mov, agora);
       if (!c.bot) continue;
@@ -681,7 +703,7 @@ async function iniciar(): Promise<void> {
       arena, personagens: personagens(agora), agora, camera, hover,
       fantasma: editor.fantasma,
       grade: editor.ativo && editor.grade,
-      sobreposicao: editor.ativo ? undefined : (ctx) => efeitos.desenhar(ctx, agora, posicaoNoMundo(agora)),
+      sobreposicao: editor.ativo ? undefined : (ctx) => efeitos.desenhar(ctx, agora, posicaoNoMundo(agora), (x, y) => tileParaMundo(x, y)),
     });
     canvas.classList.toggle('mirando', !editor.ativo && Boolean(eu.mira || colocando));
     atualizarCursor();

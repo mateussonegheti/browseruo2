@@ -141,6 +141,19 @@ Dano dos venenos (ramo AoS). Dano por tick = `1 + floor(vida_atual × %)`, preso
 | Paralyze (pré-AoS) | 27 s; 20,25 s se resistir (~29,5% no 5º círculo); qualquer dano quebra |
 | Magic Reflect clássico | 15 pontos; cada magia gasta o próprio círculo |
 
+## Magias acrescentadas (ServUO, ramo AoS)
+
+| Magia | Regra |
+|---|---|
+| Magic Arrow | 10 + 1d4 de fogo, com a escala de Eval/Int/Inscription (4–6 contra resistência 70) |
+| Harm | 17 + 1d5 de frio; ×0,5 a 2 tiles e ×0,25 mais longe (7–9 ao lado) |
+| Fireball | 19 + 1d5 de fogo (8–10) |
+| Mind Blast | (Magery + Int)/5 + 2..6, até 60; dano de frio entre esse valor e +4, 1 s depois (12–15) |
+| Curse | Str/Dex/Int −(8 + Eval/10 − Resist/10)%; −10 em fogo, frio, veneno e energia; dura 6 × Eval×10/50 + 1 s (121 s) |
+| Mana Drain | Tira 40 + Eval − Resist de mana (40) e devolve depois de 5 s; um dreno por vez |
+| Teleport | Tile livre e visível a até 11 tiles |
+| Wall of Stone | 3 peças (art 0x82) atravessadas na linha de quem lança, por 10 s; alcance 10 |
+
 ## Pendências / decisões
 0. ~~Paralyze sem efeito entre magos iguais~~: decidido, fórmula pré-AoS.
 1. ~~Template~~: decidido, todas as skills em 100.

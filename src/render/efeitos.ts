@@ -8,6 +8,8 @@ interface Visual {
   alvoId: string;
   inicio: number;
   fim: number;
+  /** Efeito num tile fixo (ex.: a fumaça do Teleport no lugar de onde saiu). */
+  local?: { x: number; y: number };
 }
 
 interface TextoFlutuante {
@@ -36,8 +38,18 @@ const DURACAO_TEXTO_MS = 1600;
 const DURACAO_PROJETIL_MS = 350;
 
 /** Efeito do cliente usado em cada visual do motor (ids iguais aos do ServUO). */
+/** Efeitos que viajam de quem lança até o alvo, girados na direção dele. */
+const MOVEIS = new Set(['projetil', 'flecha-magica', 'bola-de-fogo']);
+
 const EFEITO_DO_VISUAL: Record<string, string> = {
   projetil: '0x379F', // Energy Bolt (MovingParticles)
+  'flecha-magica': '0x36E4',
+  'bola-de-fogo': '0x36D4',
+  harm: '0x374A',
+  mente: '0x374A',
+  maldicao: '0x374A',
+  'dreno-mana': '0x3789',
+  teleporte: '0x3728',
   explosao: '0x36BD',
   'coluna-fogo': '0x3709',
   raio: 'raio', // gumps 0x4E20–0x4E29
@@ -77,9 +89,9 @@ export class Efeitos {
       case 'visual': {
         const folha = this.folha(ev.visual);
         let duracao = ev.duracaoMs;
-        if (ev.visual === 'projetil') duracao = DURACAO_PROJETIL_MS;
+        if (MOVEIS.has(ev.visual)) duracao = DURACAO_PROJETIL_MS;
         else if (folha) duracao = folha.quadros * folha.intervaloMs;
-        this.visuais.push({ visual: ev.visual, origemId: ev.origemId, alvoId: ev.alvoId, inicio: agora, fim: agora + duracao });
+        this.visuais.push({ visual: ev.visual, origemId: ev.origemId, alvoId: ev.alvoId, inicio: agora, fim: agora + duracao, local: ev.local });
         break;
       }
       case 'dano':
@@ -96,13 +108,16 @@ export class Efeitos {
     }
   }
 
-  /** `posicao` devolve o pé do personagem em coordenadas do mundo (ou null se ele sumiu). */
-  desenhar(ctx: CanvasRenderingContext2D, agora: number, posicao: (id: string) => Ponto | null): void {
+  /** `posicao` devolve o pé do personagem em coordenadas do mundo (ou null se ele sumiu); `tile`, o centro de um tile. */
+  desenhar(
+    ctx: CanvasRenderingContext2D, agora: number, posicao: (id: string) => Ponto | null,
+    tile: (x: number, y: number) => Ponto = (x, y) => ({ x, y }),
+  ): void {
     this.visuais = this.visuais.filter((v) => agora < v.fim);
     this.textos = this.textos.filter((t) => agora < t.fim);
     for (const v of this.visuais) {
-      const a = posicao(v.origemId);
-      const b = posicao(v.alvoId);
+      const a = v.local ? tile(v.local.x, v.local.y) : posicao(v.origemId);
+      const b = v.local ? a : posicao(v.alvoId);
       if (!a || !b) continue;
       this.desenharVisual(ctx, v, a, b, (agora - v.inicio) / (v.fim - v.inicio));
     }
@@ -141,7 +156,7 @@ export class Efeitos {
     const corpo = (p: Ponto): Ponto => ({ x: p.x, y: p.y - 24 });
     const f = this.folha(v.visual);
     if (f?.img) {
-      if (v.visual === 'projetil') {
+      if (MOVEIS.has(v.visual)) {
         // Imagem parada que viaja girada na direção do alvo, como no cliente
         const a = corpo(de);
         const b = corpo(para);
@@ -162,6 +177,8 @@ export class Efeitos {
       return;
     }
     switch (v.visual) {
+      case 'flecha-magica':
+      case 'bola-de-fogo':
       case 'projetil': {
         // Energy Bolt: esfera azul viajando até o alvo
         const a = corpo(de);
@@ -208,6 +225,15 @@ export class Efeitos {
       }
       case 'veneno':
         bolhas(ctx, corpo(para), t, 'rgba(110,230,110,0.85)');
+        break;
+      case 'harm':
+      case 'mente':
+      case 'maldicao':
+      case 'dreno-mana':
+        bolhas(ctx, corpo(para), t, 'rgba(180,160,255,0.85)');
+        break;
+      case 'teleporte':
+        bolhas(ctx, corpo(para), t, 'rgba(220,220,220,0.85)');
         break;
       case 'cura':
       case 'cura-veneno':

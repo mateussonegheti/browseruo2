@@ -300,14 +300,15 @@ export class Janelas {
     };
     escrever('Magery', 66, 18, '#5a1010');
     const magias = [...this.acoes.magias()].sort((a, b) => a.circulo - b.circulo);
-    let esquerda = 44;
-    let direita = 44;
+    // Círculos 1–3 na página da esquerda, 4–8 na da direita
+    let esquerda = 40;
+    let direita = 22;
     for (const m of magias) {
-      const naDireita = m.circulo >= 5;
+      const naDireita = m.circulo >= 4;
       const y = naDireita ? direita : esquerda;
-      escrever(`${m.circulo}º  ${m.nome.replace('Magic Reflection', 'Magic Reflect')}`, naDireita ? 232 : 66, y, '#2a1a0a', m.id);
-      if (naDireita) direita += 22;
-      else esquerda += 22;
+      escrever(`${m.circulo}º  ${m.nome.replace('Magic Reflection', 'Magic Reflect')}`, naDireita ? 226 : 62, y, '#2a1a0a', m.id);
+      if (naDireita) direita += 17;
+      else esquerda += 17;
     }
     this.livro = this.janela('livro', caixa, { x: 300, y: 90 });
   }

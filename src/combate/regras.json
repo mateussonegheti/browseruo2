@@ -309,6 +309,173 @@
         "0x0F86",
         "0x0F8D"
       ]
+    },
+    {
+      "id": "magic-arrow",
+      "nome": "Magic Arrow",
+      "palavras": "In Por Ylem",
+      "circulo": 1,
+      "tecla": "shift+1",
+      "icone": "0x08C4",
+      "som": "0x01E5",
+      "alvo": "outro",
+      "efeito": {
+        "tipo": "dano",
+        "bonus": 10,
+        "dados": 1,
+        "lados": 4,
+        "elemento": "fogo",
+        "atrasoMs": 0,
+        "visual": "flecha-magica"
+      },
+      "reagentes": [
+        "0x0F8C"
+      ]
+    },
+    {
+      "id": "harm",
+      "nome": "Harm",
+      "palavras": "An Mani",
+      "circulo": 2,
+      "tecla": "shift+2",
+      "icone": "0x08CB",
+      "som": "0x00FC",
+      "alvo": "outro",
+      "efeito": {
+        "tipo": "dano",
+        "bonus": 17,
+        "dados": 1,
+        "lados": 5,
+        "elemento": "frio",
+        "atrasoMs": 0,
+        "visual": "harm",
+        "perdePorDistancia": true
+      },
+      "reagentes": [
+        "0x0F88",
+        "0x0F8D"
+      ]
+    },
+    {
+      "id": "fireball",
+      "nome": "Fireball",
+      "palavras": "Vas Flam",
+      "circulo": 3,
+      "tecla": "shift+3",
+      "icone": "0x08D1",
+      "som": "0x015E",
+      "alvo": "outro",
+      "efeito": {
+        "tipo": "dano",
+        "bonus": 19,
+        "dados": 1,
+        "lados": 5,
+        "elemento": "fogo",
+        "atrasoMs": 0,
+        "visual": "bola-de-fogo"
+      },
+      "reagentes": [
+        "0x0F7A"
+      ]
+    },
+    {
+      "id": "teleport",
+      "nome": "Teleport",
+      "palavras": "Rel Por",
+      "circulo": 3,
+      "tecla": "shift+4",
+      "icone": "0x08D5",
+      "som": "0x01FE",
+      "alvo": "local",
+      "efeito": {
+        "tipo": "teleporte",
+        "alcanceTiles": 11
+      },
+      "reagentes": [
+        "0x0F7B",
+        "0x0F86"
+      ]
+    },
+    {
+      "id": "wall-of-stone",
+      "nome": "Wall of Stone",
+      "palavras": "In Sanct Ylem",
+      "circulo": 3,
+      "tecla": "shift+5",
+      "icone": "0x08D7",
+      "som": "0x01F6",
+      "alvo": "local",
+      "efeito": {
+        "tipo": "muro",
+        "alcanceTiles": 10,
+        "duracaoMs": 10000,
+        "objeto": 16514
+      },
+      "reagentes": [
+        "0x0F7B",
+        "0x0F84"
+      ]
+    },
+    {
+      "id": "curse",
+      "nome": "Curse",
+      "palavras": "Des Sanct",
+      "circulo": 4,
+      "tecla": "shift+6",
+      "icone": "0x08DA",
+      "som": "0x01E1",
+      "alvo": "outro",
+      "efeito": {
+        "tipo": "maldicao",
+        "percentualBase": 8,
+        "resistencias": 10
+      },
+      "reagentes": [
+        "0x0F84",
+        "0x0F88",
+        "0x0F8C"
+      ]
+    },
+    {
+      "id": "mana-drain",
+      "nome": "Mana Drain",
+      "palavras": "Ort Rel",
+      "circulo": 4,
+      "tecla": "shift+7",
+      "icone": "0x08DE",
+      "som": "0x01F8",
+      "alvo": "outro",
+      "efeito": {
+        "tipo": "dreno-mana",
+        "base": 40,
+        "devolveMs": 5000
+      },
+      "reagentes": [
+        "0x0F7A",
+        "0x0F86",
+        "0x0F8D"
+      ]
+    },
+    {
+      "id": "mind-blast",
+      "nome": "Mind Blast",
+      "palavras": "Por Corp Wis",
+      "circulo": 5,
+      "tecla": "shift+8",
+      "icone": "0x08E4",
+      "som": "0x0213",
+      "alvo": "outro",
+      "efeito": {
+        "tipo": "mente",
+        "maximo": 60,
+        "atrasoMs": 1000
+      },
+      "reagentes": [
+        "0x0F7A",
+        "0x0F86",
+        "0x0F88",
+        "0x0F8C"
+      ]
     }
   ],
   "somBeber": "0x02D6",

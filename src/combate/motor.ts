@@ -20,6 +20,10 @@ export interface OpcoesMotor {
   temVisao: (a: { x: number; y: number }, b: { x: number; y: number }) => boolean;
   /** Onde o combatente renasce. */
   posicaoRespawn: (c: Combatente) => { x: number; y: number };
+  /** Tile onde dá para ficar (Teleport). */
+  tileLivre?: (x: number, y: number) => boolean;
+  /** Ergue um muro temporário (Wall of Stone). */
+  criarMuro?: (tiles: Array<{ x: number; y: number }>, objeto: number, ateMs: number) => void;
 }
 
 interface Agendado {
@@ -228,12 +232,29 @@ export class MotorCombate {
     return null;
   }
 
+  /** Escolhe o tile da magia na mira (Teleport, Wall of Stone) e começa o cast. */
+  escolherLocal(id: string, x: number, y: number, agora: number): string | null {
+    const c = this.combatentes.get(id);
+    const m = c?.mira;
+    if (!c || !m || m.alvo !== 'local') return 'Nenhuma magia de local na mira.';
+    const erro = this.erroAoCastar(c, m, agora) ?? this.erroLocal(c, m, x, y);
+    if (erro) {
+      c.mira = null;
+      this.avisar(c, erro);
+      return erro;
+    }
+    c.mira = null;
+    this.comecarCast(c, m, c.id, agora, { x, y });
+    return null;
+  }
+
   /** Escolhe o alvo da magia na mira e começa o cast. Retorna o erro, ou null se começou. */
   escolherAlvo(id: string, alvoId: string, agora: number): string | null {
     const c = this.combatentes.get(id);
     const alvo = this.combatentes.get(alvoId);
     const m = c?.mira;
     if (!c || !m) return 'Nenhuma magia na mira.';
+    if (m.alvo === 'local') return this.escolherLocal(id, alvo?.mov.x ?? -1, alvo?.mov.y ?? -1, agora);
     const erro = this.erroAoCastar(c, m, agora) ?? this.erroAlvo(c, alvo, m, agora);
     if (erro) {
       // Alvo inválido encerra a mira, como no cliente.
@@ -315,6 +336,7 @@ export class MotorCombate {
       if (c.modificadores.some((m) => agora >= m.ateMs)) {
         c.modificadores = c.modificadores.filter((m) => agora < m.ateMs);
         this.recalcularMaximos(c);
+        this.recalcularEquipamento(c);
       }
       this.concluirCast(c, agora);
       this.processarGolpe(c, agora);
@@ -363,14 +385,42 @@ export class MotorCombate {
     }
   }
 
-  /** Resistências com armadura e escudo (teto 70). */
+  /** Teleport e Wall of Stone, no fim do cast. */
+  private lancarLocal(c: Combatente, m: DefMagia, local: { x: number; y: number }, agora: number): void {
+    c.mana -= this.custo(c, m);
+    for (const r of m.reagentes) c.itens[r] = (c.itens[r] ?? 0) - 1;
+    const ef = m.efeito;
+    this.eventos.push({ tipo: 'som', som: m.som, alvoId: c.id });
+    if (ef.tipo === 'teleporte') {
+      this.eventos.push({ tipo: 'visual', visual: 'teleporte', origemId: c.id, alvoId: c.id, duracaoMs: 700, local: { x: c.mov.x, y: c.mov.y } });
+      c.mov.x = local.x;
+      c.mov.y = local.y;
+      c.mov.movimento = null;
+      this.eventos.push({ tipo: 'visual', visual: 'teleporte', origemId: c.id, alvoId: c.id, duracaoMs: 700 });
+    } else if (ef.tipo === 'muro') {
+      // WallOfStone: 3 peças atravessadas na linha entre quem lança e o alvo
+      const dx = c.mov.x - local.x;
+      const dy = c.mov.y - local.y;
+      const rx = (dx - dy) * 44;
+      const ry = (dx + dy) * 44;
+      const lesteOeste = (rx >= 0 && ry < 0) || (rx < 0 && ry >= 0);
+      const tiles = [-1, 0, 1]
+        .map((i) => (lesteOeste ? { x: local.x + i, y: local.y } : { x: local.x, y: local.y + i }))
+        .filter((t) => !this.listar().some((o) => !o.morto && o.mov.x === t.x && o.mov.y === t.y));
+      this.opcoes.criarMuro?.(tiles, ef.objeto, agora + ef.duracaoMs);
+    }
+  }
+
+  /** Resistências com armadura, escudo e Curse (teto 70). */
   private recalcularEquipamento(c: Combatente): void {
     const r: Record<Elemento, number> = { ...c.ficha.resistencias };
     for (const item of this.equipados(c)) {
       const def = this.regras.armaduras[item] ?? this.regras.escudos[item];
       for (const el of ELEMENTOS) r[el] += def?.resistencias[el] ?? 0;
     }
-    for (const el of ELEMENTOS) r[el] = Math.min(70, r[el]);
+    // Curse: −10 nas resistências elementais (a física não muda)
+    const maldicao = c.modificadores.filter((md) => md.atributo === 'resistencias').reduce((t, md) => t + md.valor, 0);
+    for (const el of ELEMENTOS) r[el] = Math.max(0, Math.min(70, r[el] + (el === 'fisica' ? 0 : maldicao)));
     c.resistencias = r;
   }
 
@@ -418,17 +468,19 @@ export class MotorCombate {
     this.causarDano(alvo, dano, c.id, agora);
   }
 
-  private atributo(c: Combatente, a: 'str' | 'dex'): number {
+  private atributo(c: Combatente, a: 'str' | 'dex' | 'int'): number {
     return c.ficha.atributos[a] + c.modificadores.filter((m) => m.atributo === a).reduce((t, m) => t + m.valor, 0);
   }
 
   /** Vida e estamina máximas com os bônus de poção (o atual não passa do novo máximo). */
   private recalcularMaximos(c: Combatente): void {
-    const soma = (a: 'str' | 'dex') => c.modificadores.filter((m) => m.atributo === a).reduce((t, m) => t + m.valor, 0);
+    const soma = (a: 'str' | 'dex' | 'int') => c.modificadores.filter((m) => m.atributo === a).reduce((t, m) => t + m.valor, 0);
     c.vidaMax = vidaMaxima(c.ficha, soma('str'));
     c.stamMax = estaminaMaxima(c.ficha, soma('dex'));
+    c.manaMax = manaMaxima(c.ficha) + soma('int');
     c.vida = Math.min(c.vida, c.vidaMax);
     c.stam = Math.min(c.stam, c.stamMax);
+    c.mana = Math.min(c.mana, c.manaMax);
   }
 
   private erroAlvo(c: Combatente, alvo: Combatente | undefined, m: DefMagia, agora: number): string | null {
@@ -440,8 +492,17 @@ export class MotorCombate {
     return null;
   }
 
-  private comecarCast(c: Combatente, m: DefMagia, alvoId: string, agora: number): void {
-    c.cast = { magia: m, alvoId, inicioMs: agora, fimMs: agora + tempoCastMs(m.circulo, c.ficha) };
+  private erroLocal(c: Combatente, m: DefMagia, x: number, y: number): string | null {
+    const ef = m.efeito;
+    const alcance = ef.tipo === 'teleporte' || ef.tipo === 'muro' ? ef.alcanceTiles : this.regras.alcanceMiraTiles;
+    if (distanciaTiles(c.mov, { x, y }) > alcance) return 'Esse lugar está longe demais.';
+    if (!this.opcoes.temVisao(c.mov, { x, y })) return 'Esse lugar não pode ser visto.';
+    if (ef.tipo === 'teleporte' && !(this.opcoes.tileLivre?.(x, y) ?? true)) return 'Não dá para ir para lá.';
+    return null;
+  }
+
+  private comecarCast(c: Combatente, m: DefMagia, alvoId: string, agora: number, local?: { x: number; y: number }): void {
+    c.cast = { magia: m, alvoId, local, inicioMs: agora, fimMs: agora + tempoCastMs(m.circulo, c.ficha) };
     // Lançar magia reinicia o tempo do golpe (só volta a golpear depois do cast)
     c.proximoGolpeMs = Math.max(c.proximoGolpeMs, c.cast.fimMs + atrasoGolpeMs(this.armaDe(c).velocidade, c.stam));
     c.golpe = null;
@@ -452,9 +513,19 @@ export class MotorCombate {
   /** Fim do tempo de cast: confere o alvo de novo e só então gasta a mana e aplica o efeito. */
   private concluirCast(c: Combatente, agora: number): void {
     if (!c.cast || agora < c.cast.fimMs) return;
-    const { magia: m, alvoId } = c.cast;
+    const { magia: m, alvoId, local } = c.cast;
     c.cast = null;
     c.proximaMagiaMs = agora + recuperacaoMs(c.ficha);
+    if (local) {
+      const erroLocal = this.paralisado(c, agora) ? 'Você não pode fazer isso paralisado.' : this.erroLocal(c, m, local.x, local.y);
+      if (erroLocal || c.mana < this.custo(c, m)) {
+        this.avisar(c, `${erroLocal ?? 'Mana insuficiente.'} A magia falhou.`);
+        this.eventos.push({ tipo: 'texto', alvoId: c.id, texto: '*fizzle*', cor: COR_SISTEMA });
+        return;
+      }
+      this.lancarLocal(c, m, local, agora);
+      return;
+    }
     const alvo = this.combatentes.get(alvoId);
     const envenenado = m.efeito.tipo === 'cura' && alvo?.veneno;
     const erro = this.erroAlvo(c, alvo, m, agora) ??
@@ -473,13 +544,72 @@ export class MotorCombate {
     for (const r of m.reagentes) c.itens[r] = (c.itens[r] ?? 0) - 1;
     const ef = m.efeito;
     switch (ef.tipo) {
+      case 'mente': {
+        // Mind Blast (AoS): (Magery + Int)/5 + 2..6, até 60; chega 1 s depois; não usa Eval
+        const { destino } = this.checarReflexo(m.circulo, c, alvoOriginal);
+        const base = Math.min(ef.maximo, Math.floor((c.ficha.skills.magery + Math.min(200, this.atributo(c, 'int'))) / 5) + inteiro(this.rng, 2, 6));
+        this.eventos.push({ tipo: 'visual', visual: 'mente', origemId: c.id, alvoId: destino.id, duracaoMs: 600 });
+        this.agendados.push({ quandoMs: agora + ef.atrasoMs, executar: (quando) => {
+          if (destino.morto) return;
+          this.eventos.push({ tipo: 'som', som: m.som, alvoId: destino.id });
+          const dano = inteiro(this.rng, base, base + 4);
+          this.causarDano(destino, Math.max(0, Math.floor((dano * (100 - destino.resistencias.frio)) / 100)), c.id, quando);
+        } });
+        break;
+      }
+      case 'maldicao': {
+        const { destino } = this.checarReflexo(m.circulo, c, alvoOriginal);
+        // SpellHelper.GetOffsetScalar/GetDuration (AoS): 8% + Eval/10 − Resist/10; (6 × Eval×10 / 50 + 1) s
+        const pct = Math.max(0, ef.percentualBase + c.ficha.skills.evalInt / 10 - destino.ficha.skills.resist / 10) / 100;
+        const ate = agora + (Math.floor((6 * c.ficha.skills.evalInt * 10) / 50) + 1) * 1000;
+        destino.modificadores = destino.modificadores.filter((md) => md.origem !== 'maldicao');
+        for (const a of ['str', 'dex', 'int'] as const) {
+          destino.modificadores.push({ atributo: a, valor: -Math.ceil(destino.ficha.atributos[a] * pct), ateMs: ate, origem: 'maldicao' });
+        }
+        destino.modificadores.push({ atributo: 'resistencias', valor: -ef.resistencias, ateMs: ate, origem: 'maldicao' });
+        this.recalcularMaximos(destino);
+        this.recalcularEquipamento(destino);
+        this.interromper(destino);
+        destino.paralisadoAteMs = 0;
+        this.eventos.push({ tipo: 'som', som: m.som, alvoId: destino.id });
+        this.eventos.push({ tipo: 'visual', visual: 'maldicao', origemId: c.id, alvoId: destino.id, duracaoMs: 600 });
+        this.eventos.push({ tipo: 'texto', alvoId: destino.id, texto: '*amaldiçoado*', cor: COR_ALERTA });
+        break;
+      }
+      case 'dreno-mana': {
+        const { destino } = this.checarReflexo(m.circulo, c, alvoOriginal);
+        this.interromper(destino);
+        destino.paralisadoAteMs = 0;
+        this.eventos.push({ tipo: 'som', som: m.som, alvoId: destino.id });
+        this.eventos.push({ tipo: 'visual', visual: 'dreno-mana', origemId: c.id, alvoId: destino.id, duracaoMs: 600 });
+        // AoS: 40 + Eval − Resist; a mana volta depois de 5 s; só um dreno por vez
+        if (agora < (destino.travas['dreno-mana'] ?? 0)) break;
+        const drenar = Math.min(destino.mana, Math.max(0, ef.base + c.ficha.skills.evalInt - destino.ficha.skills.resist));
+        if (drenar <= 0) break;
+        destino.mana -= drenar;
+        destino.travas['dreno-mana'] = agora + ef.devolveMs;
+        this.eventos.push({ tipo: 'texto', alvoId: destino.id, texto: `-${drenar} mana`, cor: '#7fb7ff' });
+        this.agendados.push({ quandoMs: agora + ef.devolveMs, executar: () => {
+          if (!destino.morto) destino.mana = Math.min(destino.manaMax, destino.mana + drenar);
+        } });
+        break;
+      }
+      case 'teleporte':
+      case 'muro':
+        break; // magias de local: ver lancarLocal
       case 'dano': {
         const { origem, destino } = this.checarReflexo(m.circulo, c, alvoOriginal);
+        // Harm perde força com a distância (calculada com quem lançou a magia)
+        const fator = ef.perdePorDistancia
+          ? (distanciaTiles(c.mov, alvoOriginal.mov) > 2 ? 0.25 : distanciaTiles(c.mov, alvoOriginal.mov) > 1 ? 0.5 : 1)
+          : 1;
         this.eventos.push({ tipo: 'som', som: m.som, alvoId: destino.id });
         this.eventos.push({ tipo: 'visual', visual: ef.visual, origemId: origem.id, alvoId: destino.id, duracaoMs: Math.max(500, ef.atrasoMs) });
         const aplicar = (quando: number) => {
           if (destino.morto) return;
-          this.causarDano(destino, danoMagia(this.rng, ef.bonus, ef.dados, ef.lados, c.ficha, destino.resistencias[ef.elemento]), c.id, quando);
+          const bruto = danoMagia(this.rng, ef.bonus, ef.dados, ef.lados, c.ficha, 0);
+          const dano = Math.floor(Math.floor(bruto * fator) * (100 - Math.min(70, destino.resistencias[ef.elemento])) / 100);
+          this.causarDano(destino, dano, c.id, quando);
         };
         if (ef.atrasoMs > 0) this.agendados.push({ quandoMs: agora + ef.atrasoMs, executar: aplicar });
         else aplicar(agora);

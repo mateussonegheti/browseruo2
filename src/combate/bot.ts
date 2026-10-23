@@ -14,7 +14,7 @@ export interface AcaoBot {
 }
 
 const INTERVALO_DECISAO_MS = [350, 700] as const;
-const ATAQUES = ['explosion', 'energy-bolt', 'flamestrike', 'lightning'] as const;
+const ATAQUES = ['explosion', 'energy-bolt', 'flamestrike', 'lightning', 'fireball', 'mind-blast'] as const;
 
 /** Direção do UO que mais aproxima de (dx, dy). */
 export function direcaoPara(dx: number, dy: number): Direcao {
@@ -63,6 +63,8 @@ export function decidirBot(
   if (dist <= 10 && visao) {
     if (!inimigo.veneno && rng() < 0.25 && podeLancar('poison')) return { lancar: 'poison' };
     if (rng() < 0.1 && podeLancar('paralyze')) return { lancar: 'paralyze' };
+    if (rng() < 0.06 && podeLancar('curse') && !inimigo.modificadores.some((m) => m.origem === 'maldicao')) return { lancar: 'curse' };
+    if (rng() < 0.05 && inimigo.mana > 30 && podeLancar('mana-drain')) return { lancar: 'mana-drain' };
     const opcoes = ATAQUES.filter(podeLancar);
     if (opcoes.length && rng() < 0.7) return { lancar: opcoes[Math.floor(rng() * opcoes.length)]! };
   }
