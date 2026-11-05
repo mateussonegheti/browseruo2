@@ -1,0 +1,109 @@
+{
+ "versao": 1,
+ "efeitos": {
+  "0x379F": {
+   "arquivo": "0x379F.png",
+   "quadros": 1,
+   "largura": 6,
+   "altura": 28,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x36BD": {
+   "arquivo": "0x36BD.png",
+   "quadros": 13,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x3709": {
+   "arquivo": "0x3709.png",
+   "quadros": 30,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x376A": {
+   "arquivo": "0x376A.png",
+   "quadros": 16,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 100,
+   "ancora": "item"
+  },
+  "0x374A": {
+   "arquivo": "0x374A.png",
+   "quadros": 16,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x373A": {
+   "arquivo": "0x373A.png",
+   "quadros": 16,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x375A": {
+   "arquivo": "0x375A.png",
+   "quadros": 16,
+   "largura": 80,
+   "altura": 113,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x37B9": {
+   "arquivo": "0x37B9.png",
+   "quadros": 10,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x36E4": {
+   "arquivo": "0x36E4.png",
+   "quadros": 16,
+   "largura": 24,
+   "altura": 12,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x36D4": {
+   "arquivo": "0x36D4.png",
+   "quadros": 16,
+   "largura": 50,
+   "altura": 37,
+   "intervaloMs": 100,
+   "ancora": "item"
+  },
+  "0x3728": {
+   "arquivo": "0x3728.png",
+   "quadros": 13,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 50,
+   "ancora": "item"
+  },
+  "0x3789": {
+   "arquivo": "0x3789.png",
+   "quadros": 21,
+   "largura": 80,
+   "altura": 140,
+   "intervaloMs": 100,
+   "ancora": "item"
+  },
+  "raio": {
+   "arquivo": "raio.png",
+   "quadros": 10,
+   "largura": 150,
+   "altura": 540,
+   "intervaloMs": 50,
+   "ancora": "gump"
+  }
+ }
+}

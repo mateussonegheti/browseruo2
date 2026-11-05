@@ -599,8 +599,6 @@ async function iniciar(): Promise<void> {
   const painel = new PainelEditor(elPainel, editor, catalogo, {
     criaturas: animacoes.criaturas().map((c) => ({ ...c, perfil: perfilDe(c.nome)!, padraoFabrica: perfilPadrao(c.nome, c.tipo, c.rotulo, motor.regras.modelo) })),
     matizes: animacoes.matizesDisponiveis(),
-    grupos: animacoes.gruposMatizes(),
-    temMatiz: (id) => animacoes.temMatiz(id),
     previaCriatura: (ctx, nome, matiz, x, y) => void animacoes.desenhar(ctx, [{ nome, ...(matiz ? { matiz } : {}) }], 'parado', 4, 0, x, y),
     colocarCriatura(nome, perfil) {
       pedirPosicao(perfil.nome.toLowerCase(), (p) => criarCriatura(nome, p, perfil));

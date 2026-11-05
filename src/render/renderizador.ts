@@ -26,7 +26,7 @@ export interface PersonagemRender {
   /** 0 a 1 ao longo da ação atual. */
   progresso?: number;
   /** Animação da montaria quando o personagem está montado. */
-  montaria?: string;
+  montaria?: Camada;
 }
 
 export interface QuadroRender {
@@ -371,7 +371,7 @@ export class Renderizador {
     if (montado) {
       // Montaria primeiro, depois o cavaleiro com as ações "montado-"
       const base = (acao === 'castar' ? 'castar' : acao) as AcaoAnimacao;
-      this.animacoes!.desenhar(ctx, [{ nome: p.montaria! }], base, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6);
+      this.animacoes!.desenhar(ctx, [p.montaria!], base, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6);
       const cavaleiro = `montado-${acao === 'andar' || acao === 'correr' || acao === 'castar' ? acao : 'parado'}` as AcaoAnimacao;
       this.animacoes!.desenhar(ctx, p.camadas!, cavaleiro, p.mov.dir, p.progresso ?? 0, c.x, c.y + 6);
     } else {

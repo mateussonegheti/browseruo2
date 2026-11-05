@@ -1,0 +1,4 @@
+{
+  "max_journal_files": 100,
+  "journal_file_with_serial": false
+}

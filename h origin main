@@ -1,0 +1,737 @@
+[33mcommit 7b74426447078fbb711beed86a7c83f976bb0aa5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Mateus Sonegheti <mateussonegheti@gmail.com>
+Date:   Thu Nov 5 16:21:16 2026 +0000
+
+    feat: Add all extracted game assets and client files to repository
+    
+    Add all previously ignored files for public access:
+    - cliente/ (original game client)
+    - pacote-cliente/ (client package)
+    - public/sprites/ (character and object sprites)
+    - public/gumps/ (interface graphics)
+    - public/sons/ (audio files)
+    - public/efeitos/ (visual effects)
+    - public/animacoes/ (animations)
+    - public/interface/ (interface files)
+    
+    Also includes updates to:
+    - src/main.ts
+    - src/render/renderizador.ts
+    
+    This is part of a game preservation initiative for non-commercial educational use.
+    
+    Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+ cliente/ZuluHotel Brasil OldSkull.rar                   |  Bin [31m0[m -> [32m522977280[m bytes
+ cliente/candidatos-totem.png                            |  Bin [31m0[m -> [32m444381[m bytes
+ cliente/criaturas-faltando-1.png                        |  Bin [31m0[m -> [32m493672[m bytes
+ cliente/criaturas-faltando-2.png                        |  Bin [31m0[m -> [32m752619[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Anim1.def   |   10 [32m+[m
+ .../Ultima Online/Anim1024.bin                          |  Bin [31m0[m -> [32m4082540[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Anim2.def   |  237 [32m+++[m
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Anim256.bin |  Bin [31m0[m -> [32m4082540[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Anim3.def   |    0
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Anim4.def   |    0
+ .../Ultima Online/Antx1024.bin                          |  Bin [31m0[m -> [32m28660[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Antx256.bin |  Bin [31m0[m -> [32m377120[m bytes
+ .../Ultima Online/Arttable.cfg                          |  110 [32m++[m
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Binkw32.dll |  Bin [31m0[m -> [32m291328[m bytes
+ .../Ultima Online/Blueprints.tbp                        |  Bin [31m0[m -> [32m94993[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Body.def    |  265 [32m+++[m
+ .../Ultima Online/Bodyconv.def                          |  450 [32m+++++[m
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Chat.cht    |  Bin [31m0[m -> [32m3124[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Chat.deu    |  Bin [31m0[m -> [32m4826[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Chat.enu    |  Bin [31m0[m -> [32m4240[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Chat.esp    |  Bin [31m0[m -> [32m4428[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Chat.fra    |  Bin [31m0[m -> [32m4456[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Chat.jpn    |  Bin [31m0[m -> [32m3624[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Chat.kor    |  Bin [31m0[m -> [32m4440[m bytes
+ .../Ultima Online/Citytext.cht                          |  Bin [31m0[m -> [32m7510[m bytes
+ .../Ultima Online/Citytext.deu                          |  Bin [31m0[m -> [32m13720[m bytes
+ .../Ultima Online/Citytext.enu                          |  Bin [31m0[m -> [32m11622[m bytes
+ .../Ultima Online/Citytext.esp                          |  Bin [31m0[m -> [32m12570[m bytes
+ .../Ultima Online/Citytext.fra                          |  Bin [31m0[m -> [32m13568[m bytes
+ .../Ultima Online/Citytext.jpn                          |  Bin [31m0[m -> [32m8902[m bytes
+ .../Ultima Online/Citytext.kor                          |  Bin [31m0[m -> [32m11580[m bytes
+ .../Ultima Online/ClassicUO.Assets.pdb                  |  Bin [31m0[m -> [32m60136[m bytes
+ .../Ultima Online/ClassicUO.IO.pdb                      |  Bin [31m0[m -> [32m23756[m bytes
+ .../Ultima Online/ClassicUO.Renderer.pdb                |  Bin [31m0[m -> [32m90716[m bytes
+ .../Ultima Online/ClassicUO.Utility.pdb                 |  Bin [31m0[m -> [32m54728[m bytes
+ .../Ultima Online/ClassicUO.exe.config                  |    6 [32m+[m
+ .../Ultima Online/ClassicUO.pdb                         |  Bin [31m0[m -> [32m9852[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.chs  |  Bin [31m0[m -> [32m30364[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.cht  |  Bin [31m0[m -> [32m1780737[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.deu  |  Bin [31m0[m -> [32m706472[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.enu  |  Bin [31m0[m -> [32m2035805[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.esp  |  Bin [31m0[m -> [32m678210[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.fra  |  Bin [31m0[m -> [32m722744[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.jpn  |  Bin [31m0[m -> [32m2352479[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Cliloc.kor  |  Bin [31m0[m -> [32m1357071[m bytes
+ .../ZuluHotel Brasil OldSkull/Ultima Online/Corpse.def  |  257 [32m+++[m
+ .../MapsCache/map0_9a9dfd0bc12fc07e406fd0176450b164.png |  Bin [31m0[m -> [32m4729321[m bytes
+ .../MapsCache/map2_f46400957cad77b5f66d0722b82178d3.png |  Bin [31m0[m -> [32m1251038[m bytes
+ .../Ultima Online/Data/Client/cave.txt                  |   24 [32m+[m
+ .../Ultima Online/Data/Client/chair.txt                 |  171 [32m++[m
+ .../Ultima Online/Data/Client/containers.txt            |   80 [32m+[m
+ .../Ultima Online/Data/Client/lights.txt                |    9 [32m+[m
+ .../Ultima Online/Data/Client/lightshaders.txt          |   68 [32m+[m
+ .../Ultima Online/Data/Client/seasons.txt               |  498 [32m++++++[m
+ .../Ultima Online/Data/Client/tree.txt                  |   46 [32m+[m
+ .../Ultima Online/Data/Client/userMarkers.usr           |    0
+ .../Ultima Online/Data/Client/vegetation.txt            |  194 [32m+++[m
+ .../Ultima Online/Data/Models/Animal.lst                |   13 [32m+[m
+ .../Data/Models/Animals/Birds_Duck_Lod2.grn             |  Bin [31m0[m -> [32m18760[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Attack1.grn         |  Bin [31m0[m -> [32m36552[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Death1.grn          |  Bin [31m0[m -> [32m44868[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Die1.grn            |  Bin [31m0[m -> [32m44868[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Eat.grn             |  Bin [31m0[m -> [32m34376[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Fidget.grn          |  Bin [31m0[m -> [32m37812[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Gethit.grn          |  Bin [31m0[m -> [32m27552[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Idle.grn            |  Bin [31m0[m -> [32m23948[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Lod2.grn            |  Bin [31m0[m -> [32m17608[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Run.grn             |  Bin [31m0[m -> [32m29320[m bytes
+ .../Data/Models/Animals/Birds_Eagle_Walk.grn            |  Bin [31m0[m -> [32m29364[m bytes
+ .../Data/Models/Animals/Birds_Generic_Attack1.grn       |  Bin [31m0[m -> [32m33528[m bytes
+ .../Data/Models/Animals/Birds_Generic_Die1.grn          |  Bin [31m0[m -> [32m41692[m bytes
+ .../Data/Models/Animals/Birds_Generic_Eat.grn           |  Bin [31m0[m -> [32m34452[m bytes
+ .../Data/Models/Animals/Birds_Generic_Fidget.grn        |  Bin [31m0[m -> [32m30772[m bytes
+ .../Data/Models/Animals/Birds_Generic_Gethit.grn        |  Bin [31m0[m -> [32m25036[m bytes
+ .../Data/Models/Animals/Birds_Generic_Idle.grn          |  Bin [31m0[m -> [32m21992[m bytes
+ .../Data/Models/Animals/Birds_Generic_Lod2.grn          |  Bin [31m0[m -> [32m15764[m bytes
+ .../Data/Models/Animals/Birds_Generic_Run.grn           |  Bin [31m0[m -> [32m27888[m bytes
+ .../Data/Models/Animals/Birds_Generic_Walk.grn          |  Bin [31m0[m -> [32m22872[m bytes
+ .../Data/Models/Animals/Birds_Parrot_Lod2.grn           |  Bin [31m0[m -> [32m16004[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Attack1.grn  |  Bin [31m0[m -> [32m38428[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Die1.grn     |  Bin [31m0[m -> [32m29120[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Eat.grn      |  Bin [31m0[m -> [32m58964[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Gethit.grn   |  Bin [31m0[m -> [32m29276[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Idle.grn     |  Bin [31m0[m -> [32m23612[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Lod2.grn     |  Bin [31m0[m -> [32m29360[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Run.grn      |  Bin [31m0[m -> [32m37152[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Brown_Walk.grn     |  Bin [31m0[m -> [32m36060[m bytes
+ .../Data/Models/Animals/Bovines_Bull_Spotted_Lod2.grn   |  Bin [31m0[m -> [32m29380[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Attack1.grn   |  Bin [31m0[m -> [32m36328[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Die1.grn      |  Bin [31m0[m -> [32m37332[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Eat.grn       |  Bin [31m0[m -> [32m59652[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Fidget.grn    |  Bin [31m0[m -> [32m37308[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Gethit.grn    |  Bin [31m0[m -> [32m29260[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Idle.grn      |  Bin [31m0[m -> [32m23568[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Lod2.grn      |  Bin [31m0[m -> [32m28056[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Run.grn       |  Bin [31m0[m -> [32m37104[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Brown_Walk.grn      |  Bin [31m0[m -> [32m36056[m bytes
+ .../Data/Models/Animals/Bovines_Cow_Spotted_Lod2.grn    |  Bin [31m0[m -> [32m28064[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Attack1.grn   |  Bin [31m0[m -> [32m25804[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Die1.grn      |  Bin [31m0[m -> [32m26128[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Fidget.grn    |  Bin [31m0[m -> [32m31788[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Gethit.grn    |  Bin [31m0[m -> [32m32616[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Idle.grn      |  Bin [31m0[m -> [32m27392[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Lod2.grn      |  Bin [31m0[m -> [32m30596[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Run.grn       |  Bin [31m0[m -> [32m26200[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Black_Walk.grn      |  Bin [31m0[m -> [32m32228[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Brown_Lod2.grn      |  Bin [31m0[m -> [32m30596[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Grizzly_Lod2.grn    |  Bin [31m0[m -> [32m30604[m bytes
+ .../Data/Models/Animals/Bruins_Bear_Polar_Lod2.grn      |  Bin [31m0[m -> [32m30596[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Attack1.grn   |  Bin [31m0[m -> [32m41460[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Die1.grn      |  Bin [31m0[m -> [32m52180[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Fidget.grn    |  Bin [31m0[m -> [32m52760[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Gethit.grn    |  Bin [31m0[m -> [32m31172[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Idle.grn      |  Bin [31m0[m -> [32m26412[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Lod2.grn      |  Bin [31m0[m -> [32m32280[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Run.grn       |  Bin [31m0[m -> [32m32624[m bytes
+ .../Data/Models/Animals/Canines_Dog_Hound_Walk.grn      |  Bin [31m0[m -> [32m42056[m bytes
+ .../Data/Models/Animals/Canines_Hell_Hound_Lod2.grn     |  Bin [31m0[m -> [32m27144[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Dark_Lod2.grn      |  Bin [31m0[m -> [32m32696[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Dire_Lod2.grn      |  Bin [31m0[m -> [32m32696[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Grey_Lod2.grn      |  Bin [31m0[m -> [32m32696[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Silver_Lod2.grn    |  Bin [31m0[m -> [32m32704[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Attack1.grn |  Bin [31m0[m -> [32m41436[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Die1.grn    |  Bin [31m0[m -> [32m42088[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Fidget.grn  |  Bin [31m0[m -> [32m63188[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Gethit.grn  |  Bin [31m0[m -> [32m30692[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Idle.grn    |  Bin [31m0[m -> [32m26708[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Lod2.grn    |  Bin [31m0[m -> [32m32704[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Run.grn     |  Bin [31m0[m -> [32m32692[m bytes
+ .../Data/Models/Animals/Canines_Wolf_Timber_Walk.grn    |  Bin [31m0[m -> [32m41992[m bytes
+ .../Data/Models/Animals/Canines_Wolf_White_Lod2.grn     |  Bin [31m0[m -> [32m32700[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Alert.grn   |  Bin [31m0[m -> [32m15108[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Attack1.grn |  Bin [31m0[m -> [32m20972[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Attack2.grn |  Bin [31m0[m -> [32m22032[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Die1.grn    |  Bin [31m0[m -> [32m18892[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Die2.grn    |  Bin [31m0[m -> [32m21828[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Eat.grn     |  Bin [31m0[m -> [32m17692[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Fidget1.grn |  Bin [31m0[m -> [32m15244[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Fidget2.grn |  Bin [31m0[m -> [32m19700[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_GetHit.grn  |  Bin [31m0[m -> [32m17992[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Idle.grn    |  Bin [31m0[m -> [32m17468[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_LieDown.grn |  Bin [31m0[m -> [32m14880[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Lod2.grn    |  Bin [31m0[m -> [32m45888[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Run.grn     |  Bin [31m0[m -> [32m20888[m bytes
+ .../Ultima Online/Data/Models/Animals/Crane_Walk.grn    |  Bin [31m0[m -> [32m18828[m bytes
+ .../Ultima Online/Data/Models/Animals/Crow_Fidget1.grn  |  Bin [31m0[m -> [32m17852[m bytes
+ .../Ultima Online/Data/Models/Animals/Crow_Fidget2.grn  |  Bin [31m0[m -> [32m19052[m bytes
+ .../Ultima Online/Data/Models/Animals/Crow_LOD2.grn     |  Bin [31m0[m -> [32m57876[m bytes
+ .../Ultima Online/Data/Models/Animals/Crow_Stand.grn    |  Bin [31m0[m -> [32m16848[m bytes
+ .../Ultima Online/Data/Models/Animals/Crow_Walk.grn     |  Bin [31m0[m -> [32m16848[m bytes
+ .../Data/Models/Animals/CuShidhe_Alert.grn              |  Bin [31m0[m -> [32m21468[m bytes
+ .../Data/Models/Animals/CuShidhe_Attack1.grn            |  Bin [31m0[m -> [32m33296[m bytes
+ .../Data/Models/Animals/CuShidhe_Attack2.grn            |  Bin [31m0[m -> [32m33816[m bytes
+ .../Ultima Online/Data/Models/Animals/CuShidhe_Die1.grn |  Bin [31m0[m -> [32m35356[m bytes
+ .../Ultima Online/Data/Models/Animals/CuShidhe_Die2.grn |  Bin [31m0[m -> [32m35728[m bytes
+ .../Data/Models/Animals/CuShidhe_Fidget02.grn           |  Bin [31m0[m -> [32m22220[m bytes
+ .../Data/Models/Animals/CuShidhe_Grazing.grn            |  Bin [31m0[m -> [32m22884[m bytes
+ .../Ultima Online/Data/Models/Animals/CuShidhe_LOD2.grn |  Bin [31m0[m -> [32m57012[m bytes
+ .../Data/Models/Animals/CuShidhe_Lying.grn              |  Bin [31m0[m -> [32m25352[m bytes
+ .../Ultima Online/Data/Models/Animals/CuShidhe_Run.grn  |  Bin [31m0[m -> [32m29684[m bytes
+ .../Data/Models/Animals/CuShidhe_TakeDamage.grn         |  Bin [31m0[m -> [32m27720[m bytes
+ .../Ultima Online/Data/Models/Animals/CuShidhe_Walk.grn |  Bin [31m0[m -> [32m29080[m bytes
+ .../Data/Models/Animals/CuShidhe_fidget.grn             |  Bin [31m0[m -> [32m34000[m bytes
+ .../Ultima Online/Data/Models/Animals/CuShidhe_idle.grn |  Bin [31m0[m -> [32m21548[m bytes
+ .../Data/Models/Animals/Deer_Doe_Attack1.grn            |  Bin [31m0[m -> [32m37972[m bytes
+ .../Ultima Online/Data/Models/Animals/Deer_Doe_Die1.grn |  Bin [31m0[m -> [32m43828[m bytes
+ .../Data/Models/Animals/Deer_Doe_Fidget.grn             |  Bin [31m0[m -> [32m47952[m bytes
+ .../Data/Models/Animals/Deer_Doe_Gethit.grn             |  Bin [31m0[m -> [32m28548[m bytes
+ .../Ultima Online/Data/Models/Animals/Deer_Doe_Idle.grn |  Bin [31m0[m -> [32m24028[m bytes
+ .../Ultima Online/Data/Models/Animals/Deer_Doe_Lod2.grn |  Bin [31m0[m -> [32m25364[m bytes
+ .../Ultima Online/Data/Models/Animals/Deer_Doe_Run.grn  |  Bin [31m0[m -> [32m29524[m bytes
+ .../Ultima Online/Data/Models/Animals/Deer_Doe_Walk.grn |  Bin [31m0[m -> [32m34108[m bytes
+ .../Data/Models/Animals/Deer_Stag_Attack1.grn           |  Bin [31m0[m -> [32m37224[m bytes
+ .../Data/Models/Animals/Deer_Stag_Die1.grn              |  Bin [31m0[m -> [32m50956[m bytes
+ .../Data/Models/Animals/Deer_Stag_Fidget.grn            |  Bin [31m0[m -> [32m34880[m bytes
+ .../Data/Models/Animals/Deer_Stag_Gethit.grn            |  Bin [31m0[m -> [32m28988[m bytes
+ .../Data/Models/Animals/Deer_Stag_Idle.grn              |  Bin [31m0[m -> [32m24128[m bytes
+ .../Data/Models/Animals/Deer_Stag_Lod2.grn              |  Bin [31m0[m -> [32m26448[m bytes
+ .../Ultima Online/Data/Models/Animals/Deer_Stag_Run.grn |  Bin [31m0[m -> [32m28964[m bytes
+ .../Data/Models/Animals/Deer_Stag_Walk.grn              |  Bin [31m0[m -> [32m34168[m bytes
+ .../Animals/Equines_Horse_Dappled_Brown_Attack1.grn     |  Bin [31m0[m -> [32m42328[m bytes
+ .../Models/Animals/Equines_Horse_Dappled_Brown_Die1.grn |  Bin [31m0[m -> [32m39828[m bytes
+ .../Models/Animals/Equines_Horse_Dappled_Brown_Eat.grn  |  Bin [31m0[m -> [32m26884[m bytes
+ .../Animals/Equines_Horse_Dappled_Brown_Fidget.grn      |  Bin [31m0[m -> [32m38508[m bytes
+ .../Animals/Equines_Horse_Dappled_Brown_Gethit.grn      |  Bin [31m0[m -> [32m38676[m bytes
+ .../Models/Animals/Equines_Horse_Dappled_Brown_Idle.grn |  Bin [31m0[m -> [32m39248[m bytes
+ .../Models/Animals/Equines_Horse_Dappled_Brown_Lod2.grn |  Bin [31m0[m -> [32m43352[m bytes
+ .../Animals/Equines_Horse_Dappled_Brown_Pack_Lod2.grn   |  Bin [31m0[m -> [32m46740[m bytes
+ .../Models/Animals/Equines_Horse_Dappled_Brown_Run.grn  |  Bin [31m0[m -> [32m30588[m bytes
+ .../Models/Animals/Equines_Horse_Dappled_Brown_Walk.grn |  Bin [31m0[m -> [32m38060[m bytes
+ .../Models/Animals/Equines_Horse_Dappled_Grey_Lod2.grn  |  Bin [31m0[m -> [32m43340[m bytes
+ .../Models/Animals/Equines_Horse_Dark_Brown_Lod2.grn    |  Bin [31m0[m -> [32m43332[m bytes
+ .../Models/Animals/Equines_Horse_Dark_Steed_Lod2.grn    |  Bin [31m0[m -> [32m43332[m bytes
+ .../Data/Models/Animals/Equines_Horse_Ethereal_Lod2.grn |  Bin [31m0[m -> [32m43324[m bytes
+ .../Models/Animals/Equines_Horse_FireSteed_Lod2.grn     |  Bin [31m0[m -> [32m43328[m bytes
+ .../Models/Animals/Equines_Horse_Nightmare_Lod2.grn     |  Bin [31m0[m -> [32m43328[m bytes
+ .../Models/Animals/Equines_Horse_Silver_Steed_Lod2.grn  |  Bin [31m0[m -> [32m43340[m bytes
+ .../Data/Models/Animals/Equines_Horse_Tan_Lod2.grn      |  Bin [31m0[m -> [32m43304[m bytes
+ .../Animals/Equines_Horse_War_Brittanian_Lod2.grn       |  Bin [31m0[m -> [32m43348[m bytes
+ .../Animals/Equines_Horse_War_Mage_Council_Lod2.grn     |  Bin [31m0[m -> [32m43356[m bytes
+ .../Models/Animals/Equines_Horse_War_Minax_Lod2.grn     |  Bin [31m0[m -> [32m43352[m bytes
+ .../Animals/Equines_Horse_War_Shadowlord_Lod2.grn       |  Bin [31m0[m -> [32m43348[m bytes
+ .../Data/Models/Animals/Equines_Unicorn_Lod2.grn        |  Bin [31m0[m -> [32m44752[m bytes
+ .../Data/Models/Animals/Felines_Cougar_Lod2.grn         |  Bin [31m0[m -> [32m30300[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Attack1.grn    |  Bin [31m0[m -> [32m39604[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Die1.grn       |  Bin [31m0[m -> [32m56556[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Fidget.grn     |  Bin [31m0[m -> [32m58288[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Gethit.grn     |  Bin [31m0[m -> [32m31156[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Idle.grn       |  Bin [31m0[m -> [32m28004[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Lod2.grn       |  Bin [31m0[m -> [32m30624[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Run.grn        |  Bin [31m0[m -> [32m32884[m bytes
+ .../Data/Models/Animals/Felines_Housecat_Walk.grn       |  Bin [31m0[m -> [32m38136[m bytes
+ .../Data/Models/Animals/Felines_Leopard_Snow_Lod2.grn   |  Bin [31m0[m -> [32m30332[m bytes
+ .../Data/Models/Animals/Felines_Panther_Attack1.grn     |  Bin [31m0[m -> [32m35484[m bytes
+ .../Data/Models/Animals/Felines_Panther_Die1.grn        |  Bin [31m0[m -> [32m47388[m bytes
+ .../Data/Models/Animals/Felines_Panther_Fidget.grn      |  Bin [31m0[m -> [32m42744[m bytes
+ .../Data/Models/Animals/Felines_Panther_Gethit.grn      |  Bin [31m0[m -> [32m26052[m bytes
+ .../Data/Models/Animals/Felines_Panther_Idle.grn        |  Bin [31m0[m -> [32m22152[m bytes
+ .../Data/Models/Animals/Felines_Panther_Lod2.grn        |  Bin [31m0[m -> [32m30264[m bytes
+ .../Data/Models/Animals/Felines_Panther_Run.grn         |  Bin [31m0[m -> [32m27128[m bytes
+ .../Data/Models/Animals/Felines_Panther_Walk.grn        |  Bin [31m0[m -> [32m27748[m bytes
+ .../Models/Animals/Felines_Predator_Hellcat_Lod2.grn    |  Bin [31m0[m -> [32m29724[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Alert.grn  |  Bin [31m0[m -> [32m25056[m bytes
+ .../Data/Models/Animals/Ferret_Attack1.grn              |  Bin [31m0[m -> [32m40652[m bytes
+ .../Data/Models/Animals/Ferret_Attack2.grn              |  Bin [31m0[m -> [32m40268[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Die1.grn   |  Bin [31m0[m -> [32m38048[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Die2.grn   |  Bin [31m0[m -> [32m38780[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Fidget.grn |  Bin [31m0[m -> [32m39704[m bytes
+ .../Data/Models/Animals/Ferret_Grazing.grn              |  Bin [31m0[m -> [32m27388[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Idle2.grn  |  Bin [31m0[m -> [32m24236[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_LOD2.grn   |  Bin [31m0[m -> [32m47780[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Lying.grn  |  Bin [31m0[m -> [32m25076[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Run.grn    |  Bin [31m0[m -> [32m31124[m bytes
+ .../Data/Models/Animals/Ferret_TakeDamage.grn           |  Bin [31m0[m -> [32m32276[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_Walk.grn   |  Bin [31m0[m -> [32m24060[m bytes
+ .../Ultima Online/Data/Models/Animals/Ferret_idle.grn   |  Bin [31m0[m -> [32m25096[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Attack1.grn     |  Bin [31m0[m -> [32m22268[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Die1.grn        |  Bin [31m0[m -> [32m31776[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Die2.grn        |  Bin [31m0[m -> [32m26864[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Fidget.grn      |  Bin [31m0[m -> [32m48484[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Gethit.grn      |  Bin [31m0[m -> [32m21944[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Idle.grn        |  Bin [31m0[m -> [32m20444[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Lod2.grn        |  Bin [31m0[m -> [32m13216[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Run.grn         |  Bin [31m0[m -> [32m22340[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Hen_Walk.grn        |  Bin [31m0[m -> [32m27748[m bytes
+ .../Data/Models/Animals/Fowl_Normal_Rooster_Lod2.grn    |  Bin [31m0[m -> [32m17700[m bytes
+ .../Data/Models/Animals/Frogs_Bullfrog_Lod2.grn         |  Bin [31m0[m -> [32m32288[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Attack1.grn        |  Bin [31m0[m -> [32m108900[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Attack2.grn        |  Bin [31m0[m -> [32m114148[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Attack3.grn        |  Bin [31m0[m -> [32m90496[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Die1.grn           |  Bin [31m0[m -> [32m149080[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Fidget.grn         |  Bin [31m0[m -> [32m99340[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Fidget2.grn        |  Bin [31m0[m -> [32m88204[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Fire_LOD2.grn      |  Bin [31m0[m -> [32m127528[m bytes
+ .../Data/Models/Animals/Giant_Beetle_GetHit.grn         |  Bin [31m0[m -> [32m83092[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Idle.grn           |  Bin [31m0[m -> [32m87620[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Lod2.grn           |  Bin [31m0[m -> [32m110884[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Run.grn            |  Bin [31m0[m -> [32m70220[m bytes
+ .../Data/Models/Animals/Giant_Beetle_Walk.grn           |  Bin [31m0[m -> [32m92156[m bytes
+ .../Data/Models/Animals/Giant_Beetle_ethereal_LOD2.grn  |  Bin [31m0[m -> [32m110912[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Attack1.grn |  Bin [31m0[m -> [32m35468[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Die1.grn    |  Bin [31m0[m -> [32m47936[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Fidget.grn  |  Bin [31m0[m -> [32m42844[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Gethit.grn  |  Bin [31m0[m -> [32m27672[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Idle.grn    |  Bin [31m0[m -> [32m27024[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Lod2.grn    |  Bin [31m0[m -> [32m32720[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Run.grn     |  Bin [31m0[m -> [32m30488[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Stomp.grn   |  Bin [31m0[m -> [32m40164[m bytes
+ .../Data/Models/Animals/Gorillas_Silverback_Walk.grn    |  Bin [31m0[m -> [32m30416[m bytes
+ .../Data/Models/Animals/Hai_Riyo_Alert.grn              |  Bin [31m0[m -> [32m19420[m bytes
+ .../Data/Models/Animals/Hai_Riyo_Attack1.grn            |  Bin [31m0[m -> [32m31336[m bytes
+ .../Data/Models/Animals/Hai_Riyo_Attack2.grn            |  Bin [31m0[m -> [32m26960[m bytes
+ .../Ultima Online/Data/Models/Animals/Hai_Riyo_Die1.grn |  Bin [31m0[m -> [32m31164[m bytes
+ .../Ultima Online/Data/Models/Animals/Hai_Riyo_Die2.grn |  Bin [31m0[m -> [32m31940[m bytes
+ .../Ultima Online/Data/Models/Animals/Hai_Riyo_Eat.grn  |  Bin [31m0[m -> [32m19704[m bytes
+ .../Data/Models/Animals/Hai_Riyo_Fidget1.grn            |  Bin [31m0[m -> [32m30160[m bytes
+ .../Data/Models/Animals/Hai_Riyo_Fidget2.grn            |  Bin [31m0[m -> [32m31860[m bytes
+ .../Data/Models/Animals/Hai_Riyo_GetHit.grn             |  Bin [31m0[m -> [32m22680[m bytes
+ .../Ultima Online/Data/Models/Animals/Hai_Riyo_Idle.grn |  Bin [31m0[m -> [32m19260[m bytes
+ .../Data/Models/Animals/Hai_Riyo_LieDown.grn            |  Bin [31m0[m -> [32m19360[m bytes
+ .../Ultima Online/Data/Models/Animals/Hai_Riyo_Lod2.grn |  Bin [31m0[m -> [32m140768[m bytes
+ .../Ultima Online/Data/Models/Animals/Hai_Riyo_Run.grn  |  Bin [31m0[m -> [32m25504[m bytes
+ .../Ultima Online/Data/Models/Animals/Hai_Riyo_Walk.grn |  Bin [31m0[m -> [32m25504[m bytes
+ .../Data/Models/Animals/Kirin_Kirin_Lod2.grn            |  Bin [31m0[m -> [32m32404[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Alert.grn          |  Bin [31m0[m -> [32m24920[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Attack1.grn        |  Bin [31m0[m -> [32m37152[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Attack2.grn        |  Bin [31m0[m -> [32m34448[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Die1.grn           |  Bin [31m0[m -> [32m31868[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Die2.grn           |  Bin [31m0[m -> [32m31312[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Eat.grn            |  Bin [31m0[m -> [32m29360[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Fidget1.grn        |  Bin [31m0[m -> [32m24540[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Fidget2.grn        |  Bin [31m0[m -> [32m31812[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_GetHit.grn         |  Bin [31m0[m -> [32m29048[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Idle.grn           |  Bin [31m0[m -> [32m24780[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_LieDown.grn        |  Bin [31m0[m -> [32m24724[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Lod2.grn           |  Bin [31m0[m -> [32m68084[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Run.grn            |  Bin [31m0[m -> [32m34444[m bytes
+ .../Data/Models/Animals/Kitsun_Tsuki_Walk.grn           |  Bin [31m0[m -> [32m31364[m bytes
+ .../Models/Animals/Lizards_Alligator_Brown_Attack1.grn  |  Bin [31m0[m -> [32m32072[m bytes
+ .../Models/Animals/Lizards_Alligator_Brown_Die1.grn     |  Bin [31m0[m -> [32m47860[m bytes
+ .../Models/Animals/Lizards_Alligator_Brown_Fidget.grn   |  Bin [31m0[m -> [32m40052[m bytes
+ .../Models/Animals/Lizards_Alligator_Brown_Gethit.grn   |  Bin [31m0[m -> [32m26180[m bytes
+ .../Models/Animals/Lizards_Alligator_Brown_Idle.grn     |  Bin [31m0[m -> [32m22172[m bytes
+ .../Models/Animals/Lizards_Alligator_Brown_Lod2.grn     |  Bin [31m0[m -> [32m31148[m bytes
+ .../Data/Models/Animals/Lizards_Alligator_Brown_Run.grn |  Bin [31m0[m -> [32m26220[m bytes
+ .../Models/Animals/Lizards_Alligator_Brown_Walk.grn     |  Bin [31m0[m -> [32m26148[m bytes
+ .../Models/Animals/Lizards_Alligator_Small_Attack1.grn  |  Bin [31m0[m -> [32m32040[m bytes
+ .../Models/Animals/Lizards_Alligator_Small_Die1.grn     |  Bin [31m0[m -> [32m47624[m bytes
+ .../Models/Animals/Lizards_Alligator_Small_Fidget.grn   |  Bin [31m0[m -> [32m32996[m bytes
+ .../Models/Animals/Lizards_Alligator_Small_Gethit.grn   |  Bin [31m0[m -> [32m26036[m bytes
+ .../Models/Animals/Lizards_Alligator_Small_Idle.grn     |  Bin [31m0[m -> [32m20536[m bytes
+ .../Models/Animals/Lizards_Alligator_Small_Lod2.grn     |  Bin [31m0[m -> [32m31452[m bytes
+ .../Data/Models/Animals/Lizards_Alligator_Small_Run.grn |  Bin [31m0[m -> [32m22196[m bytes
+ .../Models/Animals/Lizards_Alligator_Small_Walk.grn     |  Bin [31m0[m -> [32m26116[m bytes
+ .../Models/Animals/Lizards_Komodo_Dragon_Attack1.grn    |  Bin [31m0[m -> [32m33792[m bytes
+ .../Data/Models/Animals/Lizards_Komodo_Dragon_Die1.grn  |  Bin [31m0[m -> [32m47432[m bytes
+ .../Models/Animals/Lizards_Komodo_Dragon_Fidget.grn     |  Bin [31m0[m -> [32m31824[m bytes
+ .../Models/Animals/Lizards_Komodo_Dragon_Gethit.grn     |  Bin [31m0[m -> [32m26408[m bytes
+ .../Data/Models/Animals/Lizards_Komodo_Dragon_Idle.grn  |  Bin [31m0[m -> [32m21252[m bytes
+ .../Data/Models/Animals/Lizards_Komodo_Dragon_Lod2.grn  |  Bin [31m0[m -> [32m26384[m bytes
+ .../Data/Models/Animals/Lizards_Komodo_Dragon_Run.grn   |  Bin [31m0[m -> [32m22496[m bytes
+ .../Data/Models/Animals/Lizards_Komodo_Dragon_Walk.grn  |  Bin [31m0[m -> [32m26144[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Attack1.grn        |  Bin [31m0[m -> [32m34312[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Die1.grn           |  Bin [31m0[m -> [32m43340[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Ethereal_Lod2.grn  |  Bin [31m0[m -> [32m36880[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Fidget.grn         |  Bin [31m0[m -> [32m31840[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Gethit.grn         |  Bin [31m0[m -> [32m26232[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Idle.grn           |  Bin [31m0[m -> [32m22460[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Lod2.grn           |  Bin [31m0[m -> [32m36844[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Pack_Lod2.grn      |  Bin [31m0[m -> [32m40208[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Run.grn            |  Bin [31m0[m -> [32m26400[m bytes
+ .../Data/Models/Animals/Llamas_Llama_Walk.grn           |  Bin [31m0[m -> [32m26932[m bytes
+ .../Data/Models/Animals/MondainSteed01_LOD2.grn         |  Bin [31m0[m -> [32m92648[m bytes
+ .../Data/Models/Animals/MondainSteed01_attack1.grn      |  Bin [31m0[m -> [32m46160[m bytes
+ .../Data/Models/Animals/MondainSteed01_die1.grn         |  Bin [31m0[m -> [32m39624[m bytes
+ .../Data/Models/Animals/MondainSteed01_fidget.grn       |  Bin [31m0[m -> [32m29028[m bytes
+ .../Data/Models/Animals/MondainSteed01_gethit.grn       |  Bin [31m0[m -> [32m35104[m bytes
+ .../Data/Models/Animals/MondainSteed01_idle.grn         |  Bin [31m0[m -> [32m26024[m bytes
+ .../Data/Models/Animals/MondainSteed01_run.grn          |  Bin [31m0[m -> [32m32432[m bytes
+ .../Data/Models/Animals/MondainSteed01_stand.grn        |  Bin [31m0[m -> [32m25732[m bytes
+ .../Data/Models/Animals/MondainSteed01_walk.grn         |  Bin [31m0[m -> [32m32240[m bytes
+ .../Models/Animals/Ostards_Ostard_Desert_Attack1.grn    |  Bin [31m0[m -> [32m24700[m bytes
+ .../Data/Models/Animals/Ostards_Ostard_Desert_Die1.grn  |  Bin [31m0[m -> [32m35368[m bytes
+ .../Models/Animals/Ostards_Ostard_Desert_Fidget.grn     |  Bin [31m0[m -> [32m41648[m bytes
+ .../Models/Animals/Ostards_Ostard_Desert_Gethit.grn     |  Bin [31m0[m -> [32m19684[m bytes
+ .../Data/Models/Animals/Ostards_Ostard_Desert_Idle.grn  |  Bin [31m0[m -> [32m17432[m bytes
+ .../Data/Models/Animals/Ostards_Ostard_Desert_Lod2.grn  |  Bin [31m0[m -> [32m22752[m bytes
+ .../Data/Models/Animals/Ostards_Ostard_Desert_Run.grn   |  Bin [31m0[m -> [32m19580[m bytes
+ .../Data/Models/Animals/Ostards_Ostard_Desert_Walk.grn  |  Bin [31m0[m -> [32m24084[m bytes
+ .../Models/Animals/Ostards_Ostard_Ethereal_Lod2.grn     |  Bin [31m0[m -> [32m22788[m bytes
+ .../Data/Models/Animals/Ostards_Ostard_Forest_Lod2.grn  |  Bin [31m0[m -> [32m22756[m bytes
+ .../Models/Animals/Ostards_Ostard_Frenzied_Lod2.grn     |  Bin [31m0[m -> [32m22788[m bytes
+ .../Ultima Online/Data/Models/Animals/Parrot_Fidget.grn |  Bin [31m0[m -> [32m25232[m bytes
+ .../Data/Models/Animals/Parrot_Fidget2.grn              |  Bin [31m0[m -> [32m25864[m bytes
+ .../Ultima Online/Data/Models/Animals/Parrot_LOD2.grn   |  Bin [31m0[m -> [32m66484[m bytes
+ .../Ultima Online/Data/Models/Animals/Parrot_Walk.grn   |  Bin [31m0[m -> [32m24068[m bytes
+ .../Ultima Online/Data/Models/Animals/Parrot_idle.grn   |  Bin [31m0[m -> [32m24068[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Attack1.grn       |  Bin [31m0[m -> [32m47812[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Die1.grn          |  Bin [31m0[m -> [32m36480[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Fidget.grn        |  Bin [31m0[m -> [32m52020[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Gethit.grn        |  Bin [31m0[m -> [32m26828[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Idle.grn          |  Bin [31m0[m -> [32m22660[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Lod2.grn          |  Bin [31m0[m -> [32m31788[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Run.grn           |  Bin [31m0[m -> [32m29696[m bytes
+ .../Data/Models/Animals/Porcines_Boar_Walk.grn          |  Bin [31m0[m -> [32m37160[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Attack1.grn        |  Bin [31m0[m -> [32m49984[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Die1.grn           |  Bin [31m0[m -> [32m72980[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Fidget.grn         |  Bin [31m0[m -> [32m40220[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Gethit.grn         |  Bin [31m0[m -> [32m26788[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Idle.grn           |  Bin [31m0[m -> [32m22656[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Lod2.grn           |  Bin [31m0[m -> [32m31772[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Run.grn            |  Bin [31m0[m -> [32m29692[m bytes
+ .../Data/Models/Animals/Porcines_Pig_Walk.grn           |  Bin [31m0[m -> [32m37156[m bytes
+ .../Data/Models/Animals/Raptalon_Alert.grn              |  Bin [31m0[m -> [32m34312[m bytes
+ .../Data/Models/Animals/Raptalon_Attack1.grn            |  Bin [31m0[m -> [32m44892[m bytes
+ .../Data/Models/Animals/Raptalon_Attack2.grn            |  Bin [31m0[m -> [32m47172[m bytes
+ .../Ultima Online/Data/Models/Animals/Raptalon_Die1.grn |  Bin [31m0[m -> [32m51224[m bytes
+ .../Ultima Online/Data/Models/Animals/Raptalon_Die2.grn |  Bin [31m0[m -> [32m48568[m bytes
+ .../Data/Models/Animals/Raptalon_Grazing.grn            |  Bin [31m0[m -> [32m33336[m bytes
+ .../Data/Models/Animals/Raptalon_Idle2.grn              |  Bin [31m0[m -> [32m36052[m bytes
+ .../Ultima Online/Data/Models/Animals/Raptalon_Lod2.grn |  Bin [31m0[m -> [32m80640[m bytes
+ .../Data/Models/Animals/Raptalon_Lying.grn              |  Bin [31m0[m -> [32m32528[m bytes
+ .../Ultima Online/Data/Models/Animals/Raptalon_Run.grn  |  Bin [31m0[m -> [32m43944[m bytes
+ .../Data/Models/Animals/Raptalon_TakeDamage.grn         |  Bin [31m0[m -> [32m39880[m bytes
+ .../Ultima Online/Data/Models/Animals/Raptalon_Walk.grn |  Bin [31m0[m -> [32m41896[m bytes
+ .../Data/Models/Animals/Raptalon_fidget.grn             |  Bin [31m0[m -> [32m29796[m bytes
+ .../Ultima Online/Data/Models/Animals/Raptalon_idle.grn |  Bin [31m0[m -> [32m32852[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Attack1.grn |  Bin [31m0[m -> [32m29732[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Die1.grn    |  Bin [31m0[m -> [32m46792[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Eat.grn     |  Bin [31m0[m -> [32m27988[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Fidget.grn  |  Bin [31m0[m -> [32m34484[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Gethit.grn  |  Bin [31m0[m -> [32m21644[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Idle.grn    |  Bin [31m0[m -> [32m19156[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Lod2.grn    |  Bin [31m0[m -> [32m27992[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Run.grn     |  Bin [31m0[m -> [32m24864[m bytes
+ .../Data/Models/Animals/Ridgeback_Ridgeback_Walk.grn    |  Bin [31m0[m -> [32m30768[m bytes
+ .../Data/Models/Animals/Ridgeback_Savage_Lod2.grn       |  Bin [31m0[m -> [32m27992[m bytes
+ .../Models/Animals/Rodents_Rabbit_Cottontail_Lod2.grn   |  Bin [31m0[m -> [32m33800[m bytes
+ .../Data/Models/Animals/Rodents_Rat_Sewer_Lod2.grn      |  Bin [31m0[m -> [32m38500[m bytes
+ .../Data/Models/Animals/Rodents_Rat_Town_Lod2.grn       |  Bin [31m0[m -> [32m38500[m bytes
+ .../Models/Animals/Ruminants_Goat_Billy_Attack1.grn     |  Bin [31m0[m -> [32m32972[m bytes
+ .../Data/Models/Animals/Ruminants_Goat_Billy_Die1.grn   |  Bin [31m0[m -> [32m44268[m bytes
+ .../Data/Models/Animals/Ruminants_Goat_Billy_Fidget.grn |  Bin [31m0[m -> [32m28168[m bytes
+ .../Data/Models/Animals/Ruminants_Goat_Billy_Gethit.grn |  Bin [31m0[m -> [32m27440[m bytes
+ .../Data/Models/Animals/Ruminants_Goat_Billy_Idle.grn   |  Bin [31m0[m -> [32m10496[m bytes
+ .../Data/Models/Animals/Ruminants_Goat_Billy_Lod2.grn   |  Bin [31m0[m -> [32m29900[m bytes
+ .../Data/Models/Animals/Ruminants_Goat_Billy_Run.grn    |  Bin [31m0[m -> [32m27660[m bytes
+ .../Data/Models/Animals/Ruminants_Goat_Billy_Walk.grn   |  Bin [31m0[m -> [32m33492[m bytes
+ .../Models/Animals/Ruminants_Goat_Mountain_Lod2.grn     |  Bin [31m0[m -> [32m29912[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Attack1.grn     |  Bin [31m0[m -> [32m33056[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Die1.grn        |  Bin [31m0[m -> [32m45684[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Fidget.grn      |  Bin [31m0[m -> [32m31580[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Gethit.grn      |  Bin [31m0[m -> [32m26380[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Idle.grn        |  Bin [31m0[m -> [32m22572[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Lod2.grn        |  Bin [31m0[m -> [32m26860[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Run.grn         |  Bin [31m0[m -> [32m27648[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Shorn_Lod2.grn  |  Bin [31m0[m -> [32m27128[m bytes
+ .../Data/Models/Animals/Ruminants_Sheep_Walk.grn        |  Bin [31m0[m -> [32m33484[m bytes
+ .../Data/Models/Animals/Serpents_Snake_Ice_Lod2.grn     |  Bin [31m0[m -> [32m24696[m bytes
+ .../Data/Models/Animals/Serpents_Snake_Lava_Lod2.grn    |  Bin [31m0[m -> [32m24704[m bytes
+ .../Data/Models/Animals/Serpents_Snake_Lod2.grn         |  Bin [31m0[m -> [32m24656[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Attack1.grn      |  Bin [31m0[m -> [32m45644[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Attack2.grn      |  Bin [31m0[m -> [32m40396[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Die1.grn         |  Bin [31m0[m -> [32m39828[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Eat.grn          |  Bin [31m0[m -> [32m44408[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Fidget.grn       |  Bin [31m0[m -> [32m37128[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Fidget2.grn      |  Bin [31m0[m -> [32m44408[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_GetHit.grn       |  Bin [31m0[m -> [32m41456[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Idle.grn         |  Bin [31m0[m -> [32m31516[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Lod2.grn         |  Bin [31m0[m -> [32m78692[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Run.grn          |  Bin [31m0[m -> [32m33048[m bytes
+ .../Data/Models/Animals/Skeletal_Mount_Walk.grn         |  Bin [31m0[m -> [32m41168[m bytes
+ .../Data/Models/Animals/Squirrel_Attack1.grn            |  Bin [31m0[m -> [32m47080[m bytes
+ .../Data/Models/Animals/Squirrel_Attack2.grn            |  Bin [31m0[m -> [32m41440[m bytes
+ .../Ultima Online/Data/Models/Animals/Squirrel_Die1.grn |  Bin [31m0[m -> [32m37956[m bytes
+ .../Ultima Online/Data/Models/Animals/Squirrel_Die2.grn |  Bin [31m0[m -> [32m38412[m bytes
+ .../Ultima Online/Data/Models/Animals/Squirrel_Eat.grn  |  Bin [31m0[m -> [32m24792[m bytes
+ .../Data/Models/Animals/Squirrel_Fidget.grn             |  Bin [31m0[m -> [32m31024[m bytes
+ .../Data/Models/Animals/Squirrel_Fidget2.grn            |  Bin [31m0[m -> [32m26476[m bytes
+ .../Ultima Online/Data/Models/Animals/Squirrel_LOD2.grn |  Bin [31m0[m -> [32m47080[m bytes
+ .../Ultima Online/Data/Models/Animals/Squirrel_Run.grn  |  Bin [31m0[m -> [32m31012[m bytes
+ .../Data/Models/Animals/Squirrel_TakeDamage.grn         |  Bin [31m0[m -> [32m30028[m bytes
+ .../Ultima Online/Data/Models/Animals/Squirrel_Walk.grn |  Bin [31m0[m -> [32m31012[m bytes
+ .../Ultima Online/Data/Models/Animals/Squirrel_idle.grn |  Bin [31m0[m -> [32m24788[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Armor_Lod2.grn     |  Bin [31m0[m -> [32m170384[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Attack1.grn        |  Bin [31m0[m -> [32m107396[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Attack2.grn        |  Bin [31m0[m -> [32m106532[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Attack3.grn        |  Bin [31m0[m -> [32m107580[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Die1.grn           |  Bin [31m0[m -> [32m131236[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Fidget.grn         |  Bin [31m0[m -> [32m118220[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Gethit.grn         |  Bin [31m0[m -> [32m91600[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Idle.grn           |  Bin [31m0[m -> [32m93928[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Lod2.grn           |  Bin [31m0[m -> [32m164200[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Lod3.grn           |  Bin [31m0[m -> [32m104008[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Run.grn            |  Bin [31m0[m -> [32m86820[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_Walk.grn           |  Bin [31m0[m -> [32m103804[m bytes
+ .../Data/Models/Animals/Swamp_Dragon_ethereal_LOD2.grn  |  Bin [31m0[m -> [32m164196[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Attack1.grn  |  Bin [31m0[m -> [32m21220[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Die1.grn     |  Bin [31m0[m -> [32m21184[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Fidget.grn   |  Bin [31m0[m -> [32m36624[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Gethit.grn   |  Bin [31m0[m -> [32m21172[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Idle.grn     |  Bin [31m0[m -> [32m19604[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Lod2.grn     |  Bin [31m0[m -> [32m28356[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Run.grn      |  Bin [31m0[m -> [32m20580[m bytes
+ .../Data/Models/Animals/Walrus_Walrus_Male_Walk.grn     |  Bin [31m0[m -> [32m25876[m bytes
+ .../Data/Models/Animals/Wild_Guar_Alert.grn             |  Bin [31m0[m -> [32m21632[m bytes
+ .../Data/Models/Animals/Wild_Guar_Attack1.grn           |  Bin [31m0[m -> [32m24428[m bytes
+ .../Data/Models/Animals/Wild_Guar_Attack2.grn           |  Bin [31m0[m -> [32m28560[m bytes
+ .../Data/Models/Animals/Wild_Guar_Die1.grn              |  Bin [31m0[m -> [32m30648[m bytes
+ .../Data/Models/Animals/Wild_Guar_Die2.grn              |  Bin [31m0[m -> [32m26528[m bytes
+ .../Ultima Online/Data/Models/Animals/Wild_Guar_Eat.grn |  Bin [31m0[m -> [32m24288[m bytes
+ .../Data/Models/Animals/Wild_Guar_Fidget1.grn           |  Bin [31m0[m -> [32m21252[m bytes
+ .../Data/Models/Animals/Wild_Guar_Fidget2.grn           |  Bin [31m0[m -> [32m25476[m bytes
+ .../Data/Models/Animals/Wild_Guar_GetHit.grn            |  Bin [31m0[m -> [32m24816[m bytes
+ .../Data/Models/Animals/Wild_Guar_Idle.grn              |  Bin [31m0[m -> [32m21192[m bytes
+ .../Data/Models/Animals/Wild_Guar_LieDown.grn           |  Bin [31m0[m -> [32m20340[m bytes
+ .../Data/Models/Animals/Wild_Guar_Lod2.grn              |  Bin [31m0[m -> [32m54948[m bytes
+ .../Ultima Online/Data/Models/Animals/Wild_Guar_Run.grn |  Bin [31m0[m -> [32m27960[m bytes
+ .../Data/Models/Animals/Wild_Guar_Walk.grn              |  Bin [31m0[m -> [32m28012[m bytes
+ .../Models/Animals/equines_unicorn_ethereal_lod2.grn    |  Bin [31m0[m -> [32m43692[m bytes
+ .../Data/Models/Animals/kirin_kirin_ethereal_lod2.grn   |  Bin [31m0[m -> [32m32428[m bytes
+ .../Animals/ridgeback_ridgeback_ethereal_LOD2.grn       |  Bin [31m0[m -> [32m28080[m bytes
+ .../Ultima Online/Data/Models/Dir.txt                   | 2095 [32m+++++++++++++++++++++++[m
+ .../Ultima Online/Data/Models/Human.lst                 |  169 [32m++[m
+ .../Data/Models/Humans/Character_Blackthorn_Lod2.grn    |  Bin [31m0[m -> [32m44872[m bytes
+ .../Data/Models/Humans/Character_Dupre_Lod2.grn         |  Bin [31m0[m -> [32m49776[m bytes
+ .../Data/Models/Humans/Character_Lord_British_Lod2.grn  |  Bin [31m0[m -> [32m47848[m bytes
+ .../Ultima Online/Data/Models/Humans/Counselor_Lod2.grn |  Bin [31m0[m -> [32m44952[m bytes
+ .../Ultima Online/Data/Models/Humans/Dawn_Girl_Lod2.grn |  Bin [31m0[m -> [32m163628[m bytes
+ .../Data/Models/Humans/H_Female_Aged_Fidget.grn         |  Bin [31m0[m -> [32m66064[m bytes
+ .../Data/Models/Humans/H_Female_Aged_Idle.grn           |  Bin [31m0[m -> [32m42820[m bytes
+ .../Data/Models/Humans/H_Female_Applaud_01.grn          |  Bin [31m0[m -> [32m36364[m bytes
+ .../Data/Models/Humans/H_Female_Argue_01.grn            |  Bin [31m0[m -> [32m59776[m bytes
+ .../Data/Models/Humans/H_Female_Argue_02.grn            |  Bin [31m0[m -> [32m58784[m bytes
+ .../Data/Models/Humans/H_Female_Argue_03.grn            |  Bin [31m0[m -> [32m58804[m bytes
+ .../Data/Models/Humans/H_Female_Athletic_Fidget.grn     |  Bin [31m0[m -> [32m73180[m bytes
+ .../Data/Models/Humans/H_Female_Athletic_Idle.grn       |  Bin [31m0[m -> [32m61700[m bytes
+ .../Data/Models/Humans/H_Female_Attackbash1h_01.grn     |  Bin [31m0[m -> [32m37624[m bytes
+ .../Data/Models/Humans/H_Female_Attackbash2h_01.grn     |  Bin [31m0[m -> [32m37252[m bytes
+ .../Data/Models/Humans/H_Female_Attackbow_01.grn        |  Bin [31m0[m -> [32m26472[m bytes
+ .../Data/Models/Humans/H_Female_Attackcrossbow_01.grn   |  Bin [31m0[m -> [32m38808[m bytes
+ .../Data/Models/Humans/H_Female_Attackpierce1h_01.grn   |  Bin [31m0[m -> [32m37320[m bytes
+ .../Data/Models/Humans/H_Female_Attackpierce2h_01.grn   |  Bin [31m0[m -> [32m36752[m bytes
+ .../Data/Models/Humans/H_Female_Attackslash1h_01.grn    |  Bin [31m0[m -> [32m39428[m bytes
+ .../Data/Models/Humans/H_Female_Attackslash2h_01.grn    |  Bin [31m0[m -> [32m37120[m bytes
+ .../Models/Humans/H_Female_Block_Shield_Hard_01.grn     |  Bin [31m0[m -> [32m27540[m bytes
+ .../Data/Models/Humans/H_Female_Blow_Kiss_01.grn        |  Bin [31m0[m -> [32m35156[m bytes
+ .../Data/Models/Humans/H_Female_Bow_Formal_01.grn       |  Bin [31m0[m -> [32m51056[m bytes
+ .../Data/Models/Humans/H_Female_Bow_Lesser_01.grn       |  Bin [31m0[m -> [32m35988[m bytes
+ .../Data/Models/Humans/H_Female_Brave_Fidget.grn        |  Bin [31m0[m -> [32m63620[m bytes
+ .../Data/Models/Humans/H_Female_Brave_Idle.grn          |  Bin [31m0[m -> [32m25780[m bytes
+ .../Data/Models/Humans/H_Female_Combatadvance_1h_01.grn |  Bin [31m0[m -> [32m30052[m bytes
+ .../Data/Models/Humans/H_Female_Combatadvance_2h_01.grn |  Bin [31m0[m -> [32m30552[m bytes
+ .../Models/Humans/H_Female_Combatadvance_Pierce_01.grn  |  Bin [31m0[m -> [32m27300[m bytes
+ .../Data/Models/Humans/H_Female_Combatidle1h_01.grn     |  Bin [31m0[m -> [32m29512[m bytes
+ .../Data/Models/Humans/H_Female_Combatidle2h_01.grn     |  Bin [31m0[m -> [32m26860[m bytes
+ .../Data/Models/Humans/H_Female_Cover_Ears_01.grn       |  Bin [31m0[m -> [32m51012[m bytes
+ .../Data/Models/Humans/H_Female_Curtsey_Formal_01.grn   |  Bin [31m0[m -> [32m50728[m bytes
+ .../Data/Models/Humans/H_Female_Dance_Folk_01.grn       |  Bin [31m0[m -> [32m49132[m bytes
+ .../Data/Models/Humans/H_Female_Dance_Folk_02.grn       |  Bin [31m0[m -> [32m53484[m bytes
+ .../Data/Models/Humans/H_Female_Dance_Nerd_01.grn       |  Bin [31m0[m -> [32m51160[m bytes
+ .../Data/Models/Humans/H_Female_Dance_Tribal_01.grn     |  Bin [31m0[m -> [32m50784[m bytes
+ .../Data/Models/Humans/H_Female_Die_Hard_Back_01.grn    |  Bin [31m0[m -> [32m47172[m bytes
+ .../Data/Models/Humans/H_Female_Die_Hard_Fwd_01.grn     |  Bin [31m0[m -> [32m50072[m bytes
+ .../Data/Models/Humans/H_Female_Drunk_Fidget.grn        |  Bin [31m0[m -> [32m67724[m bytes
+ .../Data/Models/Humans/H_Female_Drunk_Idle.grn          |  Bin [31m0[m -> [32m45748[m bytes
+ .../Models/Humans/H_Female_Fidget_Yawn_Stretch_01.grn   |  Bin [31m0[m -> [32m43228[m bytes
+ .../Data/Models/Humans/H_Female_Fold_Arms_01.grn        |  Bin [31m0[m -> [32m50016[m bytes
+ .../Data/Models/Humans/H_Female_Gethit_Fr_Hi_01.grn     |  Bin [31m0[m -> [32m32264[m bytes
+ .../Data/Models/Humans/H_Female_Gethit_Fr_Mid_01.grn    |  Bin [31m0[m -> [32m27108[m bytes
+ .../H_Female_GiantBeetle_Attack1H_SlashRight_01.grn     |  Bin [31m0[m -> [32m41628[m bytes
+ .../H_Female_Giant_Beetle_Attack1H_SlashRight_01.grn    |  Bin [31m0[m -> [32m43152[m bytes
+ .../H_Female_Giant_Beetle_Attack2H_SlashRight_01.grn    |  Bin [31m0[m -> [32m36284[m bytes
+ .../Humans/H_Female_Giant_Beetle_AttackBow_01.grn       |  Bin [31m0[m -> [32m34076[m bytes
+ .../Humans/H_Female_Giant_Beetle_AttackCrossbow_01.grn  |  Bin [31m0[m -> [32m34360[m bytes
+ .../Models/Humans/H_Female_Giant_Beetle_Idle_01.grn     |  Bin [31m0[m -> [32m26160[m bytes
+ .../Data/Models/Humans/H_Female_Giant_Beetle_Run_01.grn |  Bin [31m0[m -> [32m23684[m bytes
+ .../Models/Humans/H_Female_Giant_Beetle_Walk_01.grn     |  Bin [31m0[m -> [32m27180[m bytes
+ .../Humans/H_Female_Horse_Attack1h_Slashright_01.grn    |  Bin [31m0[m -> [32m32076[m bytes
+ .../Humans/H_Female_Horse_Attack2h_Slashright_01.grn    |  Bin [31m0[m -> [32m28584[m bytes
+ .../Data/Models/Humans/H_Female_Horse_Attackbow_01.grn  |  Bin [31m0[m -> [32m27020[m bytes
+ .../Models/Humans/H_Female_Horse_Attackcrossbow_01.grn  |  Bin [31m0[m -> [32m27024[m bytes
+ .../Data/Models/Humans/H_Female_Horse_Idle_01.grn       |  Bin [31m0[m -> [32m22036[m bytes
+ .../Data/Models/Humans/H_Female_Horse_Run_01.grn        |  Bin [31m0[m -> [32m25060[m bytes
+ .../Data/Models/Humans/H_Female_Horse_Walk_01.grn       |  Bin [31m0[m -> [32m23968[m bytes
+ .../Data/Models/Humans/H_Female_Hyper_Fidget.grn        |  Bin [31m0[m -> [32m62404[m bytes
+ .../Data/Models/Humans/H_Female_Hyper_Idle.grn          |  Bin [31m0[m -> [32m44464[m bytes
+ .../Data/Models/Humans/H_Female_Idle_01.grn             |  Bin [31m0[m -> [32m27264[m bytes
+ .../Data/Models/Humans/H_Female_Impatient_01.grn        |  Bin [31m0[m -> [32m51192[m bytes
+ .../Data/Models/Humans/H_Female_Impatient_Fidget.grn    |  Bin [31m0[m -> [32m52844[m bytes
+ .../Data/Models/Humans/H_Female_Impatient_Idle.grn      |  Bin [31m0[m -> [32m35004[m bytes
+ .../Models/Humans/H_Female_Ingest_Drink_Bottle_01.grn   |  Bin [31m0[m -> [32m48132[m bytes
+ .../Models/Humans/H_Female_Ingest_Drink_Stein_01.grn    |  Bin [31m0[m -> [32m43264[m bytes
+ .../Data/Models/Humans/H_Female_Ingest_Eat_01.grn       |  Bin [31m0[m -> [32m35440[m bytes
+ .../Data/Models/Humans/H_Female_Items_Idle2_01.grn      |  Bin [31m0[m -> [32m24240[m bytes
+ .../Data/Models/Humans/H_Female_Items_Idle_01.grn       |  Bin [31m0[m -> [32m26672[m bytes
+ .../Data/Models/Humans/H_Female_Jammin_Fidget.grn       |  Bin [31m0[m -> [32m67492[m bytes
+ .../Data/Models/Humans/H_Female_Jammin_Idle.grn         |  Bin [31m0[m -> [32m61484[m bytes
+ .../Humans/H_Female_Kirin_Attack1h_Slashright_01.grn    |  Bin [31m0[m -> [32m31316[m bytes
+ .../Humans/H_Female_Kirin_Attack2h_Slashright_01.grn    |  Bin [31m0[m -> [32m28584[m bytes
+ .../Data/Models/Humans/H_Female_Kirin_Attackbow_01.grn  |  Bin [31m0[m -> [32m27020[m bytes
+ .../Models/Humans/H_Female_Kirin_Attackcrossbow_01.grn  |  Bin [31m0[m -> [32m27024[m bytes
+ .../Data/Models/Humans/H_Female_Kirin_Idle_01.grn       |  Bin [31m0[m -> [32m23192[m bytes
+ .../Data/Models/Humans/H_Female_Kirin_Run_01.grn        |  Bin [31m0[m -> [32m25536[m bytes
+ .../Data/Models/Humans/H_Female_Kirin_Walk_01.grn       |  Bin [31m0[m -> [32m23984[m bytes
+ .../Data/Models/Humans/H_Female_Lecture_01.grn          |  Bin [31m0[m -> [32m36132[m bytes
+ .../Humans/H_Female_Llama_Attack1h_Slashright_01.grn    |  Bin [31m0[m -> [32m31452[m bytes
+ .../Humans/H_Female_Llama_Attack2h_Slashright_01.grn    |  Bin [31m0[m -> [32m28584[m bytes
+ .../Data/Models/Humans/H_Female_Llama_Attackbow_01.grn  |  Bin [31m0[m -> [32m27032[m bytes
+ .../Models/Humans/H_Female_Llama_Attackcrossbow_01.grn  |  Bin [31m0[m -> [32m27024[m bytes
+ .../Data/Models/Humans/H_Female_Llama_Idle_01.grn       |  Bin [31m0[m -> [32m21976[m bytes
+ .../Data/Models/Humans/H_Female_Llama_Run_01.grn        |  Bin [31m0[m -> [32m24928[m bytes
+ .../Data/Models/Humans/H_Female_Llama_Walk_01.grn       |  Bin [31m0[m -> [32m25208[m bytes
+ .../Ultima Online/Data/Models/Humans/H_Female_Lod2.grn  |  Bin [31m0[m -> [32m16516[m bytes
+ .../Data/Models/Humans/H_Female_Mortar_01.grn           |  Bin [31m0[m -> [32m49420[m bytes
+ .../Data/Models/Humans/H_Female_Nod_Yes_01.grn          |  Bin [31m0[m -> [32m37004[m bytes
+ .../Humans/H_Female_Ostard_Attack1h_Slashright_01.grn   |  Bin [31m0[m -> [32m32784[m bytes
+ .../Humans/H_Female_Ostard_Attack2h_Slashright_01.grn   |  Bin [31m0[m -> [32m30116[m bytes
+ .../Data/Models/Humans/H_Female_Ostard_Attackbow_01.grn |  Bin [31m0[m -> [32m27456[m bytes
+ .../Models/Humans/H_Female_Ostard_Attackcrossbow_01.grn |  Bin [31m0[m -> [32m27356[m bytes
+ .../Data/Models/Humans/H_Female_Ostard_Idle_01.grn      |  Bin [31m0[m -> [32m24216[m bytes
+ .../Data/Models/Humans/H_Female_Ostard_Run_01.grn       |  Bin [31m0[m -> [32m24044[m bytes
+ .../Data/Models/Humans/H_Female_Ostard_Walk_01.grn      |  Bin [31m0[m -> [32m24044[m bytes
+ .../Data/Models/Humans/H_Female_Pickup_01.grn           |  Bin [31m0[m -> [32m43344[m bytes
+ .../Data/Models/Humans/H_Female_Point_Assertive_01.grn  |  Bin [31m0[m -> [32m40404[m bytes
+ .../Data/Models/Humans/H_Female_Pour_Reagent_01.grn     |  Bin [31m0[m -> [32m46188[m bytes
+ .../Data/Models/Humans/H_Female_Punch_Hook_01.grn       |  Bin [31m0[m -> [32m33848[m bytes
+ .../Data/Models/Humans/H_Female_Punch_Punch_Jab_01.grn  |  Bin [31m0[m -> [32m30904[m bytes
+ .../H_Female_Ridgeback_Attack1h_Slashright_01.grn       |  Bin [31m0[m -> [32m33696[m bytes
+ .../H_Female_Ridgeback_Attack2h_Slashright_01.grn       |  Bin [31m0[m -> [32m33380[m bytes
+ .../Models/Humans/H_Female_Ridgeback_Attackbow_01.grn   |  Bin [31m0[m -> [32m27708[m bytes
+ .../Humans/H_Female_Ridgeback_Attackcrossbow_01.grn     |  Bin [31m0[m -> [32m27912[m bytes
+ .../Data/Models/Humans/H_Female_Ridgeback_Idle_01.grn   |  Bin [31m0[m -> [32m23772[m bytes
+ .../Data/Models/Humans/H_Female_Ridgeback_Run_01.grn    |  Bin [31m0[m -> [32m26640[m bytes
+ .../Data/Models/Humans/H_Female_Ridgeback_Walk_01.grn   |  Bin [31m0[m -> [32m27796[m bytes
+ .../Data/Models/Humans/H_Female_RunStaff2_01.grn        |  Bin [31m0[m -> [32m31896[m bytes
+ .../Data/Models/Humans/H_Female_Run_01.grn              |  Bin [31m0[m -> [32m36544[m bytes
+ .../Data/Models/Humans/H_Female_Runstaff_01.grn         |  Bin [31m0[m -> [32m31792[m bytes
+ .../Data/Models/Humans/H_Female_Salute_Armed1h_01.grn   |  Bin [31m0[m -> [32m38576[m bytes
+ .../Data/Models/Humans/H_Female_Salute_Greeting_01.grn  |  Bin [31m0[m -> [32m40036[m bytes
+ .../Data/Models/Humans/H_Female_Salute_Unarmed_01.grn   |  Bin [31m0[m -> [32m48452[m bytes
+ .../Humans/H_Female_Seahorse_Attack1h_Slashright_01.grn |  Bin [31m0[m -> [32m31752[m bytes
+ .../Humans/H_Female_Seahorse_Attack2h_Slashright_01.grn |  Bin [31m0[m -> [32m31972[m bytes
+ .../Models/Humans/H_Female_Seahorse_Attackbow_01.grn    |  Bin [31m0[m -> [32m28416[m bytes
+ .../Humans/H_Female_Seahorse_Attackcrossbow_01.grn      |  Bin [31m0[m -> [32m28580[m bytes
+ .../Data/Models/Humans/H_Female_Seahorse_Idle_01.grn    |  Bin [31m0[m -> [32m23024[m bytes
+ .../Data/Models/Humans/H_Female_Seahorse_Run_01.grn     |  Bin [31m0[m -> [32m25496[m bytes
+ .../Data/Models/Humans/H_Female_Seahorse_Walk_01.grn    |  Bin [31m0[m -> [32m25304[m bytes
+ .../Data/Models/Humans/H_Female_Sexy_Fidget.grn         |  Bin [31m0[m -> [32m68400[m bytes
+ .../Data/Models/Humans/H_Female_Sexy_Idle.grn           |  Bin [31m0[m -> [32m64780[m bytes
+ .../Data/Models/Humans/H_Female_Shake_No_01.grn         |  Bin [31m0[m -> [32m36760[m bytes
+ .../Data/Models/Humans/H_Female_Sinister_Fidget.grn     |  Bin [31m0[m -> [32m58320[m bytes
+ .../Data/Models/Humans/H_Female_Sinister_Idle.grn       |  Bin [31m0[m -> [32m45140[m bytes
+ .../Data/Models/Humans/H_Female_Sit_Idle_01.grn         |  Bin [31m0[m -> [32m25412[m bytes
+ .../Data/Models/Humans/H_Female_Sit_To_Stand_01.grn     |  Bin [31m0[m -> [32m38184[m bytes
+ .../Data/Models/Humans/H_Female_Sneaky_Fidget.grn       |  Bin [31m0[m -> [32m61264[m bytes
+ .../Data/Models/Humans/H_Female_Sneaky_Idle.grn         |  Bin [31m0[m -> [32m38168[m bytes
+ .../Data/Models/Humans/H_Female_Spell1.grn              |  Bin [31m0[m -> [32m36584[m bytes
+ .../Data/Models/Humans/H_Female_Spell2.grn              |  Bin [31m0[m -> [32m54812[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_1h_L1_01.grn  |  Bin [31m0[m -> [32m26996[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_1h_L1_02.grn  |  Bin [31m0[m -> [32m34316[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_1h_L2_01.grn  |  Bin [31m0[m -> [32m34228[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_1h_L2_02.grn  |  Bin [31m0[m -> [32m34288[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_1h_L3_01.grn  |  Bin [31m0[m -> [32m46620[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_1h_L3_02.grn  |  Bin [31m0[m -> [32m46516[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_1h_L4_01.grn  |  Bin [31m0[m -> [32m51852[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_2h_L1_01.grn  |  Bin [31m0[m -> [32m35608[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_2h_L2_01.grn  |  Bin [31m0[m -> [32m37104[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_2h_L3_01.grn  |  Bin [31m0[m -> [32m53280[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_2h_L4_01.grn  |  Bin [31m0[m -> [32m54088[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Dir_2h_L4_02.grn  |  Bin [31m0[m -> [32m76852[m bytes
+ .../Models/Humans/H_Female_Spell_Earth_2h_L1_01.grn     |  Bin [31m0[m -> [32m33180[m bytes
+ .../Models/Humans/H_Female_Spell_Earth_2h_L2_01.grn     |  Bin [31m0[m -> [32m37060[m bytes
+ .../Models/Humans/H_Female_Spell_Earth_2h_L3_01.grn     |  Bin [31m0[m -> [32m49992[m bytes
+ .../Models/Humans/H_Female_Spell_Earth_2h_L3_02.grn     |  Bin [31m0[m -> [32m48620[m bytes
+ .../Models/Humans/H_Female_Spell_Earth_2h_L4_01.grn     |  Bin [31m0[m -> [32m50536[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Sky_2h_L1_01.grn  |  Bin [31m0[m -> [32m34824[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Sky_2h_L2_01.grn  |  Bin [31m0[m -> [32m37096[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Sky_2h_L3_01.grn  |  Bin [31m0[m -> [32m50284[m bytes
+ .../Data/Models/Humans/H_Female_Spell_Sky_2h_L4_01.grn  |  Bin [31m0[m -> [32m53152[m bytes
+ .../Models/Humans/H_Female_Spell_Staff_2h_L1_01.grn     |  Bin [31m0[m -> [32m37164[m bytes
+ .../Models/Humans/H_Female_Spell_Staff_2h_L2_01.grn     |  Bin [31m0[m -> [32m50388[m bytes
+ .../Models/Humans/H_Female_Spell_Staff_2h_L3_01.grn     |  Bin [31m0[m -> [32m55496[m bytes
+ .../Models/Humans/H_Female_Spell_Staff_2h_L4_01.grn     |  Bin [31m0[m -> [32m79684[m bytes
+ .../Models/Humans/H_Female_Spell_Summon_2h_L1_01.grn    |  Bin [31m0[m -> [32m48956[m bytes
+ .../Models/Humans/H_Female_Spell_Summon_2h_L2_01.grn    |  Bin [31m0[m -> [32m47748[m bytes
+ .../Models/Humans/H_Female_Spell_Summon_2h_L3_01.grn    |  Bin [31m0[m -> [32m77316[m bytes
+ .../Models/Humans/H_Female_Spell_Summon_2h_L3_02.grn    |  Bin [31m0[m -> [32m75228[m bytes
+ .../Models/Humans/H_Female_Spell_Summon_2h_L4_01.grn    |  Bin [31m0[m -> [32m84160[m bytes
+ .../Data/Models/Humans/H_Female_Spell_dir_1h_L4_02.grn  |  Bin [31m0[m -> [32m79944[m bytes
+ .../Data/Models/Humans/H_Female_Stand_To_Sit_01.grn     |  Bin [31m0[m -> [32m36956[m bytes
+ .../H_Female_Swamp_Dragon_Attack1H_SlashRight_01.grn    |  Bin [31m0[m -> [32m39944[m bytes
+ .../H_Female_Swamp_Dragon_Attack2H_SlashRight_01.grn    |  Bin [31m0[m -> [32m37244[m bytes
+ .../Humans/H_Female_Swamp_Dragon_AttackBow_01.grn       |  Bin [31m0[m -> [32m31772[m bytes
+ .../Humans/H_Female_Swamp_Dragon_AttackCrossbow_01.grn  |  Bin [31m0[m -> [32m31904[m bytes
+ .../Models/Humans/H_Female_Swamp_Dragon_Idle_01.grn     |  Bin [31m0[m -> [32m24052[m bytes
+ .../Data/Models/Humans/H_Female_Swamp_Dragon_Run_01.grn |  Bin [31m0[m -> [32m24468[m bytes
+ .../Models/Humans/H_Female_Swamp_Dragon_Walk_01.grn     |  Bin [31m0[m -> [32m27580[m bytes
+ .../Data/Models/Humans/H_Female_Turn_L180_01.grn        |  Bin [31m0[m -> [32m45712[m bytes
+ .../Data/Models/Humans/H_Female_Turn_R180_01.grn        |  Bin [31m0[m -> [32m44756[m bytes
+ .../Data/Models/Humans/H_Female_Up_Yours!_01.grn        |  Bin [31m0[m -> [32m53568[m bytes
+ .../Data/Models/Humans/H_Female_Victory_01.grn          |  Bin [31m0[m -> [32m41336[m bytes
+ .../Data/Models/Humans/H_Female_Victory_02.grn          |  Bin [31m0[m -> [32m56532[m bytes
+ .../Data/Models/Humans/H_Female_WalkStaff2_01.grn       |  Bin [31m0[m -> [32m30360[m bytes
+ .../Data/Models/Humans/H_Female_Walk_01.grn             |  Bin [31m0[m -> [32m36048[m bytes
+ .../Data/Models/Humans/H_Female_Walkstaff_01.grn        |  Bin [31m0[m -> [32m35912[m bytes
+ .../Data/Models/Humans/H_Female_Wave_1h_01.grn          |  Bin [31m0[m -> [32m47132[m bytes
+ .../Data/Models/Humans/H_Female_Wave_2h_01.grn          |  Bin [31m0[m -> [32m52992[m bytes
+ .../Models/Humans/H_Female_Wave_Long_Distance_01.grn    |  Bin [31m0[m -> [32m46508[m bytes
+ .../Data/Models/Humans/H_Female_What!_01.grn            |  Bin [31m0[m -> [32m41796[m bytes
+ .../Data/Models/Humans/H_Male_Aged_Fidget.grn           |  Bin [31m0[m -> [32m65940[m bytes
+ .../Data/Models/Humans/H_Male_Aged_Idle.grn             |  Bin [31m0[m -> [32m42820[m bytes
+ .../Data/Models/Humans/H_Male_Applaud_01.grn            |  Bin [31m0[m -> [32m32460[m bytes
+ .../Data/Models/Humans/H_Male_Argue_01.grn              |  Bin [31m0[m -> [32m60612[m bytes
+ .../Data/Models/Humans/H_Male_Argue_02.grn              |  Bin [31m0[m -> [32m58692[m bytes
+ .../Data/Models/Humans/H_Male_Argue_03.grn              |  Bin [31m0[m -> [32m58692[m bytes
+ .../Data/Models/Humans/H_Male_Athletic_Fidget.grn       |  Bin [31m0[m -> [32m73224[m bytes
+ .../Data/Models/Humans/H_Male_Athletic_Idle.grn         |  Bin [31m0[m -> [32m61700[m bytes
+ .../Data/Models/Humans/H_Male_Attackbash1h_01.grn       |  Bin [31m0[m -> [32m38144[m bytes
+ .../Data/Models/Humans/H_Male_Attackbash2h_01.grn       |  Bin [31m0[m -> [32m37788[m bytes
+ .../Data/Models/Humans/H_Male_Attackbow_01.grn          |  Bin [31m0[m -> [32m37264[m bytes
+ .../Data/Models/Humans/H_Male_Attackcrossbow_01.grn     |  Bin [31m0[m -> [32m30808[m bytes
+ .../Data/Models/Humans/H_Male_Attackpierce1h_01.grn     |  Bin [31m0[m -> [32m38036[m bytes
+ .../Data/Models/Humans/H_Male_Attackpierce2h_01.grn     |  Bin [31m0[m -> [32m31796[m bytes
+ .../Data/Models/Humans/H_Male_Attackslash1h_01.grn      |  Bin [31m0[m -> [32m39424[m bytes
+ .../Data/Models/Humans/H_Male_Attackslash2h_01.grn      |  Bin [31m0[m -> [32m37380[m bytes
+ .../Data/Models/Humans/H_Male_Block_Shield_Hard_01.grn  |  Bin [31m0[m -> [32m27748[m bytes
+ .../Data/Models/Humans/H_Male_Blow_Kiss_01.grn          |  Bin [31m0[m -> [32m35364[m bytes
+ .../Data/Models/Humans/H_Male_Bow_Formal_01.grn         |  Bin [31m0[m -> [32m48808[m bytes
+ .../Data/Models/Humans/H_Male_Bow_Lesser_01.grn         |  Bin [31m0[m -> [32m35984[m bytes
+ .../Data/Models/Humans/H_Male_Brave_Fidget.grn          |  Bin [31m0[m -> [32m49504[m bytes
+ .../Data/Models/Humans/H_Male_Brave_Idle.grn            |  Bin [31m0[m -> [32m28840[m bytes
+ .../Data/Models/Humans/H_Male_Combatadvance_1h_01.grn   |  Bin [31m0[m -> [32m26720[m bytes
+ .../Data/Models/Humans/H_Male_Combatadvance_2h_01.grn   |  Bin [31m0[m -> [32m29252[m bytes
+ .../Models/Humans/H_Male_Combatadvance_Pierce_01.grn    |  Bin [31m0[m -> [32m26052[m bytes
+ .../Data/Models/Humans/H_Male_Combatidle1h_01.grn       |  Bin [31m0[m -> [32m25096[m bytes
+ .../Data/Models/Humans/H_Male_Combatidle2h_01.grn       |  Bin [31m0[m -> [32m28476[m bytes
+ .../Data/Models/Humans/H_Male_Cover_Ears_01.grn         |  Bin [31m0[m -> [32m47060[m bytes
+ .../Data/Models/Humans/H_Male_Curtsey_Formal_01.grn     |  Bin [31m0[m -> [32m50764[m bytes
+ .../Data/Models/Humans/H_Male_Dance_Folk_01.grn         |  Bin [31m0[m -> [32m49112[m bytes
+ .../Data/Models/Humans/H_Male_Dance_Folk_02.grn         |  Bin [31m0[m -> [32m49540[m bytes
+ .../Data/Models/Humans/H_Male_Dance_Nerd_01.grn         |  Bin [31m0[m -> [32m51156[m bytes
+ .../Data/Models/Humans/H_Male_Dance_Tribal_01.grn       |  Bin [31m0[m -> [32m50780[m bytes
+ .../Data/Models/Humans/H_Male_Die_Hard_Back_01.grn      |  Bin [31m0[m -> [32m47184[m bytes
+ .../Data/Models/Humans/H_Male_Die_Hard_Fwd_01.grn       |  Bin [31m0[m -> [32m49820[m bytes
+ .../Data/Models/Humans/H_Male_Die_Hard_Twist_01.grn     |  Bin [31m0[m -> [32m44084[m bytes
+ .../Data/Models/Humans/H_Male_Die_Hard_Twist_02.grn     |  Bin [31m0[m -> [32m32900[m bytes
+ .../Data/Models/Humans/H_Male_Die_Slow_Elect_01.grn     |  Bin [31m0[m -> [32m44560[m bytes
+ .../Data/Models/Humans/H_Male_Die_Slow_Fire_01.grn      |  Bin [31m0[m -> [32m70768[m bytes
+ .../Data/Models/Humans/H_Male_Die_Slow_Poison_01.grn    |  Bin [31m0[m -> [32m104292[m bytes
+ .../Data/Models/Humans/H_Male_Drunk_Fidget.grn          |  Bin [31m0[m -> [32m67720[m bytes
+ .../Data/Models/Humans/H_Male_Drunk_Idle.grn            |  Bin [31m0[m -> [32m45748[m bytes
+ .../Models/Humans/H_Male_Fidget_Yawn_Stretch_01.grn     |  Bin [31m0[m -> [32m43
